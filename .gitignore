@@ -1,0 +1,60 @@
+# Built application binaries and packages
+*.apk
+*.ap_
+*.aab
+*.dex
+
+# Gradle and Kotlin caches
+.gradle/
+build/
+*/build/
+.kotlin/
+
+# Android Studio and IntelliJ IDEA
+*.iml
+.idea/
+local.properties
+/local.properties
+
+# Keystores, signing keys and certificates
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+debug.keystore
+my-upload-key.jks
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Android NDK / Native build
+.externalNativeBuild/
+.cxx/
+captures/
+
+# Workspace session and agent metadata
+.antigravity/
+.vscode/
+.chrome-temp/
+
+# Decompilation & Scratch Recoveries
+decompiled_*/
+jadx_tool/
+jadx.zip
+*.jar
+scratch/
+scratch_*
+full_recovered_*
+recovered_*
+rts_*
+synthetic_*
+temp_*
+/*.png
+

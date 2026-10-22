@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Black Screen Recorder</string>
+    <string name="error_mic_unavailable">Microphone is unavailable or in use</string>
+    <string name="error_camera_unavailable">Camera is unavailable or in use</string>
+    <string name="permission_camera_mic">Camera and microphone permissions are required</string>
+    <string name="action_share">Share</string>
+    <string name="rename_title">Rename Recording</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+</resources>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Phone / Screen Outline -->
+    <path
+        android:fillColor="#151518"
+        android:strokeColor="#3A3A40"
+        android:strokeWidth="2.5"
+        android:pathData="M37,21 L71,21 C76,21 79,24 79,29 L79,79 C79,84 76,87 71,87 L37,87 C32,87 29,84 29,79 L29,29 C29,24 32,21 37,21 Z" />
+
+    <!-- Dark Screen Area -->
+    <path
+        android:fillColor="#08080A"
+        android:pathData="M32.5,27 L75.5,27 C77,27 77.5,27.5 77.5,29 L77.5,79 C77.5,80.5 77,81 75.5,81 L32.5,81 C31,81 30.5,80.5 30.5,79 L30.5,29 C30.5,27.5 31,27 32.5,27 Z" />
+
+    <!-- Subtle Red Recording Glow Ring -->
+    <path
+        android:fillColor="#33E53935"
+        android:pathData="M54,54m-16,0a16,16 0 1,1 32,0a16,16 0 1,1 -32,0" />
+
+    <!-- Inner Red Recording Ring -->
+    <path
+        android:fillColor="#66E53935"
+        android:pathData="M54,54m-11,0a11,11 0 1,1 22,0a11,11 0 1,1 -22,0" />
+
+    <!-- Center Red Recording Dot -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M54,54m-6.5,0a6.5,6.5 0 1,1 13,0a6.5,6.5 0 1,1 -13,0" />
+
+    <!-- Screen speaker notch -->
+    <path
+        android:fillColor="#3A3A40"
+        android:pathData="M50,23.5 L58,23.5 C58.5,23.5 59,24 59,24.5 C59,25 58.5,25.5 58,25.5 L50,25.5 C49.5,25.5 49,25 49,24.5 C49,24 49.5,23.5 50,23.5 Z" />
+</vector>

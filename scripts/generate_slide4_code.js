@@ -1,0 +1,478 @@
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const edgePath = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const mockupAssetsDir = path.join(__dirname, '../mockup_assets');
+if (!fs.existsSync(mockupAssetsDir)) {
+  fs.mkdirSync(mockupAssetsDir, { recursive: true });
+}
+
+// -------------------------------------------------------------
+// 1. RAW LOCKING SCREEN UI (Phone screen only - 1080x1920)
+// -------------------------------------------------------------
+const rawLockScreenHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1920, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 25%, #181419 0%, #0d0d12 60%, #08080a 100%);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* STATUS BAR */
+    .status-bar {
+      width: 100%;
+      height: 72px;
+      padding: 0 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 24px;
+      font-weight: 700;
+      color: #f0f0f5;
+      z-index: 20;
+    }
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-icons svg {
+      fill: #f0f0f5;
+    }
+
+    /* TOP BAR WITH BACK BUTTON */
+    .top-bar {
+      width: 100%;
+      height: 80px;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .btn-back {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-back svg {
+      width: 24px;
+      height: 24px;
+      fill: #ffffff;
+    }
+
+    /* VAULT BADGE & HEADER */
+    .vault-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+
+    .shield-icon-wrap {
+      width: 120px;
+      height: 120px;
+      border-radius: 36px;
+      background: linear-gradient(135deg, rgba(229, 9, 20, 0.22) 0%, rgba(139, 0, 0, 0.1) 100%);
+      border: 2px solid rgba(229, 9, 20, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 50px rgba(229, 9, 20, 0.35), inset 0 0 20px rgba(229, 9, 20, 0.2);
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .shield-icon-wrap::after {
+      content: '';
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(229, 9, 20, 0.2) 0%, transparent 70%);
+      z-index: -1;
+    }
+    .shield-svg {
+      width: 60px;
+      height: 60px;
+      fill: #e50914;
+      filter: drop-shadow(0 4px 10px rgba(229, 9, 20, 0.5));
+    }
+
+    .vault-title {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .vault-subtitle {
+      font-size: 24px;
+      font-weight: 500;
+      color: #8c8c9a;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .vault-tag {
+      background: rgba(229, 9, 20, 0.15);
+      color: #e50914;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.8px;
+      border: 1px solid rgba(229, 9, 20, 0.3);
+    }
+
+    /* PIN DOTS */
+    .pin-dots-container {
+      display: flex;
+      gap: 30px;
+      margin-top: 60px;
+      margin-bottom: 80px;
+    }
+    .pin-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .pin-dot.filled {
+      background: linear-gradient(135deg, #ff1a26, #e50914);
+      box-shadow: 0 0 20px rgba(229, 9, 20, 0.8), 0 0 6px #fff;
+    }
+    .pin-dot.empty {
+      background: #171720;
+      border: 2px solid #363646;
+    }
+
+    /* 3x4 KEYPAD */
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px 60px;
+      width: 680px;
+    }
+
+    .key-btn {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1b1b24 0%, #121219 100%);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+    }
+    .key-num {
+      font-size: 46px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+    }
+    .key-sub {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #606072;
+      margin-top: 6px;
+    }
+
+    /* ACTION KEYS (BIOMETRIC & BACKSPACE) */
+    .key-btn.biometric {
+      background: linear-gradient(135deg, rgba(229, 9, 20, 0.2) 0%, rgba(20, 15, 18, 0.8) 100%);
+      border: 1.5px solid rgba(229, 9, 20, 0.4);
+      box-shadow: 0 0 25px rgba(229, 9, 20, 0.25);
+    }
+    .key-btn.biometric svg {
+      width: 48px;
+      height: 48px;
+      fill: #e50914;
+    }
+
+    .key-btn.backspace svg {
+      width: 42px;
+      height: 42px;
+      fill: #9a9ab0;
+    }
+
+    /* BOTTOM HOME INDICATOR */
+    .home-bar {
+      position: absolute;
+      bottom: 24px;
+      width: 220px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div>09:41</div>
+    <div class="status-icons">
+      <!-- 5G -->
+      <span style="font-size:20px; font-weight:800; letter-spacing:0.5px;">5G</span>
+      <!-- WIFI -->
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.5 0 6.67 1.39 9 3.66L12 19.34 3 11.16C5.33 8.89 8.5 7.5 12 7.5z"/></svg>
+      <!-- BATTERY -->
+      <svg width="28" height="28" viewBox="0 0 24 24"><path d="M17 5v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2zm-4-3h-2v1h2V2z"/></svg>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="btn-back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+  </div>
+
+  <!-- HERO SECTION -->
+  <div class="vault-hero">
+    <div class="shield-icon-wrap">
+      <svg class="shield-svg" viewBox="0 0 24 24">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+      </svg>
+    </div>
+    <div class="vault-title">Enter Security PIN</div>
+    <div class="vault-subtitle">
+      Protected Storage <span class="vault-tag">ENCRYPTED</span>
+    </div>
+  </div>
+
+  <!-- 4 PIN DOTS (2 FILLED, 2 EMPTY) -->
+  <div class="pin-dots-container">
+    <div class="pin-dot filled"></div>
+    <div class="pin-dot filled"></div>
+    <div class="pin-dot empty"></div>
+    <div class="pin-dot empty"></div>
+  </div>
+
+  <!-- 3x4 KEYPAD -->
+  <div class="keypad-grid">
+    <div class="key-btn"><span class="key-num">1</span><span class="key-sub">&nbsp;</span></div>
+    <div class="key-btn"><span class="key-num">2</span><span class="key-sub">ABC</span></div>
+    <div class="key-btn"><span class="key-num">3</span><span class="key-sub">DEF</span></div>
+
+    <div class="key-btn"><span class="key-num">4</span><span class="key-sub">GHI</span></div>
+    <div class="key-btn"><span class="key-num">5</span><span class="key-sub">JKL</span></div>
+    <div class="key-btn"><span class="key-num">6</span><span class="key-sub">MNO</span></div>
+
+    <div class="key-btn"><span class="key-num">7</span><span class="key-sub">PQRS</span></div>
+    <div class="key-btn"><span class="key-num">8</span><span class="key-sub">TUV</span></div>
+    <div class="key-btn"><span class="key-num">9</span><span class="key-sub">WXYZ</span></div>
+
+    <div class="key-btn biometric">
+      <!-- FINGERPRINT SVG -->
+      <svg viewBox="0 0 24 24">
+        <path d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41-.24.13-.54.04-.68-.2-.13-.24-.04-.55.2-.68C7.82 2.52 9.86 2 12.01 2c2.13 0 3.99.47 5.92 1.5.24.13.33.43.2.67-.08.19-.21.3-.32.3zm-3.08 3.08c-.13 0-.27-.05-.37-.15-.71-.71-1.42-1.07-2.36-1.07-1.12 0-2.07.47-2.73 1.37-.16.22-.47.27-.69.11-.22-.16-.27-.47-.11-.69.83-1.13 2.05-1.79 3.53-1.79 1.18 0 2.15.45 3.1 1.4.2.2.2.51 0 .71-.1.11-.24.17-.37.17zM12 7c-2.43 0-4.4 1.97-4.4 4.4 0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-2.98 2.42-5.4 5.4-5.4s5.4 2.42 5.4 5.4c0 .28-.22.5-.5.5s-.5-.22-.5-.5C16.4 8.97 14.43 7 12 7zm0 4c-1.1 0-2 .9-2 2v6c0 .55.45 1 1 1s1-.45 1-1v-6c0-.55.45-1 1-1s1 .45 1 1v6c0 1.65-1.35 3-3 3s-3-1.35-3-3v-6c0-1.65 1.35-3 3-3s3 1.35 3 3c0 .28.22.5.5.5s.5-.22.5-.5c0-2.21-1.79-4-4-4zm-7.01 2.37c-.15 0-.29-.06-.4-.18-1.57-1.74-1.99-3.78-1.99-5.79 0-3.86 3.14-7 7-7s7 3.14 7 7c0 .28-.22.5-.5.5s-.5-.22-.5-.5c0-3.31-2.69-6-6-6s-6 2.69-6 6c0 1.76.37 3.55 1.75 5.09.18.21.16.52-.05.7-.1.08-.21.12-.31.12zm13.9 6.64c-.16 0-.32-.08-.41-.23-.15-.23-.08-.54.15-.69 2.02-1.35 3.37-3.78 3.37-6.69 0-.28.22-.5.5-.5s.5.22.5.5c0 3.23-1.5 5.92-3.74 7.42-.11.08-.24.12-.37.12z"/>
+      </svg>
+    </div>
+
+    <div class="key-btn"><span class="key-num">0</span><span class="key-sub">&nbsp;</span></div>
+
+    <div class="key-btn backspace">
+      <!-- BACKSPACE DELETE SVG -->
+      <svg viewBox="0 0 24 24">
+        <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="home-bar"></div>
+</body>
+</html>`;
+
+// -------------------------------------------------------------
+// 2. COMPLETE PLAY STORE MOCKUP SLIDE 4 (1080x1920)
+// -------------------------------------------------------------
+const mockupSlide4Html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1080, height=1920, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #181416 0%, #0c0a0c 55%, #070708 100%);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* AMBIENT RED GLOW BEHIND PHONE */
+    .ambient-glow {
+      position: absolute;
+      width: 800px;
+      height: 800px;
+      top: 550px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(229, 9, 20, 0.28) 0%, rgba(229, 9, 20, 0.08) 55%, transparent 75%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* TOP TEXT SECTION */
+    .header-section {
+      width: 100%;
+      text-align: center;
+      padding-top: 130px;
+      z-index: 10;
+    }
+
+    .tag-badge {
+      display: inline-block;
+      color: #e50914;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .main-headline {
+      font-size: 72px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .highlight-red {
+      color: #e50914;
+    }
+
+    .sub-headline {
+      font-size: 28px;
+      font-weight: 500;
+      color: #9a9aa8;
+      max-width: 820px;
+      margin: 0 auto;
+      line-height: 1.4;
+    }
+
+    /* PHONE FRAME */
+    .phone-wrapper {
+      position: absolute;
+      top: 450px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 760px;
+      height: 1540px;
+      background: #1e1e24;
+      border-radius: 68px;
+      padding: 16px;
+      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.85), 0 0 0 2px rgba(255, 255, 255, 0.08);
+      z-index: 5;
+    }
+
+    .phone-inner-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 52px;
+      overflow: hidden;
+      position: relative;
+      background: #0d0d12;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    /* CAMERA PUNCH HOLE */
+    .punch-hole {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 22px;
+      background: #000;
+      border-radius: 50%;
+      border: 1.5px solid #222;
+      z-index: 30;
+    }
+
+    /* EMBEDDED IFRAME CONTENT */
+    iframe {
+      width: 1080px;
+      height: 1920px;
+      transform-origin: top left;
+      transform: scale(0.674);
+      border: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <div class="header-section">
+    <div class="tag-badge">VAULT</div>
+    <div class="main-headline">Keep your clips <span class="highlight-red">private</span></div>
+    <div class="sub-headline">Protect your personal recordings behind Fingerprint & PIN lock</div>
+  </div>
+
+  <div class="phone-wrapper">
+    <div class="phone-inner-screen">
+      <div class="punch-hole"></div>
+      <iframe src="slide4_raw_screen.html"></iframe>
+    </div>
+  </div>
+</body>
+</html>`;
+
+// WRITE TEMP HTML FILES
+const rawHtmlPath = path.join(mockupAssetsDir, 'slide4_raw_screen.html');
+const mockupHtmlPath = path.join(mockupAssetsDir, 'slide4_mockup_slide.html');
+
+fs.writeFileSync(rawHtmlPath, rawLockScreenHtml, 'utf8');
+fs.writeFileSync(mockupHtmlPath, mockupSlide4Html, 'utf8');
+
+console.log('Rendering 1: Raw Locking Screen UI (1080x1920 PNG)...');
+const outScreenPng = path.join(mockupAssetsDir, 'slide4_locking_vault_screen.png');
+const cmd1 = '"' + edgePath + '" --headless --disable-gpu --window-size=1080,1920 --screenshot="' + outScreenPng + '" "file:///' + rawHtmlPath.replace(/\\/g, '/') + '"';
+execSync(cmd1);
+console.log('Saved:', outScreenPng);
+
+console.log('Rendering 2: Complete Mockup Slide 4 (1080x1920 PNG)...');
+const outMockupPng = path.join(mockupAssetsDir, 'slide4_locking_vault_mockup.png');
+const cmd2 = '"' + edgePath + '" --headless --disable-gpu --window-size=1080,1920 --screenshot="' + outMockupPng + '" "file:///' + mockupHtmlPath.replace(/\\/g, '/') + '"';
+execSync(cmd2);
+console.log('Saved:', outMockupPng);
+
+console.log('Both code-rendered Slide 4 assets generated with 100% CODE!');

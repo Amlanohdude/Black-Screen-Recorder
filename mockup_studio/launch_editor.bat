@@ -1,0 +1,3 @@
+@echo off
+echo Launching Play Store Mockup Studio...
+start "" "%~dp0index.html"
