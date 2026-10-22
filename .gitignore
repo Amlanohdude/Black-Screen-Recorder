@@ -1,60 +1,175 @@
-# Built application binaries and packages
+# ==============================================================================
+# Hardened .gitignore for Black Screen Recorder Pro
+# Stack: Android (Kotlin / Jetpack Compose / Gradle KTS) + Promo Studio Tooling
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Built Application Binaries & Packages
+# ------------------------------------------------------------------------------
 *.apk
 *.ap_
 *.aab
 *.dex
+*.aar
+*.jar
+*.war
+*.class
 
-# Gradle and Kotlin caches
+# ------------------------------------------------------------------------------
+# 2. Gradle & Kotlin Compiler Caches
+# ------------------------------------------------------------------------------
 .gradle/
 build/
-*/build/
+**/build/
 .kotlin/
+.kotlin-daemon/
+.ksp/
+**/ksp/
+*.gradle.cache/
+reports/
+**/reports/
 
-# Android Studio and IntelliJ IDEA
-*.iml
-.idea/
-local.properties
-/local.properties
+# ------------------------------------------------------------------------------
+# 3. Android NDK, C++ & Profiler Data
+# ------------------------------------------------------------------------------
+.cxx/
+.externalNativeBuild/
+obj/
+**/obj/
+captures/
+*.hprof
+*.trace
+*.perf
 
-# Keystores, signing keys and certificates
+# ------------------------------------------------------------------------------
+# 4. Keystores, Signing Keys & Certificates (CRITICAL: Zero-Leak Policy)
+# ------------------------------------------------------------------------------
 *.jks
 *.keystore
 *.p12
 *.pem
 *.key
-debug.keystore
+*.pkcs12
+*.der
+*.crt
+*.cer
+*.pfx
 my-upload-key.jks
+debug.keystore
 
-# Environment variables and secrets
+# ------------------------------------------------------------------------------
+# 5. Environment Variables, Secrets & Credentials
+# ------------------------------------------------------------------------------
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 !.env.example
 
-# OS files
-.DS_Store
-Thumbs.db
+# Authentication and service account credentials
+*credentials*.json
+*secret*.json
+auth*.json
 
-# Android NDK / Native build
-.externalNativeBuild/
-.cxx/
-captures/
+# Local SDK and machine-specific properties
+local.properties
+/local.properties
 
-# Workspace session and agent metadata
-.antigravity/
+# ------------------------------------------------------------------------------
+# 6. Android Studio, IntelliJ IDEA & Other IDEs
+# ------------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
 .vscode/
-.chrome-temp/
+.settings/
+.project
+.classpath
 
-# Decompilation & Scratch Recoveries
+# ------------------------------------------------------------------------------
+# 7. AI Assistants, Agents & Headless Browser Automation
+# ------------------------------------------------------------------------------
+.antigravity/
+.gemini/
+.agents/
+.cursor/
+.windsurf/
+.chrome-temp/
+chrome-temp/
+puppeteer-temp/
+
+# ------------------------------------------------------------------------------
+# 8. Decompilation Tools, Bytecode Dumps & Forensic Scripts
+# ------------------------------------------------------------------------------
 decompiled_*/
 jadx_tool/
 jadx.zip
-*.jar
+cfr.jar
+apktool/
+baksmali/
+synthetic_methods.txt
+rts_*.txt
+recovered_*.txt
+temp_*.txt
+full_recovered_*
 scratch/
 scratch_*
-full_recovered_*
-recovered_*
-rts_*
-synthetic_*
-temp_*
-/*.png
 
+# ------------------------------------------------------------------------------
+# 9. Backup, Autosave & Swap Files
+# ------------------------------------------------------------------------------
+*_backup*/
+*backup*
+*.bak
+*.old
+*.orig
+*.rej
+*~
+*.swp
+*.swo
+.#*
+*.lock
+
+# ------------------------------------------------------------------------------
+# 10. Transient Root Media & Logs
+# ------------------------------------------------------------------------------
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+hs_err_pid*
+replay_pid*
+*.dmp
+
+# ------------------------------------------------------------------------------
+# 11. Node / Web Studio Dependencies (for promo/mockup studios)
+# ------------------------------------------------------------------------------
+node_modules/
+.npm/
+dist/
+
+# ------------------------------------------------------------------------------
+# 12. OS Specific Metadata
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
