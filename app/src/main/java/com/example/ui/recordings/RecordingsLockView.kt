@@ -267,12 +267,12 @@ fun RecordingsLockView(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(0.6f))
+            Spacer(modifier = Modifier.weight(0.4f))
 
             // SHIELD & PADLOCK ICON BADGE (RED GLOW)
             Box(
                 modifier = Modifier
-                    .size(92.dp)
+                    .size(72.dp)
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
@@ -280,12 +280,12 @@ fun RecordingsLockView(
                                 AccentRedDark.copy(alpha = 0.08f)
                             )
                         ),
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(22.dp)
                     )
                     .border(
                         width = 1.5.dp,
                         color = AccentRed.copy(alpha = 0.45f),
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(22.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -293,19 +293,19 @@ fun RecordingsLockView(
                     imageVector = Icons.Default.Shield,
                     contentDescription = null,
                     tint = AccentRed,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(38.dp)
                 )
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
                     tint = TextPrimary,
                     modifier = Modifier
-                        .size(22.dp)
-                        .padding(top = 4.dp)
+                        .size(17.dp)
+                        .padding(top = 3.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // TITLE
             val titleText = when {
@@ -315,19 +315,19 @@ fun RecordingsLockView(
             }
             Text(
                 text = titleText,
-                fontSize = 28.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // SUBTITLE / ENCRYPTED BADGE
             if (errorMessage != null) {
                 Text(
                     text = errorMessage ?: "",
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = AccentRed,
                     textAlign = TextAlign.Center
@@ -339,7 +339,7 @@ fun RecordingsLockView(
                 ) {
                     Text(
                         text = if (isSetupMode) "Protect your recordings with a 4-digit PIN" else "Protected Storage",
-                        fontSize = 15.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Normal,
                         color = TextSecondary
                     )
@@ -369,13 +369,13 @@ fun RecordingsLockView(
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // 4 PIN INDICATOR DOTS (WITH SHAKE ANIMATION)
             Row(
                 modifier = Modifier
                     .offset { IntOffset(x = shakeOffset.value.roundToInt(), y = 0) },
-                horizontalArrangement = Arrangement.spacedBy(22.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 for (i in 0 until 4) {
@@ -400,7 +400,7 @@ fun RecordingsLockView(
 
                     Box(
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(13.dp)
                             .background(dotColor, CircleShape)
                             .border(1.5.dp, borderColor, CircleShape)
                     )
@@ -420,9 +420,9 @@ fun RecordingsLockView(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 36.dp)
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 28.dp)
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 for (row in keypadRows) {
@@ -438,7 +438,7 @@ fun RecordingsLockView(
                                     if (!isSetupMode) {
                                         Box(
                                             modifier = Modifier
-                                                .size(76.dp)
+                                                .size(64.dp)
                                                 .background(
                                                     color = AccentRed.copy(alpha = 0.15f),
                                                     shape = CircleShape
@@ -459,19 +459,19 @@ fun RecordingsLockView(
                                                 imageVector = Icons.Default.Fingerprint,
                                                 contentDescription = "Biometric Unlock",
                                                 tint = AccentRed,
-                                                modifier = Modifier.size(34.dp)
+                                                modifier = Modifier.size(30.dp)
                                             )
                                         }
                                     } else {
                                         // Invisible spacer in setup mode
-                                        Spacer(modifier = Modifier.size(76.dp))
+                                        Spacer(modifier = Modifier.size(64.dp))
                                     }
                                 }
                                 "DEL" -> {
                                     // BACKSPACE BUTTON
                                     Box(
                                         modifier = Modifier
-                                            .size(76.dp)
+                                            .size(64.dp)
                                             .clip(CircleShape)
                                             .clickable { handleBackspace() },
                                         contentAlignment = Alignment.Center
@@ -480,7 +480,7 @@ fun RecordingsLockView(
                                             imageVector = Icons.AutoMirrored.Filled.Backspace,
                                             contentDescription = "Delete",
                                             tint = TextSecondary,
-                                            modifier = Modifier.size(28.dp)
+                                            modifier = Modifier.size(24.dp)
                                         )
                                     }
                                 }
@@ -488,7 +488,7 @@ fun RecordingsLockView(
                                     // NUMERIC KEY BUTTON
                                     Box(
                                         modifier = Modifier
-                                            .size(76.dp)
+                                            .size(64.dp)
                                             .background(SurfaceSecondary, CircleShape)
                                             .border(1.dp, BorderSubtle, CircleShape)
                                             .clip(CircleShape)
@@ -501,10 +501,10 @@ fun RecordingsLockView(
                                         ) {
                                             Text(
                                                 text = key,
-                                                fontSize = 28.sp,
+                                                fontSize = 25.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = TextPrimary,
-                                                lineHeight = 30.sp
+                                                lineHeight = 26.sp
                                             )
                                             if (sub.isNotEmpty()) {
                                                 Text(
