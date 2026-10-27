@@ -5,22 +5,23 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleService
 import com.example.MainActivity
 import com.example.R
 import com.example.storage.AppDatabase
+import com.example.storage.PrivateAppStorageProvider
 import com.example.storage.RecordingRepository
+import com.example.storage.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,7 +39,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class RecordingService : Service() {
+class RecordingService : LifecycleService() {
 
     companion object {
         private const val TAG = "RecordingService"
@@ -54,6 +55,9 @@ class RecordingService : Service() {
         const val EXTRA_DURATION = "extra_duration"
         const val EXTRA_PREFERRED_MIC = "extra_preferred_mic"
 
+        var activeVideoManager: VideoRecordingManager? = null
+            private set
+
         private val _recordingStatus = MutableStateFlow(RecordingStatus())
         val recordingStatus: StateFlow<RecordingStatus> = _recordingStatus.asStateFlow()
 
@@ -62,6 +66,10 @@ class RecordingService : Service() {
 
         private val _liveAudioLevel = MutableStateFlow(0f)
         val liveAudioLevel: StateFlow<Float> = _liveAudioLevel.asStateFlow()
+
+        fun updateStatus(status: RecordingStatus) {
+            _recordingStatus.value = status
+        }
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
@@ -70,25 +78,26 @@ class RecordingService : Service() {
     private var watchdogJob: Job? = null
 
     private var audioRecorder: AudioRecorder? = null
+    private var videoManager: VideoRecordingManager? = null
     private var wakeLock: PowerManager.WakeLock? = null
-    private var currentRecordingType = RecordingType.VIDEO
     private var recordingStartTime = 0L
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
-        wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BlackScreenRecorder::RecordingLock")
+        wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BlackScreenRecorder::RecordingLock")?.apply {
+            setReferenceCounted(false)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_START_VIDEO -> {
-                currentRecordingType = RecordingType.VIDEO
                 startVideoRecordingForeground()
             }
             ACTION_START_AUDIO -> {
-                currentRecordingType = RecordingType.AUDIO
                 startAudioRecordingForeground()
             }
             ACTION_STOP -> {
@@ -99,6 +108,8 @@ class RecordingService : Service() {
                 val duration = intent.getLongExtra(EXTRA_DURATION, 0L)
                 if (path != null) {
                     saveCompletedVideo(path, duration)
+                } else {
+                    cleanupAndStop()
                 }
             }
         }
@@ -124,17 +135,27 @@ class RecordingService : Service() {
         wakeLock?.acquire(3 * 60 * 60 * 1000L)
         val notification = createNotification("Audio Recording · Screen kept dark")
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        val recorder = AudioRecorder(applicationContext)
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        val audioConfig = AudioRecordingConfig(
+            microphone = AudioMicSource.fromId(prefs.preferredMicrophone),
+            quality = AudioQuality.fromId(prefs.audioQuality),
+            clearVoice = prefs.audioClearVoice,
+            reduceEcho = prefs.audioReduceEcho,
+            inputVolume = prefs.audioInputVolume,
+            channels = prefs.audioChannels,
+            bitrate = prefs.audioBitrate,
+            sampleRate = prefs.audioSampleRate
+        )
+
+        val recorder = AudioRecorder(applicationContext, PrivateAppStorageProvider(applicationContext))
         audioRecorder = recorder
-        val outputFile = recorder.start()
+        val outputFile = recorder.start(audioConfig)
 
         if (outputFile != null) {
             _recordingStatus.value = RecordingStatus(
@@ -149,7 +170,7 @@ class RecordingService : Service() {
             _recordingStatus.value = RecordingStatus(
                 stage = RecordingStage.ERROR,
                 isRecording = false,
-                error = "Failed to start microphone recording"
+                error = getString(R.string.error_mic_unavailable)
             )
             cleanupAndStop()
         }
@@ -159,13 +180,23 @@ class RecordingService : Service() {
         amplitudeJob?.cancel()
         amplitudeJob = serviceScope.launch {
             while (isActive && _recordingStatus.value.isRecording) {
-                delay(100)
-                _liveAudioLevel.value = 0.5f
+                delay(150L)
+                val amp = audioRecorder?.getMaxAmplitude() ?: 0
+                val normalized = if (amp > 0) {
+                    ((Math.sqrt(amp / 32767.0)).toFloat()).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                _liveAudioLevel.value = normalized
             }
         }
     }
 
     private fun startVideoRecordingForeground() {
+        if (_recordingStatus.value.isRecording) {
+            return
+        }
+
         val hasCameraPermission = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.CAMERA
@@ -209,14 +240,50 @@ class RecordingService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        _recordingStatus.value = RecordingStatus(
-            stage = RecordingStage.RECORDING,
-            isRecording = true,
-            type = RecordingType.VIDEO,
-            durationSeconds = 0L
-        )
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        val manager = VideoRecordingManager(applicationContext, PrivateAppStorageProvider(applicationContext))
+        this.videoManager = manager
+        activeVideoManager = manager
 
-        startTimer()
+        manager.initializeCamera(
+            lifecycleOwner = this,
+            previewView = null,
+            useFrontCamera = prefs.useFrontCamera,
+            qualityStr = prefs.videoQuality,
+            onReady = {
+                val file = manager.startRecording(
+                    hasAudioPermission = hasMicPermission,
+                    preferredMic = AudioMicSource.fromId(prefs.preferredMicrophone),
+                    onFinalized = { savedFile, success ->
+                        handleVideoFinalized(savedFile, success)
+                    }
+                )
+                if (file != null) {
+                    _recordingStatus.value = RecordingStatus(
+                        stage = RecordingStage.RECORDING,
+                        isRecording = true,
+                        type = RecordingType.VIDEO,
+                        durationSeconds = 0L
+                    )
+                    startTimer()
+                } else {
+                    _recordingStatus.value = RecordingStatus(
+                        stage = RecordingStage.ERROR,
+                        isRecording = false,
+                        error = getString(R.string.error_camera_unavailable)
+                    )
+                    cleanupAndStop()
+                }
+            },
+            onError = { errorMsg ->
+                _recordingStatus.value = RecordingStatus(
+                    stage = RecordingStage.ERROR,
+                    isRecording = false,
+                    error = errorMsg
+                )
+                cleanupAndStop()
+            }
+        )
     }
 
     private fun startTimer() {
@@ -233,63 +300,126 @@ class RecordingService : Service() {
 
     private fun stopActiveRecording() {
         timerJob?.cancel()
+        timerJob = null
+        amplitudeJob?.cancel()
+        amplitudeJob = null
+        _liveAudioLevel.value = 0f
         _stopEvent.tryEmit(Unit)
 
-        if (currentRecordingType == RecordingType.AUDIO) {
-            val file = audioRecorder?.stop()
-            val duration = _recordingStatus.value.durationSeconds
-            if (file != null && file.exists() && file.length() > 0) {
-                serviceScope.launch {
-                    try {
-                        MediaScannerConnection.scanFile(
-                            applicationContext,
-                            arrayOf(file.absolutePath),
-                            arrayOf("audio/mp4"),
-                            null
-                        )
-                    } catch (_: Exception) {}
+        val current = _recordingStatus.value
+        val duration = current.durationSeconds
+        val type = current.type
 
+        if (type == RecordingType.AUDIO) {
+            _recordingStatus.value = current.copy(
+                stage = RecordingStage.FINALIZING,
+                isRecording = false
+            )
+            val audioFile = audioRecorder?.stop()
+            audioRecorder?.release()
+            audioRecorder = null
+
+            if (audioFile != null && audioFile.exists() && audioFile.length() > 0) {
+                serviceScope.launch {
                     val db = AppDatabase.getInstance(applicationContext)
                     val repo = RecordingRepository(db.recordingDao(), applicationContext)
                     val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
                     repo.insertRecording(
                         title = "Audio $title",
-                        file = file,
+                        file = audioFile,
                         durationSeconds = maxOf(1L, duration),
                         type = "AUDIO"
                     )
 
                     _recordingStatus.value = RecordingStatus(
-                        stage = RecordingStage.STOPPED,
+                        stage = RecordingStage.IDLE,
                         isRecording = false,
-                        type = RecordingType.AUDIO,
-                        durationSeconds = duration,
-                        lastSavedFilePath = file.absolutePath,
+                        type = null,
+                        durationSeconds = 0L,
+                        lastSavedFilePath = audioFile.absolutePath,
                         lastSavedTitle = "Audio $title",
-                        lastSavedDurationSeconds = duration
+                        lastSavedDurationSeconds = duration,
+                        lastSavedSizeBytes = audioFile.length()
                     )
                     cleanupAndStop()
                 }
             } else {
+                _recordingStatus.value = RecordingStatus(
+                    stage = RecordingStage.IDLE,
+                    isRecording = false
+                )
                 cleanupAndStop()
             }
+            return
         }
+
+        if (type != RecordingType.VIDEO) {
+            cleanupAndStop()
+            return
+        }
+
+        _recordingStatus.value = current.copy(
+            stage = RecordingStage.FINALIZING,
+            isRecording = false
+        )
+        videoManager?.stopRecording()
+
+        watchdogJob?.cancel()
+        watchdogJob = serviceScope.launch {
+            delay(10000L)
+            cleanupAndStop()
+        }
+    }
+
+    private fun handleVideoFinalized(file: File?, success: Boolean) {
+        watchdogJob?.cancel()
+        watchdogJob = null
+        val duration = maxOf(1L, _recordingStatus.value.durationSeconds)
+
+        if (success && file != null && file.exists() && file.length() > 0) {
+            serviceScope.launch {
+                val db = AppDatabase.getInstance(applicationContext)
+                val repo = RecordingRepository(db.recordingDao(), applicationContext)
+                val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
+                repo.insertRecording(
+                    title = "Video $title",
+                    file = file,
+                    durationSeconds = duration,
+                    type = "VIDEO"
+                )
+
+                _recordingStatus.value = RecordingStatus(
+                    stage = RecordingStage.IDLE,
+                    isRecording = false,
+                    type = null,
+                    durationSeconds = 0L,
+                    lastSavedFilePath = file.absolutePath,
+                    lastSavedTitle = "Video $title",
+                    lastSavedDurationSeconds = duration,
+                    lastSavedSizeBytes = file.length()
+                )
+                cleanupAndStop()
+            }
+            return
+        }
+
+        if (file != null && file.exists() && file.length() == 0L) {
+            file.delete()
+        }
+        _recordingStatus.value = RecordingStatus(
+            stage = RecordingStage.ERROR,
+            isRecording = false,
+            error = "Video recording could not be saved safely."
+        )
+        cleanupAndStop()
     }
 
     private fun saveCompletedVideo(path: String, duration: Long) {
         watchdogJob?.cancel()
+        watchdogJob = null
         val file = File(path)
         if (file.exists() && file.length() > 0) {
             serviceScope.launch {
-                try {
-                    MediaScannerConnection.scanFile(
-                        applicationContext,
-                        arrayOf(file.absolutePath),
-                        arrayOf("video/mp4"),
-                        null
-                    )
-                } catch (_: Exception) {}
-
                 val db = AppDatabase.getInstance(applicationContext)
                 val repo = RecordingRepository(db.recordingDao(), applicationContext)
                 val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
@@ -301,25 +431,42 @@ class RecordingService : Service() {
                 )
 
                 _recordingStatus.value = RecordingStatus(
-                    stage = RecordingStage.STOPPED,
+                    stage = RecordingStage.IDLE,
                     isRecording = false,
-                    type = RecordingType.VIDEO,
-                    durationSeconds = duration,
+                    type = null,
+                    durationSeconds = 0L,
                     lastSavedFilePath = file.absolutePath,
                     lastSavedTitle = "Video $title",
-                    lastSavedDurationSeconds = duration
+                    lastSavedDurationSeconds = duration,
+                    lastSavedSizeBytes = file.length()
                 )
                 cleanupAndStop()
             }
         } else {
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.IDLE,
+                isRecording = false
+            )
             cleanupAndStop()
         }
     }
 
     private fun cleanupAndStop() {
+        watchdogJob?.cancel()
+        watchdogJob = null
         timerJob?.cancel()
+        timerJob = null
         amplitudeJob?.cancel()
+        amplitudeJob = null
         _liveAudioLevel.value = 0f
+
+        videoManager?.release()
+        videoManager = null
+        activeVideoManager = null
+
+        audioRecorder?.release()
+        audioRecorder = null
+
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
@@ -380,7 +527,14 @@ class RecordingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         watchdogJob?.cancel()
+        watchdogJob = null
         timerJob?.cancel()
+        timerJob = null
+        amplitudeJob?.cancel()
+        amplitudeJob = null
+        videoManager?.release()
+        videoManager = null
+        activeVideoManager = null
         audioRecorder?.release()
         audioRecorder = null
         try {
@@ -390,5 +544,8 @@ class RecordingService : Service() {
         } catch (_: Exception) {}
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
+        return null
+    }
 }

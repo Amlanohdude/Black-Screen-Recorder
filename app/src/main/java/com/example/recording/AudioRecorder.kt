@@ -3,31 +3,27 @@ package com.example.recording
 import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
-import android.os.Environment
 import android.util.Log
+import com.example.storage.PrivateAppStorageProvider
+import com.example.storage.RecordingStorageProvider
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-class AudioRecorder(private val context: Context) {
+class AudioRecorder(
+    private val context: Context,
+    private val storageProvider: RecordingStorageProvider = PrivateAppStorageProvider(context)
+) {
     private var mediaRecorder: MediaRecorder? = null
     private var currentOutputFile: File? = null
+    private var routingSession: AudioRoutingSession? = null
     private var isRecording = false
 
-    fun start(): File? {
+    fun start(config: AudioRecordingConfig = AudioRecordingConfig()): File? {
         if (isRecording) {
             return currentOutputFile
         }
 
         return try {
-            val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-                ?: File(context.filesDir, "recordings_audio")
-            val audioDir = File(baseDir, "BlackScreenRecorder").apply {
-                if (!exists()) mkdirs()
-            }
-            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val file = File(audioDir, "AUD_${timeStamp}.m4a")
+            val file = storageProvider.createAudioOutputFile()
             currentOutputFile = file
 
             val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -37,16 +33,30 @@ class AudioRecorder(private val context: Context) {
                 MediaRecorder()
             }
 
-            recorder.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioEncodingBitRate(128000)
-                setAudioSamplingRate(44100)
-                setOutputFile(file.absolutePath)
-                prepare()
-                start()
+            val audioSource = if (config.clearVoice) {
+                MediaRecorder.AudioSource.VOICE_RECOGNITION
+            } else if (config.reduceEcho) {
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION
+            } else {
+                MediaRecorder.AudioSource.MIC
             }
+
+            recorder.setAudioSource(audioSource)
+            routingSession = AudioDeviceRouter.routeAudioInput(context, config.microphone, recorder)
+
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            recorder.setAudioEncodingBitRate(config.bitrate)
+            recorder.setAudioSamplingRate(config.sampleRate)
+            try {
+                recorder.setAudioChannels(config.channels)
+            } catch (e: Exception) {
+                Log.w("AudioRecorder", "Device does not support ${config.channels} channels, falling back to mono", e)
+                recorder.setAudioChannels(1)
+            }
+            recorder.setOutputFile(file.absolutePath)
+            recorder.prepare()
+            recorder.start()
 
             mediaRecorder = recorder
             isRecording = true
@@ -60,10 +70,22 @@ class AudioRecorder(private val context: Context) {
         }
     }
 
+    fun getMaxAmplitude(): Int {
+        if (!isRecording) return 0
+        return try {
+            mediaRecorder?.maxAmplitude ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     fun stop(): File? {
         if (!isRecording) return currentOutputFile
         val file = currentOutputFile
         return try {
+            routingSession?.release()
+            routingSession = null
+
             mediaRecorder?.apply {
                 stop()
                 reset()
@@ -94,6 +116,8 @@ class AudioRecorder(private val context: Context) {
 
     fun release() {
         try {
+            routingSession?.release()
+            routingSession = null
             mediaRecorder?.reset()
             mediaRecorder?.release()
         } catch (_: Exception) {}

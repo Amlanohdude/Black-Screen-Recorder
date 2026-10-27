@@ -53,9 +53,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -66,8 +68,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.MainActivity
 import com.example.covers.ControlGesture
 import com.example.covers.CoverConfig
 import com.example.covers.CoverDisplay
@@ -143,17 +148,7 @@ fun RecordingScreen(
             }
         }
 
-        applyImmersiveMode()
-
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                applyImmersiveMode()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        fun restoreSystemBars() {
             window?.let { win ->
                 WindowCompat.setDecorFitsSystemWindows(win, true)
                 val insetsController = WindowCompat.getInsetsController(win, win.decorView)
@@ -165,6 +160,20 @@ fun RecordingScreen(
                     }
                 }
             }
+        }
+
+        applyImmersiveMode()
+
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                applyImmersiveMode()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            restoreSystemBars()
         }
     }
 
@@ -195,10 +204,8 @@ fun RecordingScreen(
         }
     }
 
-    // Setup video recording manager if video mode
-    val videoManager = remember { VideoRecordingManager(context) }
+    // Video preview ref
     var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
-    var videoRecordingStarted by remember { mutableStateOf(false) }
 
     // Controls visibility and interaction state
     var showControlsOverlay by remember { mutableStateOf(false) }
@@ -211,16 +218,59 @@ fun RecordingScreen(
     var finalizationErrorMessage by remember { mutableStateOf<String?>(null) }
     var showStopAndExitConfirmDialog by remember { mutableStateOf(false) }
 
-    // Quick exit execution
+    // Stop execution
     fun executeStop(isQuickExit: Boolean = false) {
         if (isFinalizing) return
+        val shouldExit = isQuickExit || (settings.exitAfterRecordingEnabled && settings.exitMethod == ExitMethod.NORMAL_STOP_CONTROLS)
         isFinalizing = true
-        isQuickExitRequested = isQuickExit
+        isQuickExitRequested = shouldExit
+        viewModel.stopRecording(context)
+    }
 
-        if (type == RecordingType.VIDEO) {
-            videoManager.stopRecording()
+    fun triggerGestureExit() {
+        if (isFinalizing) return
+        if (settings.stopBehavior == StopBehavior.CONFIRM_TO_STOP) {
+            showStopAndExitConfirmDialog = true
         } else {
-            viewModel.stopRecording(context)
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            executeStop(isQuickExit = true)
+        }
+    }
+
+    // Start recording service if not already recording
+    LaunchedEffect(type) {
+        if (type == RecordingType.AUDIO) {
+            if (!status.isRecording) {
+                viewModel.startAudio(context)
+            }
+        } else if (type == RecordingType.VIDEO) {
+            if (!status.isRecording) {
+                viewModel.startVideo(context)
+            }
+        }
+    }
+
+    // Lifecycle observer: if background recording is disabled, stop when leaving app
+    DisposableEffect(lifecycleOwner, settings.backgroundRecordingEnabled) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                if (!settings.backgroundRecordingEnabled && status.isRecording && !isFinalizing) {
+                    executeStop(isQuickExit = false)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Listen to volume down twice quick exit trigger
+    LaunchedEffect(settings.exitAfterRecordingEnabled, settings.exitMethod, settings.exitGesture) {
+        if (settings.exitAfterRecordingEnabled && settings.exitMethod == ExitMethod.GESTURE && settings.exitGesture == ExitGesture.VOLUME_DOWN_TWICE) {
+            MainActivity.volumeDownExitTrigger.collect {
+                triggerGestureExit()
+            }
         }
     }
 
@@ -361,7 +411,99 @@ fun RecordingScreen(
             .background(Color.Black)
             .pointerInput(isGestureExitActive, settings.exitGesture) {
                 if (!isGestureExitActive) return@pointerInput
-                // Gesture exit detection
+                var lastTwoFingerTapTime = 0L
+                var lastCornerTapTime = 0L
+
+                awaitPointerEventScope {
+                    while (true) {
+                        val downEvent = awaitPointerEvent(PointerEventPass.Initial)
+                        val downPointers = downEvent.changes.filter { it.pressed }
+                        when (settings.exitGesture) {
+                            ExitGesture.TWO_FINGER_DOUBLE_TAP -> {
+                                if (downPointers.size >= 2) {
+                                    downEvent.changes.forEach { it.consume() }
+                                    val downTime = System.currentTimeMillis()
+                                    var releasedQuickly = false
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val stillPressed = event.changes.filter { it.pressed }
+                                        event.changes.forEach { it.consume() }
+                                        if (stillPressed.isEmpty()) {
+                                            releasedQuickly = (System.currentTimeMillis() - downTime) < 500L
+                                            break
+                                        }
+                                        if (System.currentTimeMillis() - downTime > 500L) {
+                                            break
+                                        }
+                                    }
+                                    if (releasedQuickly) {
+                                        val now = System.currentTimeMillis()
+                                        if (now - lastTwoFingerTapTime < 500L) {
+                                            lastTwoFingerTapTime = 0L
+                                            triggerGestureExit()
+                                        } else {
+                                            lastTwoFingerTapTime = now
+                                        }
+                                    }
+                                }
+                            }
+                            ExitGesture.THREE_FINGER_LONG_PRESS -> {
+                                if (downPointers.size >= 3) {
+                                    downEvent.changes.forEach { it.consume() }
+                                    val downTime = System.currentTimeMillis()
+                                    var heldLongEnough = false
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val stillPressed = event.changes.filter { it.pressed }
+                                        event.changes.forEach { it.consume() }
+                                        if (stillPressed.size < 3) {
+                                            break
+                                        }
+                                        if (System.currentTimeMillis() - downTime >= 800L) {
+                                            heldLongEnough = true
+                                            break
+                                        }
+                                    }
+                                    if (heldLongEnough) {
+                                        triggerGestureExit()
+                                    }
+                                }
+                            }
+                            ExitGesture.DOUBLE_TAP_CORNER -> {
+                                if (downPointers.size == 1) {
+                                    val first = downPointers.first()
+                                    val isLowerRight = first.position.x > size.width * 0.75f && first.position.y > size.height * 0.75f
+                                    if (isLowerRight) {
+                                        downEvent.changes.forEach { it.consume() }
+                                        val downTime = System.currentTimeMillis()
+                                        var tapReleased = false
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            val stillPressed = event.changes.filter { it.pressed }
+                                            event.changes.forEach { it.consume() }
+                                            if (stillPressed.isEmpty()) {
+                                                tapReleased = (System.currentTimeMillis() - downTime) < 400L
+                                                break
+                                            }
+                                        }
+                                        if (tapReleased) {
+                                            val now = System.currentTimeMillis()
+                                            if (now - lastCornerTapTime < 500L) {
+                                                lastCornerTapTime = 0L
+                                                triggerGestureExit()
+                                            } else {
+                                                lastCornerTapTime = now
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            ExitGesture.VOLUME_DOWN_TWICE -> {
+                                // Handled via MainActivity.volumeDownExitTrigger Flow
+                            }
+                        }
+                    }
+                }
             }
             .combinedClickable(
                 onClick = {
@@ -390,89 +532,44 @@ fun RecordingScreen(
                         implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                         scaleType = PreviewView.ScaleType.FILL_CENTER
                         previewViewRef = this
-                        videoManager.initializeCamera(
-                            lifecycleOwner = lifecycleOwner,
-                            previewView = this,
-                            useFrontCamera = settings.useFrontCamera,
-                            qualityStr = settings.videoQuality,
-                            onReady = {
-                                if (!videoRecordingStarted) {
-                                    videoRecordingStarted = true
-                                    val videoFile = videoManager.startRecording(
-                                        hasAudioPermission = true,
-                                        preferredMic = AudioMicSource.fromId(settings.preferredMicrophone),
-                                        onFinalized = { file, success ->
-                                            if (success && file != null && file.exists() && file.length() > 0) {
-                                                val finalDuration = maxOf(1L, status.durationSeconds)
-                                                viewModel.saveCompletedVideo(
-                                                    context = context,
-                                                    file = file,
-                                                    durationSeconds = finalDuration
-                                                )
-                                                if (!isQuickExitRequested) {
-                                                    val cameraSide = if (settings.useFrontCamera) "Front Camera" else "Back Camera"
-                                                    val summary = RecordingSummaryInfo(
-                                                        type = RecordingType.VIDEO,
-                                                        title = file.nameWithoutExtension,
-                                                        filePath = file.absolutePath,
-                                                        durationSeconds = finalDuration,
-                                                        fileSizeBytes = file.length(),
-                                                        qualityOrFormat = "${settings.videoQuality} • $cameraSide",
-                                                        coverName = activeCover.name
-                                                    )
-                                                    onRecordingFinished(summary)
-                                                }
-                                            } else {
-                                                if (isQuickExitRequested) {
-                                                    isFinalizing = false
-                                                    isQuickExitRequested = false
-                                                    finalizationErrorMessage = "Video recording could not be saved safely. App will not exit to prevent data loss."
-                                                } else {
-                                                    viewModel.stopRecording(context)
-                                                    onRecordingFinished(null)
-                                                }
-                                            }
-                                        }
-                                    )
-                                    if (videoFile != null) {
-                                        viewModel.startVideo(context)
-                                    } else {
-                                        executeStop(isQuickExit = false)
-                                    }
-                                }
-                            },
-                            onError = {
-                                if (isQuickExitRequested) {
-                                    isFinalizing = false
-                                    isQuickExitRequested = false
-                                    finalizationErrorMessage = "Camera recording encountered an error. App will not exit."
-                                } else {
-                                    executeStop(isQuickExit = false)
-                                    onRecordingFinished(null)
-                                }
-                            }
-                        )
+                        RecordingService.activeVideoManager?.setPreviewSurfaceProvider(surfaceProvider)
                     }
                 },
-                modifier = Modifier.fillMaxSize()
+                update = { view ->
+                    previewViewRef = view
+                    RecordingService.activeVideoManager?.setPreviewSurfaceProvider(view.surfaceProvider)
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(if (showCameraPeek) 0.85f else 0.001f)
             )
+
+            DisposableEffect(previewViewRef, status.isRecording) {
+                if (previewViewRef != null && status.isRecording) {
+                    RecordingService.activeVideoManager?.setPreviewSurfaceProvider(previewViewRef?.surfaceProvider)
+                }
+                onDispose {
+                    RecordingService.activeVideoManager?.setPreviewSurfaceProvider(null)
+                }
+            }
         }
 
-        // Active Recording Cover Display (unless user explicitly peeks camera)
+        // Active Cover View on top of preview (hidden while peeking camera)
         if (!showCameraPeek) {
             CoverDisplay(
                 cover = activeCover,
+                modifier = Modifier.fillMaxSize(),
                 isRecording = true,
                 durationSeconds = status.durationSeconds
             )
         }
 
-        // Discreet camera peek toggle button in top right
+        // Peek Camera Button (top-right corner, visible only during video recording)
         if (type == RecordingType.VIDEO && (showControlsOverlay || showCameraPeek)) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 48.dp, end = 20.dp)
+                    .fillMaxSize()
+                    .padding(top = 16.dp, end = 16.dp)
             ) {
                 IconButton(
                     onClick = { showCameraPeek = !showCameraPeek },
