@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -409,20 +410,20 @@ fun RecordingsLockView(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 3x4 KEYPAD GRID (NO EMOJIS - USES VECTOR ICONS)
+            // 3x4 KEYPAD GRID (MATCHING DECOMPILED LAYOUT)
             val keypadRows = listOf(
-                listOf("1" to "", "2" to "ABC", "3" to "DEF"),
-                listOf("4" to "GHI", "5" to "JKL", "6" to "MNO"),
-                listOf("7" to "PQRS", "8" to "TUV", "9" to "WXYZ"),
-                listOf("BIO" to "", "0" to "", "DEL" to "")
+                listOf("1", "2", "3"),
+                listOf("4", "5", "6"),
+                listOf("7", "8", "9"),
+                listOf("BIO", "0", "DEL")
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 28.dp)
+                    .padding(horizontal = 24.dp)
                     .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 for (row in keypadRows) {
@@ -431,14 +432,14 @@ fun RecordingsLockView(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        for ((key, sub) in row) {
+                        for (key in row) {
                             when (key) {
                                 "BIO" -> {
                                     // BIOMETRIC BUTTON
                                     if (!isSetupMode) {
                                         Box(
                                             modifier = Modifier
-                                                .size(64.dp)
+                                                .size(68.dp)
                                                 .background(
                                                     color = AccentRed.copy(alpha = 0.15f),
                                                     shape = CircleShape
@@ -452,7 +453,8 @@ fun RecordingsLockView(
                                                 .clickable {
                                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                                     authenticateWithBiometrics()
-                                                },
+                                                }
+                                                .testTag("keypad_biometric"),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
@@ -464,16 +466,17 @@ fun RecordingsLockView(
                                         }
                                     } else {
                                         // Invisible spacer in setup mode
-                                        Spacer(modifier = Modifier.size(64.dp))
+                                        Spacer(modifier = Modifier.size(68.dp))
                                     }
                                 }
                                 "DEL" -> {
                                     // BACKSPACE BUTTON
                                     Box(
                                         modifier = Modifier
-                                            .size(64.dp)
+                                            .size(68.dp)
                                             .clip(CircleShape)
-                                            .clickable { handleBackspace() },
+                                            .clickable { handleBackspace() }
+                                            .testTag("keypad_backspace"),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
@@ -488,34 +491,20 @@ fun RecordingsLockView(
                                     // NUMERIC KEY BUTTON
                                     Box(
                                         modifier = Modifier
-                                            .size(64.dp)
-                                            .background(SurfaceSecondary, CircleShape)
-                                            .border(1.dp, BorderSubtle, CircleShape)
+                                            .size(68.dp)
+                                            .background(SurfacePrimary, CircleShape)
+                                            .border(0.5.dp, BorderSubtle, CircleShape)
                                             .clip(CircleShape)
-                                            .clickable { handleDigitPress(key) },
+                                            .clickable { handleDigitPress(key) }
+                                            .testTag("keypad_digit_$key"),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center
-                                        ) {
-                                            Text(
-                                                text = key,
-                                                fontSize = 25.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = TextPrimary,
-                                                lineHeight = 26.sp
-                                            )
-                                            if (sub.isNotEmpty()) {
-                                                Text(
-                                                    text = sub,
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = TextMuted,
-                                                    letterSpacing = 1.sp
-                                                )
-                                            }
-                                        }
+                                        Text(
+                                            text = key,
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = TextPrimary
+                                        )
                                     }
                                 }
                             }

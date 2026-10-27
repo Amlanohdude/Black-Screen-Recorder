@@ -150,7 +150,7 @@ modifier = modifier
 .fillMaxSize()
 .background(BgDark)
 ) {
-TabTopHeader(title = "COVERS")
+TabTopHeader(title = "RECORDING COVERS")
 
 LazyVerticalGrid(
 columns = GridCells.Fixed(2),

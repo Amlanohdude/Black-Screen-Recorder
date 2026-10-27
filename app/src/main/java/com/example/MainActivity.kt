@@ -439,7 +439,7 @@ fun CustomBottomNavigationBar(
         color = Color(0xFF000000)
     ) {
         Column {
-            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFF1E1E1E))
+            HorizontalDivider(thickness = 0.5.dp, color = BorderSubtle)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -471,24 +471,41 @@ private fun CustomBottomNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.12f else 1.0f,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "nav_scale_${tab.name}"
+    )
+    val iconOffsetY by animateDpAsState(
+        targetValue = if (isSelected) (-1.5).dp else 0.dp,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "nav_offset_${tab.name}"
+    )
     val iconColor by animateColorAsState(
-        targetValue = if (isSelected) AccentRed else TextMuted,
+        targetValue = if (isSelected) AccentRed else Color(0xFF8A8A8A),
         animationSpec = tween(150),
-        label = "nav_item_icon_color"
+        label = "nav_icon_color_${tab.name}"
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) AccentRed else TextMuted,
+        targetValue = if (isSelected) Color.White else Color(0xFF757575),
         animationSpec = tween(150),
-        label = "nav_item_label_color"
+        label = "nav_label_color_${tab.name}"
     )
-    val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.08f else 1.0f,
-        animationSpec = tween(150),
-        label = "nav_item_icon_scale"
+    val dotAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 1.0f else 0.0f,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "nav_dot_alpha_${tab.name}"
+    )
+    val dotScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.0f else 0.3f,
+        animationSpec = tween(150, easing = FastOutSlowInEasing),
+        label = "nav_dot_scale_${tab.name}"
     )
 
     Column(
         modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -503,18 +520,31 @@ private fun CustomBottomNavItem(
             contentDescription = tab.title,
             tint = iconColor,
             modifier = Modifier
-                .size(22.dp)
+                .size(24.dp)
                 .graphicsLayer {
+                    translationY = with(density) { iconOffsetY.toPx() }
                     scaleX = iconScale
                     scaleY = iconScale
                 }
         )
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = tab.title,
             color = labelColor,
             fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Box(
+            modifier = Modifier
+                .size(4.dp)
+                .graphicsLayer {
+                    alpha = dotAlpha
+                    scaleX = dotScale
+                    scaleY = dotScale
+                }
+                .clip(CircleShape)
+                .background(AccentRed)
         )
     }
 }

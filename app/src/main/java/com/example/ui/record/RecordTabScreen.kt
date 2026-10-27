@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.SettingsVoice
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -227,26 +228,39 @@ fun RecordTabScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             TabTopHeader(
                 title = "BLACK SCREEN RECORDER",
-                modifier = Modifier.testTag("app_title_text"),
+                titleModifier = Modifier.testTag("app_title_text"),
                 actions = {
-                    if (!isPro) {
-                        Button(
-                            onClick = onNavigateToPro,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFD700),
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .height(32.dp)
-                                .testTag("record_tab_pro_button")
-                        ) {
-                            Text(
-                                text = "PRO",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                    val goldColor = Color(0xFFFFD54F)
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isPro) goldColor.copy(alpha = 0.15f) else SurfaceSecondary)
+                            .border(
+                                width = 0.5.dp,
+                                color = if (isPro) goldColor.copy(alpha = 0.4f) else BorderSubtle,
+                                shape = RoundedCornerShape(8.dp)
                             )
-                        }
+                            .clickable { onNavigateToPro() }
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                            .testTag("record_tab_pro_button"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isPro) Icons.Default.Check else Icons.Default.WorkspacePremium,
+                            contentDescription = "Pro",
+                            modifier = Modifier.size(15.dp),
+                            tint = if (isPro) goldColor else AccentRed
+                        )
+                        Text(
+                            text = "PRO",
+                            color = if (isPro) goldColor else TextPrimary,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        )
                     }
                 }
             )
