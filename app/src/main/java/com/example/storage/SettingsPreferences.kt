@@ -213,39 +213,93 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
     }
 
     fun applyPreset(presetId: RecordingPresetId) {
+        if (presetId.isAudioPreset()) {
+            if (presetId == RecordingPresetId.CUSTOM || presetId == RecordingPresetId.CUSTOM_AUDIO) {
+                prefs.edit()
+                    .putString("active_preset", "CUSTOM_AUDIO")
+                    .putString("active_audio_preset", "CUSTOM_AUDIO")
+                    .apply()
+                _settings.value = _settings.value.copy(
+                    activePreset = RecordingPresetId.CUSTOM_AUDIO,
+                    activeAudioPreset = RecordingPresetId.CUSTOM_AUDIO
+                )
+                return
+            }
+            val def = RecordingPresetId.getPresetDefinition(presetId)
+            val bitrate = if (def.audioQuality == "STANDARD") 128000 else if (def.audioQuality == "MAXIMUM") 256000 else 192000
+            val sampleRate = if (def.audioQuality == "STANDARD") 44100 else 48000
+            prefs.edit()
+                .putString("active_preset", presetId.name)
+                .putString("active_audio_preset", presetId.name)
+                .putString("default_recording_type", "AUDIO")
+                .putString("audio_quality", def.audioQuality)
+                .putBoolean("audio_clear_voice", def.audioClearVoice)
+                .putBoolean("audio_reduce_echo", def.audioReduceEcho)
+                .putInt("audio_channels", def.audioChannels)
+                .putInt("audio_bitrate", bitrate)
+                .putInt("audio_sample_rate", sampleRate)
+                .apply()
+
+            _settings.value = _settings.value.copy(
+                defaultRecordingType = "AUDIO",
+                activePreset = presetId,
+                activeAudioPreset = presetId,
+                audioQuality = def.audioQuality,
+                audioClearVoice = def.audioClearVoice,
+                audioReduceEcho = def.audioReduceEcho,
+                audioChannels = def.audioChannels,
+                audioBitrate = bitrate,
+                audioSampleRate = sampleRate
+            )
+            return
+        }
+
+        if (presetId == RecordingPresetId.CUSTOM) {
+            prefs.edit()
+                .putString("active_preset", "CUSTOM")
+                .putString("active_video_preset", "CUSTOM")
+                .apply()
+            _settings.value = _settings.value.copy(
+                activePreset = RecordingPresetId.CUSTOM,
+                activeVideoPreset = RecordingPresetId.CUSTOM
+            )
+            return
+        }
+
         val def = RecordingPresetId.getPresetDefinition(presetId)
         val cover = def.coverConfig
+        prefs.edit()
+            .putString("active_preset", presetId.name)
+            .putString("active_video_preset", presetId.name)
+            .putString("default_recording_type", def.recordingType)
+            .putString("video_quality", def.videoQuality)
+            .putBoolean("use_front_camera", def.useFrontCamera)
+            .putString("cover_preset_id", cover.presetId.name)
+            .putString("cover_name", cover.name)
+            .putBoolean("cover_show_clock", cover.showClock)
+            .putBoolean("cover_clock_24h", cover.clockIs24Hour)
+            .putString("cover_clock_style", cover.clockStyle.name)
+            .putInt("cover_clock_size", cover.clockSizeSp)
+            .putFloat("cover_clock_opacity", cover.clockOpacity)
+            .putBoolean("cover_show_date", cover.showDate)
+            .putString("cover_date_format", cover.dateFormat.name)
+            .putFloat("cover_date_opacity", cover.dateOpacity)
+            .putBoolean("cover_show_battery", cover.showBattery)
+            .putString("cover_background", cover.background.name)
+            .putInt("cover_brightness", cover.brightnessPercent)
+            .putBoolean("cover_show_timer", cover.showRecordingTimer)
+            .putString("cover_control_gesture", cover.controlGesture.name)
+            .apply()
 
-prefs.edit()
-.putString("active_preset", presetId.name)
-.putString("default_recording_type", def.recordingType)
-.putString("video_quality", def.videoQuality)
-.putBoolean("use_front_camera", def.useFrontCamera)
-.putString("cover_preset_id", cover.presetId.name)
-.putString("cover_name", cover.name)
-.putBoolean("cover_show_clock", cover.showClock)
-.putBoolean("cover_clock_24h", cover.clockIs24Hour)
-.putString("cover_clock_style", cover.clockStyle.name)
-.putInt("cover_clock_size", cover.clockSizeSp)
-.putFloat("cover_clock_opacity", cover.clockOpacity)
-.putBoolean("cover_show_date", cover.showDate)
-.putString("cover_date_format", cover.dateFormat.name)
-.putFloat("cover_date_opacity", cover.dateOpacity)
-.putBoolean("cover_show_battery", cover.showBattery)
-.putString("cover_background", cover.background.name)
-.putInt("cover_brightness", cover.brightnessPercent)
-.putBoolean("cover_show_timer", cover.showRecordingTimer)
-.putString("cover_control_gesture", cover.controlGesture.name)
-.apply()
-
-_settings.value = _settings.value.copy(
-activePreset = presetId,
-defaultRecordingType = def.recordingType,
-videoQuality = def.videoQuality,
-useFrontCamera = def.useFrontCamera,
-activeCover = cover
-)
-}
+        _settings.value = _settings.value.copy(
+            activePreset = presetId,
+            activeVideoPreset = presetId,
+            useFrontCamera = def.useFrontCamera,
+            videoQuality = def.videoQuality,
+            defaultRecordingType = def.recordingType,
+            activeCover = cover
+        )
+    }
 
 fun updateCamera(useFront: Boolean) {
 prefs.edit().putBoolean("use_front_camera", useFront).apply()
@@ -273,8 +327,16 @@ _settings.value = _settings.value.copy(keepScreenAwake = keepAwake)
 }
 
 fun updateDefaultRecordingType(type: String) {
-prefs.edit().putString("default_recording_type", type).apply()
-_settings.value = _settings.value.copy(defaultRecordingType = type)
+    val isAudio = (type == "AUDIO")
+    val targetPreset = if (isAudio) _settings.value.activeAudioPreset else _settings.value.activeVideoPreset
+    prefs.edit()
+        .putString("default_recording_type", type)
+        .putString("active_preset", targetPreset.name)
+        .apply()
+    _settings.value = _settings.value.copy(
+        defaultRecordingType = type,
+        activePreset = targetPreset
+    )
 }
 
 fun updateActiveCover(cover: CoverConfig) {

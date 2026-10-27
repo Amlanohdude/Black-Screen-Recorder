@@ -62,60 +62,68 @@ enum class RecordingPresetId(
 
         fun getPresetDefinition(id: RecordingPresetId): PresetDefinition = when (id) {
             DISCREET_VIDEO -> PresetDefinition(
-                id = id,
                 recordingType = "VIDEO",
                 videoQuality = "720p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.PURE_BLACK, name = "Pure Black")
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK).copy(name = "Pure Black", brightnessPercent = 1)
             )
             STANDARD_VIDEO -> PresetDefinition(
-                id = id,
                 recordingType = "VIDEO",
                 videoQuality = "1080p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.CLOCK, name = "Clock", showClock = true)
+                coverConfig = CoverConfig.forPreset(CoverPresetId.CLOCK).copy(name = "OLED Clock", brightnessPercent = 30)
             )
             VOICE_AUDIO -> PresetDefinition(
-                id = id,
-                recordingType = "AUDIO",
-                videoQuality = "720p",
-                useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.PURE_BLACK, name = "Pure Black")
-            )
-            GENERAL_AUDIO -> PresetDefinition(
-                id = id,
-                recordingType = "AUDIO",
-                videoQuality = "720p",
-                useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.PURE_BLACK, name = "Pure Black")
-            )
-            HIGH_QUALITY_AUDIO -> PresetDefinition(
-                id = id,
                 recordingType = "AUDIO",
                 videoQuality = "1080p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.PURE_BLACK, name = "Pure Black")
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK).copy(name = "Pure Black", brightnessPercent = 1),
+                audioQuality = "STANDARD",
+                audioClearVoice = true,
+                audioReduceEcho = false,
+                audioChannels = 1
+            )
+            GENERAL_AUDIO -> PresetDefinition(
+                recordingType = "AUDIO",
+                videoQuality = "1080p",
+                useFrontCamera = false,
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK).copy(name = "Pure Black", brightnessPercent = 1),
+                audioQuality = "STANDARD",
+                audioClearVoice = false,
+                audioReduceEcho = false,
+                audioChannels = 1
+            )
+            HIGH_QUALITY_AUDIO -> PresetDefinition(
+                recordingType = "AUDIO",
+                videoQuality = "1080p",
+                useFrontCamera = false,
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK).copy(name = "Pure Black", brightnessPercent = 1),
+                audioQuality = "MAXIMUM",
+                audioClearVoice = false,
+                audioReduceEcho = false,
+                audioChannels = 2
             )
             CUSTOM_AUDIO -> PresetDefinition(
-                id = id,
                 recordingType = "AUDIO",
-                videoQuality = "720p",
+                videoQuality = "1080p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.CUSTOM, name = "Custom")
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK)
             )
             AUDIO -> PresetDefinition(
-                id = id,
                 recordingType = "AUDIO",
-                videoQuality = "720p",
+                videoQuality = "1080p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.PURE_BLACK, name = "Pure Black")
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK).copy(name = "Pure Black", brightnessPercent = 1),
+                audioQuality = "STANDARD",
+                audioClearVoice = false,
+                audioReduceEcho = false,
+                audioChannels = 1
             )
             CUSTOM -> PresetDefinition(
-                id = id,
                 recordingType = "VIDEO",
                 videoQuality = "1080p",
                 useFrontCamera = false,
-                coverConfig = CoverConfig(presetId = CoverPresetId.CUSTOM, name = "Custom")
+                coverConfig = CoverConfig.forPreset(CoverPresetId.PURE_BLACK)
             )
         }
     }
@@ -124,9 +132,12 @@ enum class RecordingPresetId(
 typealias RecordingPreset = RecordingPresetId
 
 data class PresetDefinition(
-    val id: RecordingPresetId,
     val recordingType: String,
     val videoQuality: String = "1080p",
     val useFrontCamera: Boolean = false,
-    val coverConfig: CoverConfig
+    val coverConfig: CoverConfig = CoverConfig.PURE_BLACK_PRESET,
+    val audioQuality: String = "HIGH",
+    val audioClearVoice: Boolean = false,
+    val audioReduceEcho: Boolean = false,
+    val audioChannels: Int = 2
 )

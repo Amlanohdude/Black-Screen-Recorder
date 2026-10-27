@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Layers
@@ -67,6 +69,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -78,6 +81,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.example.covers.CoverDisplay
+import com.example.presets.RecordingPresetId
 import com.example.storage.EntitlementManager
 import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
@@ -268,50 +272,35 @@ fun RecordTabScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(horizontal = 14.dp, vertical = 13.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(SurfaceSecondary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = null,
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = "PRESET",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextMuted,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = if (selectedMode == "AUDIO") settings.activeAudioPreset.name else settings.activeVideoPreset.name,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
-                            }
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Select Preset",
-                            tint = TextMuted,
-                            modifier = Modifier.size(20.dp)
+                        Text(
+                            text = "Preset",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                            color = TextSecondary
                         )
+                        val activePreset = if (selectedMode == "AUDIO") settings.activeAudioPreset else settings.activeVideoPreset
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = activePreset.title,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = "Select Preset",
+                                tint = TextMuted,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
@@ -547,7 +536,12 @@ fun RecordTabScreen(
                                     RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
-                                    viewModel.updateBackgroundRecordingEnabled(!bgEnabled)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    val newState = !bgEnabled
+                                    viewModel.updateBackgroundRecordingEnabled(newState)
+                                    if (newState) {
+                                        Toast.makeText(context, "Recording will continue when you leave the app", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                                 .padding(vertical = 10.dp)
                                 .testTag("toggle_background_recording"),
@@ -584,7 +578,12 @@ fun RecordTabScreen(
                                     RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
-                                    viewModel.updateExitAfterRecordingEnabled(!exitEnabled)
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    val newState = !exitEnabled
+                                    viewModel.updateExitAfterRecordingEnabled(newState)
+                                    if (newState) {
+                                        Toast.makeText(context, "App will close after recording is safely saved", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                                 .padding(vertical = 10.dp)
                                 .testTag("toggle_exit_after_recording"),
@@ -757,6 +756,93 @@ fun RecordTabScreen(
                     Text("OK", color = AccentRed)
                 }
             },
+            containerColor = SurfacePrimary
+        )
+    }
+
+    // Preset Selection Dialog
+    if (showPresetDialog) {
+        val isAudio = (selectedMode == "AUDIO")
+        val presetsForMode = RecordingPresetId.getPresetsForMode(isAudio)
+        val currentActivePreset = if (isAudio) settings.activeAudioPreset else settings.activeVideoPreset
+
+        AlertDialog(
+            onDismissRequest = { showPresetDialog = false },
+            title = {
+                Text(
+                    text = if (isAudio) "Audio Presets" else "Video Presets",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    presetsForMode.forEach { preset ->
+                        val isSelected = (currentActivePreset == preset)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSelected) SurfaceSecondary else Color.Transparent)
+                                .border(
+                                    width = if (isSelected) 1.dp else 0.5.dp,
+                                    color = if (isSelected) AccentRed else BorderSubtle.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable {
+                                    viewModel.applyPreset(preset)
+                                    showPresetDialog = false
+                                }
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = preset.title,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 14.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                                        ),
+                                        color = if (isSelected) Color.White else TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = preset.description,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 11.sp
+                                        ),
+                                        color = if (isSelected) TextSecondary else TextMuted
+                                    )
+                                }
+                                if (isSelected) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = AccentRed,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPresetDialog = false }) {
+                    Text("Close", color = TextSecondary)
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
             containerColor = SurfacePrimary
         )
     }
