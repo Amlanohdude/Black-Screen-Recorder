@@ -84,6 +84,7 @@ import com.example.R
 import com.example.covers.CoverDisplay
 import com.example.presets.RecordingPresetId
 import com.example.storage.EntitlementManager
+import com.example.storage.ExitMethod
 import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
@@ -275,7 +276,10 @@ fun RecordTabScreen(
             ) {
                 // Preset Selector Card
                 Card(
-                    onClick = { showPresetDialog = true },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showPresetDialog = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("preset_selector_row"),
@@ -523,103 +527,139 @@ fun RecordTabScreen(
                     }
                 }
 
-                // Recording Options Card (Background Rec & Exit on Stop)
-                Card(
+                // Recording Options (Background Rec & Exit on Stop)
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("recording_options_card"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderSubtle)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
+                    val bgEnabled = settings.backgroundRecordingEnabled
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        val bgEnabled = settings.backgroundRecordingEnabled
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (bgEnabled) SurfaceSecondary else Color.Transparent)
-                                .border(
-                                    0.5.dp,
-                                    if (bgEnabled) AccentRed else BorderSubtle,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    val newState = !bgEnabled
-                                    viewModel.updateBackgroundRecordingEnabled(newState)
-                                    if (newState) {
-                                        Toast.makeText(context, "Recording will continue when you leave the app", Toast.LENGTH_SHORT).show()
-                                    }
+                            .weight(1f)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (bgEnabled) Color(0xFF1D2431) else SurfacePrimary)
+                            .border(
+                                width = if (bgEnabled) 1.5.dp else 0.5.dp,
+                                color = if (bgEnabled) AccentRed else BorderSubtle,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                val newState = !bgEnabled
+                                viewModel.updateBackgroundRecordingEnabled(newState)
+                                if (newState) {
+                                    Toast.makeText(context, "Recording will continue when you leave the app", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Recording will stop when you leave the app", Toast.LENGTH_SHORT).show()
                                 }
-                                .padding(vertical = 10.dp)
-                                .testTag("toggle_background_recording"),
-                            contentAlignment = Alignment.Center
+                            }
+                            .padding(horizontal = 12.dp)
+                            .testTag("toggle_background_recording"),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                modifier = Modifier.weight(1f, fill = false)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Layers,
                                     contentDescription = null,
                                     tint = if (bgEnabled) AccentRed else TextMuted,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(17.dp)
                                 )
                                 Text(
                                     text = "Background Rec",
                                     fontSize = 12.sp,
                                     fontWeight = if (bgEnabled) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (bgEnabled) Color.White else TextSecondary
+                                    color = if (bgEnabled) Color.White else TextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(if (bgEnabled) AccentRed else Color.Transparent)
+                                    .then(
+                                        if (!bgEnabled) Modifier.border(1.dp, TextMuted.copy(alpha = 0.4f), CircleShape)
+                                        else Modifier
+                                    )
+                            )
                         }
+                    }
 
-                        val exitEnabled = settings.exitAfterRecordingEnabled
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (exitEnabled) SurfaceSecondary else Color.Transparent)
-                                .border(
-                                    0.5.dp,
-                                    if (exitEnabled) AccentRed else BorderSubtle,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    val newState = !exitEnabled
-                                    viewModel.updateExitAfterRecordingEnabled(newState)
-                                    if (newState) {
-                                        Toast.makeText(context, "App will close after recording is safely saved", Toast.LENGTH_SHORT).show()
-                                    }
+                    val exitEnabled = settings.exitAfterRecordingEnabled
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (exitEnabled) Color(0xFF1D2431) else SurfacePrimary)
+                            .border(
+                                width = if (exitEnabled) 1.5.dp else 0.5.dp,
+                                color = if (exitEnabled) AccentRed else BorderSubtle,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                val newState = !exitEnabled
+                                viewModel.updateExitAfterRecordingEnabled(newState)
+                                if (newState) {
+                                    viewModel.updateExitMethod(ExitMethod.NORMAL_STOP_CONTROLS)
+                                    Toast.makeText(context, "App will close after recording is safely saved", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "App will stay open after recording stops", Toast.LENGTH_SHORT).show()
                                 }
-                                .padding(vertical = 10.dp)
-                                .testTag("toggle_exit_after_recording"),
-                            contentAlignment = Alignment.Center
+                            }
+                            .padding(horizontal = 12.dp)
+                            .testTag("toggle_exit_after_recording"),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                modifier = Modifier.weight(1f, fill = false)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                     contentDescription = null,
                                     tint = if (exitEnabled) AccentRed else TextMuted,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(17.dp)
                                 )
                                 Text(
                                     text = "Exit on Stop",
                                     fontSize = 12.sp,
                                     fontWeight = if (exitEnabled) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (exitEnabled) Color.White else TextSecondary
+                                    color = if (exitEnabled) Color.White else TextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(if (exitEnabled) AccentRed else Color.Transparent)
+                                    .then(
+                                        if (!exitEnabled) Modifier.border(1.dp, TextMuted.copy(alpha = 0.4f), CircleShape)
+                                        else Modifier
+                                    )
+                            )
                         }
                     }
                 }
@@ -809,6 +849,7 @@ fun RecordTabScreen(
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     viewModel.applyPreset(preset)
                                     showPresetDialog = false
                                 }

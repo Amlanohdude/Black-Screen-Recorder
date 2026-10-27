@@ -65,7 +65,7 @@ data class UserSettings(
     val customExportFolderUri: String? = null,
     val customExportFolderName: String? = null,
     val exitAfterRecordingEnabled: Boolean = false,
-    val backgroundRecordingEnabled: Boolean = true,
+    val backgroundRecordingEnabled: Boolean = false,
     val exitMethod: ExitMethod = ExitMethod.NORMAL_STOP_CONTROLS,
     val exitGesture: ExitGesture = ExitGesture.TWO_FINGER_DOUBLE_TAP,
     val preferredMicrophone: String = "PHONE_MIC",

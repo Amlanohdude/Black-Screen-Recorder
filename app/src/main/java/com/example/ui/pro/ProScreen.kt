@@ -1,6 +1,7 @@
 package com.example.ui.pro
 
 import android.app.Activity
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
@@ -18,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,17 +35,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AllInclusive
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -63,7 +61,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,6 +77,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,41 +94,36 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
+import java.util.Locale
 
-private val GoldAccent = Color(0xFFFFD54F)
-private val GoldAccentDark = Color(0xFFFFA000)
-private val GreenUnlocked = Color(0xFF4CAF50)
+val GoldAccent = Color(0xFFFFD54F)
+val GoldAccentDark = Color(0xFFFFA000)
+val GreenUnlocked = Color(0xFF4CAF50)
 
 enum class UnlockableFeature(
-val title: String,
-val description: String,
-val icon: ImageVector,
-val unlockSuccessMsg: String
+    val title: String,
+    val description: String,
+    val icon: ImageVector,
+    val unlockSuccessMsg: String
 ) {
-CUSTOM_COVERS(
-title = "CUSTOM COVERS",
-description = "Tailored visual disguise covers",
-icon = Icons.Default.Palette,
-unlockSuccessMsg = "1 Custom Cover use added."
-),
-CUSTOM_FOLDER(
-title = "CUSTOM FOLDER EXPORT",
-description = "Save copies to any chosen directory",
-icon = Icons.Default.Folder,
-unlockSuccessMsg = "1 Custom Folder Export use added."
-),
-AUTO_STOP(
-title = "AUTO STOP",
-description = "Automatically stop after set duration",
-icon = Icons.Default.Timer,
-unlockSuccessMsg = "1 Auto Stop use added."
-),
-NO_ADS(
-title = "NO ADS",
-description = "100% ad-free experience across the app",
-icon = Icons.Default.Block,
-unlockSuccessMsg = ""
-)
+    CUSTOM_COVERS(
+        title = "CUSTOM COVERS",
+        description = "Tailored visual disguise covers",
+        icon = Icons.Default.Palette,
+        unlockSuccessMsg = "1 Custom Cover free use added."
+    ),
+    CUSTOM_FOLDER(
+        title = "CUSTOM FOLDER EXPORT",
+        description = "Save copies to any chosen directory",
+        icon = Icons.Default.Folder,
+        unlockSuccessMsg = "1 Custom Folder Export free use added."
+    ),
+    AUTO_STOP(
+        title = "AUTO STOP",
+        description = "Automatically stop after set duration",
+        icon = Icons.Default.Timer,
+        unlockSuccessMsg = "1 Auto Stop free use added."
+    )
 }
 
 @Composable
@@ -148,13 +141,46 @@ fun ProScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
     val billingState by BillingManager.uiState.collectAsStateWithLifecycle()
+    val isAdLoading by RewardedAdManager.isLoading.collectAsStateWithLifecycle()
+
+    var pendingFeatureToUnlock by remember { mutableStateOf<UnlockableFeature?>(null) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pro_screen_shimmer")
+    val borderAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "border_shimmer"
+    )
+    val crownPulse by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "crown_pulse"
+    )
 
     val isPro = entitlements.isPro
-    val heroBorderBrush = remember(isPro) {
+    val heroBorderBrush = remember(isPro, borderAlpha) {
         if (isPro) {
-            Brush.linearGradient(listOf(GoldAccent, GoldAccentDark))
+            Brush.linearGradient(
+                listOf(
+                    GoldAccent.copy(alpha = borderAlpha),
+                    GoldAccentDark.copy(alpha = borderAlpha * 0.7f)
+                )
+            )
         } else {
-            Brush.linearGradient(listOf(Color(0xFF333333), Color(0xFF222222)))
+            Brush.linearGradient(
+                listOf(
+                    GoldAccent.copy(alpha = borderAlpha * 0.6f),
+                    Color(0xFF333333)
+                )
+            )
         }
     }
 
@@ -199,107 +225,1080 @@ fun ProScreen(
                 )
             }
 
-// Animated Hero Banner Card
-Card(
-modifier = Modifier.fillMaxWidth(),
-shape = RoundedCornerShape(20.dp),
-colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
-border = androidx.compose.foundation.BorderStroke(1.5.dp, heroBorderBrush)
-) {
-Column(
-modifier = Modifier
-.fillMaxWidth()
-.padding(20.dp),
-horizontalAlignment = Alignment.CenterHorizontally
-) {
-// Top Tier Status Badge
-Box(
-modifier = Modifier
-.clip(RoundedCornerShape(20.dp))
-.background(if (entitlements.isPro) GoldAccent.copy(alpha = 0.15f) else SurfaceSecondary)
-.border(
-1.dp,
-if (entitlements.isPro) GoldAccent.copy(alpha = 0.4f) else BorderSubtle,
-RoundedCornerShape(20.dp)
-)
-.padding(horizontal = 14.dp, vertical = 5.dp)
-) {
-Row(verticalAlignment = Alignment.CenterVertically) {
-Icon(
-imageVector = if (entitlements.isPro) Icons.Default.CheckCircle else Icons.Default.ConfirmationNumber,
-contentDescription = null,
-tint = if (entitlements.isPro) GoldAccent else AccentRed,
-modifier = Modifier.size(13.dp)
-)
-Spacer(modifier = Modifier.width(6.dp))
-Text(
-text = if (entitlements.isPro) "PRO LIFETIME ACTIVE" else "FREE TIER · PASS WALLET",
-style = MaterialTheme.typography.labelSmall.copy(
-fontWeight = FontWeight.Bold,
-letterSpacing = 0.8.sp,
-fontSize = 10.5.sp
-),
-color = if (entitlements.isPro) GoldAccent else TextSecondary
-)
-}
-}
-
-Spacer(modifier = Modifier.height(14.dp))
-
-// Emblem
-            Box(
+            // Animated Hero Banner Card
+            Card(
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(if (entitlements.isPro) GoldAccent.copy(alpha = 0.15f) else SurfaceSecondary),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .testTag("pro_purchase_hero_card"),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, heroBorderBrush)
             ) {
-                Icon(
-                    imageVector = Icons.Default.WorkspacePremium,
-                    contentDescription = null,
-                    tint = if (entitlements.isPro) GoldAccent else TextSecondary,
-                    modifier = Modifier.size(36.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Top Tier Status Badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isPro) GoldAccent.copy(alpha = 0.15f) else SurfaceSecondary)
+                            .border(
+                                1.dp,
+                                if (isPro) GoldAccent.copy(alpha = 0.4f) else BorderSubtle,
+                                RoundedCornerShape(20.dp)
+                            )
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isPro) Icons.Default.CheckCircle else Icons.Default.WorkspacePremium,
+                                contentDescription = null,
+                                tint = if (isPro) GoldAccent else AccentRed,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isPro) "PRO LIFETIME ACTIVE" else "LIFETIME UPGRADE",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.8.sp,
+                                    fontSize = 10.5.sp
+                                ),
+                                color = if (isPro) GoldAccent else TextSecondary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Emblem
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .graphicsLayer {
+                                scaleX = crownPulse
+                                scaleY = crownPulse
+                            }
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(if (isPro) GoldAccent.copy(alpha = 0.18f) else SurfaceSecondary)
+                            .border(
+                                1.dp,
+                                if (isPro) GoldAccent.copy(alpha = 0.45f) else BorderSubtle,
+                                RoundedCornerShape(18.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.WorkspacePremium,
+                            contentDescription = null,
+                            tint = if (isPro) GoldAccent else AccentRed,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "BLACK SCREEN RECORDER PRO",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.2.sp
+                        ),
+                        color = if (isPro) GoldAccent else TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "Unlock the full recorder.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Normal
+                        ),
+                        color = TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Features Column
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(SurfaceSecondary.copy(alpha = 0.6f))
+                            .border(0.5.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(
+                                "Ad-Free",
+                                "Unlimited Custom Covers",
+                                "Unlimited Custom Folder Export",
+                                "Unlimited Auto Stop"
+                            ).forEach { item ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = GoldAccent,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = item,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = TextPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Purchase State Section
+                    if (isPro || billingState.isPro) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(GoldAccent.copy(alpha = 0.12f))
+                                .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                                .padding(vertical = 14.dp, horizontal = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = GoldAccent,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "PRO ACTIVE",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 1.sp
+                                        ),
+                                        color = GoldAccent
+                                    )
+                                    Text(
+                                        text = "Lifetime access",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+                        }
+                    } else if (billingState.isPurchasePending) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceSecondary)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Timer,
+                                        contentDescription = null,
+                                        tint = GoldAccent,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Purchase pending",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = TextPrimary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Your purchase will activate after payment is completed.",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    } else {
+                        // Pricing & Buy Button
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val activePrice = billingState.formattedPrice ?: "PRO"
+                            val regPrice = billingState.originalFormattedPrice ?: billingState.standardFormattedPrice
+
+                            if (regPrice != null && billingState.formattedPrice != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = regPrice,
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontSize = 14.sp,
+                                            textDecoration = TextDecoration.LineThrough
+                                        ),
+                                        color = TextMuted
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "→",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                                        color = GoldAccent
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = activePrice,
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = GoldAccent
+                                    )
+                                    val discount = billingState.discountPercentage
+                                    if (discount != null && discount > 0) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(GoldAccent.copy(alpha = 0.15f))
+                                                .border(1.dp, GoldAccent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = "$discount% OFF",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 11.sp
+                                                ),
+                                                color = GoldAccent
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                            } else if (billingState.formattedPrice != null) {
+                                Text(
+                                    text = activePrice,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = GoldAccent
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
+
+                            Button(
+                                onClick = {
+                                    val activity = context as? Activity
+                                    if (activity != null) {
+                                        BillingManager.launchPurchaseFlow(activity)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("buy_pro_button"),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.WorkspacePremium,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "UNLOCK PRO · $activePrice",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontSize = 14.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        ),
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = "Lifetime access · One-time purchase",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = TextMuted,
+                                textAlign = TextAlign.Center
+                            )
+
+                            if (billingState.isConnecting) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(SurfaceSecondary)
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = AccentRed
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Connecting to store...",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+
+                            if (billingState.userMessage != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = billingState.userMessage ?: "",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                                    color = AccentRed,
+                                    textAlign = TextAlign.Center
+                                )
+                                TextButton(
+                                    onClick = {
+                                        BillingManager.startConnection {
+                                            BillingManager.queryProductDetails()
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = "Retry",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = AccentRed
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Restore Purchases Button
+                    TextButton(
+                        onClick = {
+                            BillingManager.restorePurchases { _, message ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(message)
+                                }
+                            }
+                        },
+                        modifier = Modifier.testTag("restore_purchases_button")
+                    ) {
+                        if (billingState.isRestoring) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 1.5.dp,
+                                color = TextSecondary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Restoring Purchases...",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
+                                color = TextSecondary
+                            )
+                        } else {
+                            Text(
+                                text = "Restore Purchases",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Plan Comparison Table Card
+            PlanComparisonCard()
+
+            // Free Uses Card Section
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column {
+                    Text(
+                        text = "FREE USES",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Need an extra premium use? Watch a short ad.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                        color = TextSecondary
+                    )
+                }
+
+                ProFeatureCard(
+                    feature = UnlockableFeature.CUSTOM_COVERS,
+                    isPro = isPro,
+                    credits = entitlements.customCoverCredits,
+                    isAdLoading = isAdLoading,
+                    onWatchAdClick = {
+                        pendingFeatureToUnlock = UnlockableFeature.CUSTOM_COVERS
+                    },
+                    onUseClick = onNavigateToCovers
+                )
+
+                ProFeatureCard(
+                    feature = UnlockableFeature.CUSTOM_FOLDER,
+                    isPro = isPro,
+                    credits = entitlements.customFolderExportCredits,
+                    isAdLoading = isAdLoading,
+                    onWatchAdClick = {
+                        pendingFeatureToUnlock = UnlockableFeature.CUSTOM_FOLDER
+                    },
+                    onUseClick = onNavigateToSettings ?: onNavigateToRecordings
+                )
+
+                ProFeatureCard(
+                    feature = UnlockableFeature.AUTO_STOP,
+                    isPro = isPro,
+                    credits = entitlements.autoStopCredits,
+                    isAdLoading = isAdLoading,
+                    onWatchAdClick = {
+                        pendingFeatureToUnlock = UnlockableFeature.AUTO_STOP
+                    },
+                    onUseClick = onNavigateToSettings
                 )
             }
 
-Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
 
-// Restore Purchases Button
-TextButton(
-onClick = {
-BillingManager.restorePurchases { _, message ->
-coroutineScope.launch {
-snackbarHostState.showSnackbar(message)
+    // Rewarded Ad Dialog
+    pendingFeatureToUnlock?.let { feature ->
+        AlertDialog(
+            onDismissRequest = { pendingFeatureToUnlock = null },
+            title = {
+                Text(
+                    text = "Get 1 Free Use of ${feature.title}?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "Watch a short sponsored video to get 1 free use of ${feature.title}.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val featureToUnlock = feature
+                        pendingFeatureToUnlock = null
+                        val activity = context as? Activity
+                        if (activity != null) {
+                            RewardedAdManager.showAd(
+                                activity = activity,
+                                onUserEarnedReward = { _ ->
+                                    when (featureToUnlock) {
+                                        UnlockableFeature.CUSTOM_COVERS -> EntitlementManager.addCustomCoverCredit()
+                                        UnlockableFeature.CUSTOM_FOLDER -> EntitlementManager.addCustomFolderExportCredit()
+                                        UnlockableFeature.AUTO_STOP -> EntitlementManager.addAutoStopCredit()
+                                    }
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(featureToUnlock.unlockSuccessMsg)
+                                    }
+                                },
+                                onFailedToShow = { errorMsg ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(errorMsg)
+                                    }
+                                }
+                            )
+                        }
+                    },
+                    modifier = Modifier.testTag("confirm_watch_ad_button"),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                ) {
+                    Text(
+                        text = "Watch Ad",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingFeatureToUnlock = null }) {
+                    Text(
+                        text = "Cancel",
+                        color = TextSecondary
+                    )
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 }
+
+@Composable
+private fun PlanComparisonCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "FREE VS PRO",
+                    modifier = Modifier.weight(1.3f),
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    ),
+                    color = TextPrimary
+                )
+                Text(
+                    text = "FREE",
+                    modifier = Modifier.weight(1.0f),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = TextSecondary
+                )
+                Text(
+                    text = "PRO",
+                    modifier = Modifier.weight(1.0f),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = GoldAccent
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 4.dp),
+                thickness = 0.5.dp,
+                color = BorderSubtle
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Videocam,
+                title = "Audio / Video",
+                freeContent = { IncludedBadge(false) },
+                proContent = { IncludedBadge(true) },
+                isAltRow = false
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Shield,
+                title = "Basic Features",
+                freeContent = { IncludedBadge(false) },
+                proContent = { IncludedBadge(true) },
+                isAltRow = true
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Block,
+                title = "Ads",
+                freeContent = { TextBadge("Native Ads", isMuted = true) },
+                proContent = { TextBadge("None", isGold = true) },
+                isAltRow = false
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Palette,
+                title = "Custom Covers",
+                freeContent = { TextBadge("1 use / credit") },
+                proContent = { UnlimitedBadge() },
+                isAltRow = true
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Folder,
+                title = "Custom Folder Export",
+                freeContent = { TextBadge("1 use / credit") },
+                proContent = { UnlimitedBadge() },
+                isAltRow = false
+            )
+
+            ComparisonRow(
+                icon = Icons.Default.Timer,
+                title = "Auto Stop Timer",
+                freeContent = { TextBadge("1 use / credit") },
+                proContent = { UnlimitedBadge() },
+                isAltRow = true
+            )
+        }
+    }
 }
-},
-modifier = Modifier.testTag("restore_purchases_button")
+
+@Composable
+fun ComparisonRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String? = null,
+    freeContent: @Composable () -> Unit,
+    proContent: @Composable () -> Unit,
+    isAltRow: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
-if (billingState.isRestoring) {
-CircularProgressIndicator(
-modifier = Modifier.size(14.dp),
-strokeWidth = 1.5.dp,
-color = TextSecondary
-)
-Spacer(modifier = Modifier.width(6.dp))
-Text(
-text = "Restoring Purchases...",
-style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
-color = TextSecondary
-)
-} else {
-Text(
-text = "Restore Purchases",
-style = MaterialTheme.typography.bodySmall.copy(
-fontSize = 12.5.sp,
-fontWeight = FontWeight.Medium
-),
-color = TextSecondary
-)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (isAltRow) SurfaceSecondary.copy(alpha = 0.35f) else Color.Transparent)
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1.3f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(13.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = TextPrimary
+                )
+            }
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    modifier = Modifier.padding(start = 19.dp),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 9.5.sp,
+                        lineHeight = 12.sp
+                    ),
+                    color = TextMuted
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier.weight(1.0f),
+            contentAlignment = Alignment.Center
+        ) {
+            freeContent()
+        }
+
+        Box(
+            modifier = Modifier.weight(1.0f),
+            contentAlignment = Alignment.Center
+        ) {
+            proContent()
+        }
+    }
 }
+
+@Composable
+fun IncludedBadge(isPro: Boolean) {
+    val tintColor = if (isPro) GoldAccent else TextSecondary
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = "Included",
+            modifier = Modifier.size(13.dp),
+            tint = tintColor
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = "Included",
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 10.5.sp,
+                fontWeight = if (isPro) FontWeight.SemiBold else FontWeight.Medium
+            ),
+            color = tintColor
+        )
+    }
 }
+
+@Composable
+fun UnlimitedBadge() {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(GoldAccent.copy(alpha = 0.15f))
+            .border(0.5.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.AllInclusive,
+            contentDescription = null,
+            tint = GoldAccent,
+            modifier = Modifier.size(11.dp)
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = "Unlimited",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = GoldAccent
+        )
+    }
 }
+
+@Composable
+fun TextBadge(
+    text: String,
+    isMuted: Boolean = false,
+    isGold: Boolean = false
+) {
+    val textColor = when {
+        isGold -> GoldAccent
+        isMuted -> TextMuted
+        else -> TextSecondary
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall.copy(
+            fontSize = 10.5.sp,
+            fontWeight = if (isGold) FontWeight.SemiBold else FontWeight.Medium,
+            textAlign = TextAlign.Center
+        ),
+        color = textColor
+    )
 }
-}
-}
+
+@Composable
+private fun ProFeatureCard(
+    feature: UnlockableFeature,
+    isPro: Boolean,
+    credits: Int,
+    isAdLoading: Boolean,
+    onWatchAdClick: () -> Unit,
+    onUseClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val lowerCase = feature.name.lowercase(Locale.ROOT)
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("pro_feature_card_$lowerCase"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isPro) GoldAccent.copy(alpha = 0.45f) else BorderSubtle
+        )
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Top Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1.0f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val iconBg = when {
+                        isPro -> GoldAccent.copy(alpha = 0.15f)
+                        credits > 0 -> GreenUnlocked.copy(alpha = 0.15f)
+                        else -> SurfaceSecondary
+                    }
+                    val iconBorder = when {
+                        isPro -> GoldAccent.copy(alpha = 0.4f)
+                        credits > 0 -> GreenUnlocked.copy(alpha = 0.4f)
+                        else -> BorderSubtle
+                    }
+                    val iconTint = when {
+                        isPro -> GoldAccent
+                        credits > 0 -> GreenUnlocked
+                        else -> TextSecondary
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(iconBg, CircleShape)
+                            .border(0.5.dp, iconBorder, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = feature.icon,
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = feature.title,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = feature.description,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Right Status Badge
+                if (isPro) {
+                    UnlimitedBadge()
+                } else {
+                    AnimatedContent(
+                        targetState = credits,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "credit_counter_$lowerCase"
+                    ) { targetCredits ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (targetCredits > 0) GreenUnlocked.copy(alpha = 0.15f) else SurfaceSecondary)
+                                .border(
+                                    0.5.dp,
+                                    if (targetCredits > 0) GreenUnlocked.copy(alpha = 0.4f) else BorderSubtle,
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = if (targetCredits > 0) "$targetCredits USES" else "0 USES",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = if (targetCredits > 0) GreenUnlocked else TextMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 10.dp),
+                thickness = 0.5.dp,
+                color = BorderSubtle
+            )
+
+            // Bottom Action Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isPro) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = GoldAccent,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Included with Lifetime Pro",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = GoldAccent
+                        )
+                    }
+                } else if (credits > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = GreenUnlocked,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Ready to use",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = GreenUnlocked
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (onUseClick != null) {
+                            Button(
+                                onClick = onUseClick,
+                                modifier = Modifier.testTag("use_button_$lowerCase"),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AccentRed,
+                                    contentColor = Color.White
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "USE",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onWatchAdClick,
+                            modifier = Modifier.testTag("watch_ad_button_$lowerCase"),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SurfaceSecondary,
+                                contentColor = TextPrimary
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            if (isAdLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = AccentRed
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Text(
+                                text = "WATCH AD",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = TextPrimary
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Watch ad to get 1 free use",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                        color = TextSecondary
+                    )
+
+                    Button(
+                        onClick = onWatchAdClick,
+                        modifier = Modifier.testTag("watch_ad_button_$lowerCase"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SurfaceSecondary,
+                            contentColor = TextPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        if (isAdLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                strokeWidth = 2.dp,
+                                color = AccentRed
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = AccentRed,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+                        Text(
+                            text = "WATCH AD",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

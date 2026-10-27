@@ -251,10 +251,11 @@ fun RecordingScreen(
     }
 
     // Lifecycle observer: if background recording is disabled, stop when leaving app
-    DisposableEffect(lifecycleOwner, settings.backgroundRecordingEnabled) {
+    DisposableEffect(lifecycleOwner, settings.backgroundRecordingEnabled, status.isRecording, isFinalizing) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                if (!settings.backgroundRecordingEnabled && status.isRecording && !isFinalizing) {
+                val currentStatus = viewModel.recordingStatus.value
+                if (!settings.backgroundRecordingEnabled && currentStatus.isRecording && !isFinalizing) {
                     executeStop(isQuickExit = false)
                 }
             }
