@@ -171,9 +171,7 @@ fun SettingsScreen(
             .background(BgDark)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
+            modifier = Modifier.fillMaxSize()
         ) {
             TabTopHeader(title = "SETTINGS")
 
@@ -586,7 +584,7 @@ fun SettingsScreen(
                     // Version Row
                     SettingsInfoRow(
                         title = "Version",
-                        value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        value = BuildConfig.VERSION_NAME,
                         modifier = Modifier
                             .testTag("settings_version_row")
                             .clickable {
