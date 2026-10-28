@@ -1,10 +1,15 @@
 <resources>
     <string name="app_name">Black Screen Recorder</string>
-    <string name="error_mic_unavailable">Microphone is unavailable or in use</string>
-    <string name="error_camera_unavailable">Camera is unavailable or in use</string>
-    <string name="permission_camera_mic">Camera and microphone permissions are required</string>
+    <string name="error_mic_unavailable">Microphone unavailable</string>
+    <string name="error_camera_unavailable">Camera unavailable</string>
+    <string name="permission_camera_mic">Camera and microphone access are required to record video.</string>
+    <string name="permission_mic">Microphone access is required to record audio.</string>
+    <string name="privacy_policy_body">Black Screen Recorder is a local-only utility for intentional recording while keeping your screen dark to save battery and reduce distraction. It does not contain spyware, remote monitoring, cloud uploads, or hidden recording features. Recordings are saved only on this device.</string>
+    <string name="rename_title">Rename recording</string>
+    <string name="delete_confirmation">Delete this recording?</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
     <string name="action_share">Share</string>
-    <string name="rename_title">Rename Recording</string>
-    <string name="action_delete">Delete</string>
     <string name="action_rename">Rename</string>
+    <string name="action_delete">Delete</string>
 </resources>

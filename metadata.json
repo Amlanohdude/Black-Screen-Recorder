@@ -1,1 +1,1 @@
-{"name":"BlackScreen Recorder Pro","description":"Minimal utility to record video or audio while keeping the display dark.","requestFramePermissions":[],"majorCapabilities":[]}
+{"name":"Black Screen Video Recorder","description":"Record video in background with screen off. Fast, battery-saving BVR camera.","requestFramePermissions":[],"majorCapabilities":["background-video-recording","screen-off-recording","amoled-battery-saver","discreet-covers","pin-vault"]}
