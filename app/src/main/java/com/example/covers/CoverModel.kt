@@ -10,9 +10,11 @@ enum class CoverPresetId {
     CLOCK,
     ANALOG_CLOCK,
     LOCK_SCREEN,
-    MINIMAL,
     DIM_CLOCK,
-    PHONE_CALL,
+    SYSTEM_STATUS,
+    DASHCAM_HUD,
+    TIMER,
+    MINIMAL,
     CUSTOM
 }
 
@@ -531,18 +533,6 @@ data class CoverConfig(
             brightnessPercent = 40
         )
 
-        val PHONE_CALL_PRESET = CoverConfig(
-            id = "preset_phone_call",
-            presetId = CoverPresetId.PHONE_CALL,
-            name = "Phone Call",
-            isCustom = false,
-            showClock = false,
-            showDate = false,
-            showBattery = false,
-            background = CoverBackground.PURE_BLACK,
-            brightnessPercent = 30
-        )
-
         val DIM_CLOCK_PRESET = CoverConfig(
             id = "preset_dim_clock",
             presetId = CoverPresetId.DIM_CLOCK,
@@ -559,13 +549,55 @@ data class CoverConfig(
             brightnessPercent = 1
         )
 
+        val SYSTEM_STATUS_PRESET = CoverConfig(
+            id = "preset_system_status",
+            presetId = CoverPresetId.SYSTEM_STATUS,
+            name = "System Status",
+            isCustom = false,
+            showClock = true,
+            clockMode = ClockMode.DIGITAL,
+            clockStyle = ClockStyle.DIGITAL,
+            showDate = true,
+            showBattery = true,
+            background = CoverBackground.PURE_BLACK,
+            brightnessPercent = 25
+        )
+
+        val DASHCAM_HUD_PRESET = CoverConfig(
+            id = "preset_dashcam_hud",
+            presetId = CoverPresetId.DASHCAM_HUD,
+            name = "Dashcam HUD",
+            isCustom = false,
+            showClock = true,
+            clockMode = ClockMode.DIGITAL,
+            clockStyle = ClockStyle.BOLD,
+            showDate = true,
+            showBattery = false,
+            background = CoverBackground.PURE_BLACK,
+            brightnessPercent = 35
+        )
+
+        val TIMER_PRESET = CoverConfig(
+            id = "preset_timer",
+            presetId = CoverPresetId.TIMER,
+            name = "Stopwatch / Timer",
+            isCustom = false,
+            showClock = false,
+            showDate = false,
+            showBattery = false,
+            background = CoverBackground.PURE_BLACK,
+            brightnessPercent = 25
+        )
+
         val ALL_PRESETS = listOf(
             PURE_BLACK_PRESET,
             CLOCK_PRESET,
             ANALOG_CLOCK_PRESET,
             LOCK_SCREEN_PRESET,
-            PHONE_CALL_PRESET,
-            DIM_CLOCK_PRESET
+            DIM_CLOCK_PRESET,
+            SYSTEM_STATUS_PRESET,
+            DASHCAM_HUD_PRESET,
+            TIMER_PRESET
         )
 
         fun forPreset(presetId: CoverPresetId): CoverConfig {
@@ -574,8 +606,10 @@ data class CoverConfig(
                 CoverPresetId.CLOCK -> CLOCK_PRESET
                 CoverPresetId.ANALOG_CLOCK -> ANALOG_CLOCK_PRESET
                 CoverPresetId.LOCK_SCREEN -> LOCK_SCREEN_PRESET
-                CoverPresetId.PHONE_CALL -> PHONE_CALL_PRESET
                 CoverPresetId.DIM_CLOCK -> DIM_CLOCK_PRESET
+                CoverPresetId.SYSTEM_STATUS -> SYSTEM_STATUS_PRESET
+                CoverPresetId.DASHCAM_HUD -> DASHCAM_HUD_PRESET
+                CoverPresetId.TIMER -> TIMER_PRESET
                 CoverPresetId.CUSTOM,
                 CoverPresetId.MINIMAL -> createDefaultCustomCover()
             }

@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -195,7 +197,7 @@ fun CoverDisplay(
 
         // Speaker slit indicator for Pure Black preview
         if (isCardPreview && !cover.showClock && !cover.showDate && !cover.showBattery &&
-            cover.background == CoverBackground.PURE_BLACK && cover.presetId != CoverPresetId.PHONE_CALL
+            cover.background == CoverBackground.PURE_BLACK && cover.presetId == CoverPresetId.PURE_BLACK
         ) {
             Box(
                 modifier = Modifier
@@ -206,24 +208,49 @@ fun CoverDisplay(
             )
         }
 
-        // LAYER 4: Phone Call or Unified element layout engine
-        if (cover.presetId == CoverPresetId.PHONE_CALL) {
-            PhoneCallCoverContent(
-                isCardPreview = isCardPreview,
-                isRecording = isRecording,
-                durationSeconds = durationSeconds,
-                driftXPx = driftXPx,
-                driftYPx = driftYPx
-            )
-        } else {
-            CoverElementsEngine(
-                cover = cover,
-                currentTime = currentTime,
-                batteryPercent = batteryPercent,
-                isCardPreview = isCardPreview,
-                driftXPx = driftXPx,
-                driftYPx = driftYPx
-            )
+        val formattedTimeStr = remember(currentTime) {
+            java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(currentTime)
+        }
+
+        // LAYER 4: Preset-specific content or Unified element layout engine
+        when (cover.presetId) {
+            CoverPresetId.SYSTEM_STATUS -> {
+                SystemStatusCoverContent(
+                    isCardPreview = isCardPreview,
+                    batteryPercent = batteryPercent,
+                    currentTime = formattedTimeStr,
+                    driftXPx = driftXPx,
+                    driftYPx = driftYPx
+                )
+            }
+            CoverPresetId.DASHCAM_HUD -> {
+                DashcamHudCoverContent(
+                    isCardPreview = isCardPreview,
+                    isRecording = isRecording,
+                    currentTime = formattedTimeStr,
+                    driftXPx = driftXPx,
+                    driftYPx = driftYPx
+                )
+            }
+            CoverPresetId.TIMER -> {
+                TimerStopwatchCoverContent(
+                    isCardPreview = isCardPreview,
+                    isRecording = isRecording,
+                    durationSeconds = durationSeconds,
+                    driftXPx = driftXPx,
+                    driftYPx = driftYPx
+                )
+            }
+            else -> {
+                CoverElementsEngine(
+                    cover = cover,
+                    currentTime = currentTime,
+                    batteryPercent = batteryPercent,
+                    isCardPreview = isCardPreview,
+                    driftXPx = driftXPx,
+                    driftYPx = driftYPx
+                )
+            }
         }
     }
 }
@@ -695,11 +722,441 @@ fun resolveTextAlign(
 }
 
 // =========================================================================
-// PHONE CALL COVER PRESET IMPLEMENTATION
+// SYSTEM STATUS / BATTERY MONITOR PRESET IMPLEMENTATION
 // =========================================================================
 
 @Composable
-fun PhoneCallCoverContent(
+fun SystemStatusCoverContent(
+    isCardPreview: Boolean,
+    batteryPercent: Int,
+    currentTime: String,
+    driftXPx: Float,
+    driftYPx: Float,
+    modifier: Modifier = Modifier
+) {
+    if (isCardPreview) {
+        SystemStatusCoverPreview(batteryPercent = batteryPercent, currentTime = currentTime, modifier = modifier)
+    } else {
+        SystemStatusCoverFullScreen(
+            batteryPercent = batteryPercent,
+            currentTime = currentTime,
+            driftXPx = driftXPx,
+            driftYPx = driftYPx,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun SystemStatusCoverPreview(
+    batteryPercent: Int,
+    currentTime: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Mini top bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = currentTime.ifEmpty { "12:00" },
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 7.5.sp,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                text = "$batteryPercent%",
+                color = Color(0xFF00E5FF),
+                fontSize = 7.5.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Center Gauge
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = "$batteryPercent%",
+                color = Color(0xFF00E5FF),
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            // Mini battery bar
+            Box(
+                modifier = Modifier
+                    .width(36.dp)
+                    .height(4.dp)
+                    .background(Color(0xFF1E2836), RoundedCornerShape(2.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth((batteryPercent / 100f).coerceIn(0.05f, 1f))
+                        .background(Color(0xFF00E5FF), RoundedCornerShape(2.dp))
+                )
+            }
+        }
+
+        // Mini status pills
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = "STORAGE OK",
+                color = Color(0xFF00E676),
+                fontSize = 6.sp,
+                fontFamily = FontFamily.Monospace
+            )
+            Text(
+                text = "SYSTEM ACTIVE",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 5.5.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+    }
+}
+
+@Composable
+private fun SystemStatusCoverFullScreen(
+    batteryPercent: Int,
+    currentTime: String,
+    driftXPx: Float,
+    driftYPx: Float,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .graphicsLayer {
+                translationX = driftXPx
+                translationY = driftYPx
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "SYSTEM MONITOR",
+                color = Color(0xFF00E5FF).copy(alpha = 0.8f),
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+            Text(
+                text = currentTime.ifEmpty { "12:00" },
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 15.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        // Big Battery Indicator
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "$batteryPercent%",
+                color = Color(0xFF00E5FF),
+                fontSize = 64.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "BATTERY STATUS · OPTIMAL",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+            )
+            // Segmented battery progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .height(10.dp)
+                    .background(Color(0xFF16202C), RoundedCornerShape(5.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth((batteryPercent / 100f).coerceIn(0.05f, 1f))
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color(0xFF00E5FF), Color(0xFF00E676))
+                            ),
+                            shape = RoundedCornerShape(5.dp)
+                        )
+                )
+            }
+        }
+
+        // Diagnostics Cards
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SystemStatusInfoRow(title = "ENERGY SAVER", value = "AMOLED PIXELS OFF", highlight = Color(0xFF00E676))
+            SystemStatusInfoRow(title = "THERMAL STATE", value = "31.4°C · NORMAL", highlight = Color(0xFF00E5FF))
+            SystemStatusInfoRow(title = "MEMORY PROFILE", value = "OPTIMIZED", highlight = Color.White.copy(alpha = 0.8f))
+            SystemStatusInfoRow(title = "BACKGROUND REC", value = "RUNNING CONTINUOUS", highlight = Color(0xFF00E676))
+        }
+    }
+}
+
+@Composable
+private fun SystemStatusInfoRow(
+    title: String,
+    value: String,
+    highlight: Color
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF0A1017), RoundedCornerShape(8.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            color = Color.White.copy(alpha = 0.55f),
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace
+        )
+        Text(
+            text = value,
+            color = highlight,
+            fontSize = 11.5.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+// =========================================================================
+// DASHCAM / HUD MODE PRESET IMPLEMENTATION
+// =========================================================================
+
+@Composable
+fun DashcamHudCoverContent(
+    isCardPreview: Boolean,
+    isRecording: Boolean,
+    currentTime: String,
+    driftXPx: Float,
+    driftYPx: Float,
+    modifier: Modifier = Modifier
+) {
+    if (isCardPreview) {
+        DashcamHudCoverPreview(currentTime = currentTime, modifier = modifier)
+    } else {
+        DashcamHudCoverFullScreen(
+            isRecording = isRecording,
+            currentTime = currentTime,
+            driftXPx = driftXPx,
+            driftYPx = driftYPx,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun DashcamHudCoverPreview(
+    currentTime: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 6.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Mini Compass
+        Text(
+            text = "▲ N 045°",
+            color = Color(0xFFFFB300),
+            fontSize = 7.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold
+        )
+
+        // Mini Speed
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "0",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "KM/H",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 6.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        // Mini Rec status
+        Text(
+            text = "● REC 1080P",
+            color = Color(0xFFFF5252),
+            fontSize = 6.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DashcamHudCoverFullScreen(
+    isRecording: Boolean,
+    currentTime: String,
+    driftXPx: Float,
+    driftYPx: Float,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 28.dp)
+            .graphicsLayer {
+                translationX = driftXPx
+                translationY = driftYPx
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Top Compass Tape
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "W · · NW · · ▲ N 045° NE · · E",
+                color = Color(0xFFFFB300),
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(1.dp)
+                    .background(Color(0xFFFFB300).copy(alpha = 0.4f))
+            )
+        }
+
+        // Center Speedometer & HUD Reticle
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "0",
+                    color = Color.White,
+                    fontSize = 84.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "KM/H",
+                    color = Color(0xFFFFB300),
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+            Text(
+                text = "GPS LOCK · 3D ACTIVE",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+            )
+        }
+
+        // Bottom Telemetry & Recording Status
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (isRecording) "● REC FHD 1080P" else "● STANDBY",
+                    color = if (isRecording) Color(0xFFFF5252) else Color(0xFFFFB300),
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = currentTime.ifEmpty { "00:00" },
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "ELEV: 124m · PITCH: 0°",
+                    color = Color.White.copy(alpha = 0.45f),
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                Text(
+                    text = "G-FORCE: 1.0G",
+                    color = Color.White.copy(alpha = 0.45f),
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
+        }
+    }
+}
+
+// =========================================================================
+// STOPWATCH / TIMER PRESET IMPLEMENTATION
+// =========================================================================
+
+@Composable
+fun TimerStopwatchCoverContent(
     isCardPreview: Boolean,
     isRecording: Boolean,
     durationSeconds: Long,
@@ -708,9 +1165,9 @@ fun PhoneCallCoverContent(
     modifier: Modifier = Modifier
 ) {
     if (isCardPreview) {
-        PhoneCallCoverPreview(modifier = modifier)
+        TimerStopwatchCoverPreview(modifier = modifier)
     } else {
-        PhoneCallCoverFullScreen(
+        TimerStopwatchCoverFullScreen(
             isRecording = isRecording,
             durationSeconds = durationSeconds,
             driftXPx = driftXPx,
@@ -721,118 +1178,79 @@ fun PhoneCallCoverContent(
 }
 
 @Composable
-private fun PhoneCallCoverPreview(
+private fun TimerStopwatchCoverPreview(
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 6.dp, vertical = 10.dp),
+            .padding(horizontal = 6.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Top Avatar & Caller Info
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(26.dp)
-                    .background(Color(0xFF2C2C30), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color(0xFFD0D0D4),
-                    modifier = Modifier.size(15.dp)
-                )
-            }
+        Text(
+            text = "TIMER",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 7.sp,
+            fontFamily = FontFamily.Monospace
+        )
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Home",
-                color = Color.White,
+                text = "00:05:32",
+                color = Color(0xFF00E5FF),
                 fontSize = 10.5.sp,
-                fontWeight = FontWeight.SemiBold
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
             )
             Text(
-                text = "00:45",
-                color = Color.White.copy(alpha = 0.65f),
-                fontSize = 8.sp
+                text = ".40",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 7.sp,
+                fontFamily = FontFamily.Monospace
             )
         }
 
-        // Mini Actions Row
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
-                    .background(Color(0xFF242428), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MicOff,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(8.dp)
-                )
-            }
+                    .size(12.dp)
+                    .background(Color(0xFF222222), CircleShape)
+            )
             Box(
                 modifier = Modifier
-                    .size(16.dp)
-                    .background(Color(0xFF242428), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.VolumeUp,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(8.dp)
-                )
-            }
-        }
-
-        // Mini End Call Button
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .background(Color(0xFFEB5545), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.CallEnd,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(10.dp)
+                    .size(12.dp)
+                    .background(Color(0xFF331515), CircleShape)
             )
         }
     }
 }
 
 @Composable
-private fun PhoneCallCoverFullScreen(
+private fun TimerStopwatchCoverFullScreen(
     isRecording: Boolean,
     durationSeconds: Long,
     driftXPx: Float,
     driftYPx: Float,
     modifier: Modifier = Modifier
 ) {
-    val durationText = if (isRecording) {
-        val mins = durationSeconds / 60
-        val secs = durationSeconds % 60
-        String.format(Locale.US, "%02d:%02d", mins, secs)
+    val hours = durationSeconds / 3600
+    val mins = (durationSeconds % 3600) / 60
+    val secs = durationSeconds % 60
+    val timerString = if (hours > 0) {
+        String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
     } else {
-        "02:14"
+        String.format(Locale.US, "00:%02d:%02d", mins, secs)
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 40.dp)
+            .padding(horizontal = 24.dp, vertical = 36.dp)
             .graphicsLayer {
                 translationX = driftXPx
                 translationY = driftYPx
@@ -840,104 +1258,127 @@ private fun PhoneCallCoverFullScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Caller Info Header
+        // Header
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Text(
+                text = "STOPWATCH",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 2.sp
+            )
+            Text(
+                text = if (isRecording) "SESSION ACTIVE" else "READY",
+                color = if (isRecording) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.4f),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        // Giant Stopwatch Numerals
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = timerString,
+                color = Color(0xFF00E5FF),
+                fontSize = 52.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = ".82",
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 22.sp,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        // Lap Split Times
+        Column(
+            modifier = Modifier.fillMaxWidth(0.85f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TimerLapRow(lapNum = 2, time = timerString, split = "+01:14")
+            TimerLapRow(lapNum = 1, time = "00:03:45", split = "+03:45")
+        }
+
+        // Minimalist Stopwatch Control Buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Lap Button
             Box(
                 modifier = Modifier
-                    .size(96.dp)
-                    .background(Color(0xFF2C2C30), CircleShape),
+                    .size(68.dp)
+                    .background(Color(0xFF18181A), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color(0xFFD0D0D4),
-                    modifier = Modifier.size(54.dp)
+                Text(
+                    text = "LAP",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Home",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Ongoing call • $durationText",
-                color = Color.White.copy(alpha = 0.65f),
-                fontSize = 14.sp
-            )
-        }
 
-        // 3x2 In-Call Grid Actions
-        Column(
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(36.dp)
+            // Stop / Pause Button
+            Box(
+                modifier = Modifier
+                    .size(68.dp)
+                    .background(Color(0xFF2E1212), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                PhoneCallActionButton(icon = Icons.Default.MicOff, label = "Mute")
-                PhoneCallActionButton(icon = Icons.Default.Dialpad, label = "Keypad")
-                PhoneCallActionButton(icon = Icons.Default.VolumeUp, label = "Speaker")
+                Text(
+                    text = "STOP",
+                    color = Color(0xFFEF5350),
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(36.dp)
-            ) {
-                PhoneCallActionButton(icon = Icons.Default.Pause, label = "Hold")
-                PhoneCallActionButton(icon = Icons.Default.Person, label = "Contact")
-                PhoneCallActionButton(icon = Icons.Default.Person, label = "Add Call")
-            }
-        }
-
-        // Large End Call Button
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .background(Color(0xFFEB5545), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.CallEnd,
-                contentDescription = "End Call",
-                tint = Color.White,
-                modifier = Modifier.size(34.dp)
-            )
         }
     }
 }
 
 @Composable
-private fun PhoneCallActionButton(
-    icon: ImageVector,
-    label: String
+private fun TimerLapRow(
+    lapNum: Int,
+    time: String,
+    split: String
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(58.dp)
-                .background(Color(0xFF242428), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-        }
         Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 12.sp
+            text = "LAP $lapNum",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace
+        )
+        Text(
+            text = time,
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace
+        )
+        Text(
+            text = split,
+            color = Color.White.copy(alpha = 0.45f),
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace
         )
     }
 }

@@ -92,14 +92,7 @@ var coverToDelete by remember { mutableStateOf<CoverConfig?>(null) }
 var showCustomCoversLockedDialog by remember { mutableStateOf(false) }
 
 val builtInPresets = remember {
-listOf(
-CoverConfig.PURE_BLACK_PRESET,
-CoverConfig.CLOCK_PRESET,
-CoverConfig.ANALOG_CLOCK_PRESET,
-CoverConfig.PHONE_CALL_PRESET,
-CoverConfig.LOCK_SCREEN_PRESET,
-CoverConfig.DIM_CLOCK_PRESET
-)
+    CoverConfig.ALL_PRESETS
 }
 
 val firstPresetBatch = remember(builtInPresets) { builtInPresets.take(AdsConfig.coversFrequency) }
