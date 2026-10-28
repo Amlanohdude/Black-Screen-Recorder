@@ -289,10 +289,12 @@ initialCover = coverToCustomize!!,
 onDismiss = { viewModel.closeCoverDesigner() },
 onSaveOnly = { newCover ->
 viewModel.saveCustomCover(newCover)
+viewModel.closeCoverDesigner()
 },
 onSaveAndApply = { newCover ->
 viewModel.saveCustomCover(newCover)
 viewModel.setActiveCover(newCover)
+viewModel.closeCoverDesigner()
 },
 onNavigateToPro = {
 viewModel.closeCoverDesigner()
