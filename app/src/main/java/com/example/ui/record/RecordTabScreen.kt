@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Mic
@@ -125,6 +126,8 @@ fun RecordTabScreen(
     var showCriticalStorageDialog by remember { mutableStateOf(false) }
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
+    var showFirstRecordingSafetyDialog by remember { mutableStateOf(false) }
+    var pendingRecordingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val isStorageCritical = remember(storageStats.availableBytes) {
         StorageCapacityEstimator.isStorageCriticallyLow(storageStats.availableBytes)
@@ -175,12 +178,7 @@ fun RecordTabScreen(
         }
     }
 
-    fun startCurrentRecording() {
-        if (isStorageCritical) {
-            showCriticalStorageDialog = true
-            return
-        }
-
+    fun executeRecordingAction() {
         if (selectedMode == "VIDEO") {
             val permissions = mutableListOf(
                 Manifest.permission.CAMERA,
@@ -218,6 +216,20 @@ fun RecordTabScreen(
             } else {
                 audioPermissionLauncher.launch(permissions.toTypedArray())
             }
+        }
+    }
+
+    fun startCurrentRecording() {
+        if (isStorageCritical) {
+            showCriticalStorageDialog = true
+            return
+        }
+
+        if (!settings.firstRecordingExplanationShown) {
+            pendingRecordingAction = { executeRecordingAction() }
+            showFirstRecordingSafetyDialog = true
+        } else {
+            executeRecordingAction()
         }
     }
 
@@ -336,7 +348,7 @@ fun RecordTabScreen(
                             .testTag("mode_selector_video"),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isVideo) SurfaceSecondary else SurfacePrimary
+                            containerColor = if (isVideo) Color(0xFF221111) else SurfacePrimary
                         ),
                         border = androidx.compose.foundation.BorderStroke(
                             width = if (isVideo) 1.5.dp else 0.5.dp,
@@ -373,7 +385,7 @@ fun RecordTabScreen(
                             .testTag("mode_selector_audio"),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isAudio) SurfaceSecondary else SurfacePrimary
+                            containerColor = if (isAudio) Color(0xFF221111) else SurfacePrimary
                         ),
                         border = androidx.compose.foundation.BorderStroke(
                             width = if (isAudio) 1.5.dp else 0.5.dp,
@@ -540,7 +552,7 @@ fun RecordTabScreen(
                             .weight(1f)
                             .height(46.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (bgEnabled) Color(0xFF1D2431) else SurfacePrimary)
+                            .background(if (bgEnabled) Color(0xFF221111) else SurfacePrimary)
                             .border(
                                 width = if (bgEnabled) 1.5.dp else 0.5.dp,
                                 color = if (bgEnabled) AccentRed else BorderSubtle,
@@ -604,7 +616,7 @@ fun RecordTabScreen(
                             .weight(1f)
                             .height(46.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (exitEnabled) Color(0xFF1D2431) else SurfacePrimary)
+                            .background(if (exitEnabled) Color(0xFF221111) else SurfacePrimary)
                             .border(
                                 width = if (exitEnabled) 1.5.dp else 0.5.dp,
                                 color = if (exitEnabled) AccentRed else BorderSubtle,
@@ -673,30 +685,29 @@ fun RecordTabScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    if (isStorageCritical) {
+                    val isStorageWarning = remember(storageStats.availableBytes) {
+                        StorageCapacityEstimator.isStorageLow(storageStats.availableBytes)
+                    }
+
+                    if (isStorageCritical || isStorageWarning) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Critically low storage",
-                            tint = AccentRed,
-                            modifier = Modifier.size(14.dp)
+                            contentDescription = null,
+                            tint = if (isStorageCritical) AccentRed else Color(0xFFFFB300),
+                            modifier = Modifier.size(13.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Critically low storage",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AccentRed
-                        )
-                    } else {
-                        val hours = estimatedCapacitySeconds / 3600
-                        val mins = (estimatedCapacitySeconds % 3600) / 60
-                        val timeStr = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-                        Text(
-                            text = "$timeStr free at ${if (selectedMode == "AUDIO") "audio" else settings.videoQuality}",
-                            fontSize = 12.sp,
-                            color = TextSecondary
-                        )
                     }
+
+                    val availableStr = MainViewModel.formatFileSize(storageStats.availableBytes) + " free"
+                    val durationStr = if (isStorageCritical) "0m" else StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds)
+                    val modeQualityStr = if (selectedMode == "AUDIO") "audio" else "at ${settings.videoQuality}"
+
+                    Text(
+                        text = "$availableStr · $durationStr $modeQualityStr",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = if (isStorageCritical) AccentRed else TextSecondary
+                    )
                 }
 
                 // Main Big Start Recording Button
@@ -706,7 +717,7 @@ fun RecordTabScreen(
                         .fillMaxWidth()
                         .height(56.dp)
                         .testTag("start_recording_button"),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AccentRed,
                         contentColor = Color.White
@@ -714,18 +725,23 @@ fun RecordTabScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.RadioButtonChecked,
+                            imageVector = Icons.Default.FiberManualRecord,
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
                         )
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (selectedMode == "AUDIO") "START AUDIO RECORDING" else "START VIDEO RECORDING",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            text = "START RECORDING",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.5.sp
+                            ),
+                            color = Color.White
                         )
                     }
                 }
@@ -740,51 +756,86 @@ fun RecordTabScreen(
                     colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderSubtle)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "ACTIVE COVER",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextMuted,
-                                    letterSpacing = 1.sp
-                                )
-                                Text(
-                                    text = activeCover.name,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
-                            }
-                            Text(
-                                text = "Change Cover",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = AccentRed
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1.8f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.Black),
+                                .width(104.dp)
+                                .height(175.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black)
+                                .border(1.dp, Color(0xFF2E2E32), RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             CoverDisplay(
                                 cover = activeCover,
                                 isCardPreview = true
                             )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(175.dp),
+                            verticalArrangement = Arrangement.SpaceBetween,
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "COVER",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.2.sp
+                                    )
+                                )
+                                Text(
+                                    text = activeCover.name,
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${activeCover.brightnessPercent}% Brightness · ${settings.stopBehavior.displayName}",
+                                    color = TextSecondary,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Change Cover",
+                                    color = TextPrimary,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = "Change cover",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = TextMuted
+                                )
+                            }
                         }
                     }
                 }
@@ -803,13 +854,76 @@ fun RecordTabScreen(
     if (showCriticalStorageDialog) {
         AlertDialog(
             onDismissRequest = { showCriticalStorageDialog = false },
-            title = { Text("Storage Space Critical") },
-            text = { Text("Your device has critically low storage. Please free up space before recording.") },
+            title = {
+                Text(
+                    text = "Critically Low Storage",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Cannot start recording because available storage is critically low (${MainViewModel.formatFileSize(storageStats.availableBytes)} left). Please delete old recordings or free up space to record safely.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { showCriticalStorageDialog = false }) {
                     Text("OK", color = AccentRed)
                 }
             },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = SurfacePrimary
+        )
+    }
+
+    // First Recording Safety Notice Dialog
+    if (showFirstRecordingSafetyDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showFirstRecordingSafetyDialog = false
+                pendingRecordingAction = null
+            },
+            title = {
+                Text(
+                    text = "Responsible Recording Notice",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Your screen will turn dark while recording starts. You can stop recording anytime using your configured stop controls (hold screen) or through the recording notification in the status bar.\n\nPlease ensure you comply with all applicable local privacy laws and regulations regarding audio and video recording.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showFirstRecordingSafetyDialog = false
+                        viewModel.markFirstRecordingExplanationShown()
+                        pendingRecordingAction?.invoke()
+                        pendingRecordingAction = null
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                ) {
+                    Text("Continue", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showFirstRecordingSafetyDialog = false
+                        pendingRecordingAction = null
+                    }
+                ) {
+                    Text("Cancel", color = TextMuted)
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
             containerColor = SurfacePrimary
         )
     }
@@ -824,7 +938,7 @@ fun RecordTabScreen(
             onDismissRequest = { showPresetDialog = false },
             title = {
                 Text(
-                    text = if (isAudio) "Audio Presets" else "Video Presets",
+                    text = if (isAudio) "Select Audio Preset" else "Select Video Preset",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -842,9 +956,9 @@ fun RecordTabScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) SurfaceSecondary else Color.Transparent)
+                                .background(if (isSelected) Color(0xFF221111) else SurfacePrimary)
                                 .border(
-                                    width = if (isSelected) 1.dp else 0.5.dp,
+                                    width = if (isSelected) 1.5.dp else 0.5.dp,
                                     color = if (isSelected) AccentRed else BorderSubtle.copy(alpha = 0.5f),
                                     shape = RoundedCornerShape(10.dp)
                                 )
