@@ -42,15 +42,47 @@ class RecordingRepository(
         recordingDao.updateRecording(updated)
     }
 
+    suspend fun getRecordingById(id: Long): RecordingEntity? = withContext(Dispatchers.IO) {
+        recordingDao.getRecordingById(id)
+    }
+
+    suspend fun getRecordingByFilePath(filePath: String): RecordingEntity? = withContext(Dispatchers.IO) {
+        recordingDao.getRecordingByFilePath(filePath)
+    }
+
     suspend fun deleteRecording(recording: RecordingEntity) = withContext(Dispatchers.IO) {
         try {
             val file = File(recording.filePath)
             if (file.exists()) {
-                file.delete()
+                val deleted = file.delete()
+                if (!deleted) {
+                    try {
+                        java.io.FileOutputStream(file).close()
+                    } catch (_: Exception) {}
+                    file.delete()
+                }
             }
         } catch (_: Exception) {
         }
         recordingDao.deleteRecording(recording)
+        recordingDao.deleteRecordingByFilePath(recording.filePath)
+    }
+
+    suspend fun deleteRecordingByFilePath(filePath: String) = withContext(Dispatchers.IO) {
+        try {
+            val file = File(filePath)
+            if (file.exists()) {
+                val deleted = file.delete()
+                if (!deleted) {
+                    try {
+                        java.io.FileOutputStream(file).close()
+                    } catch (_: Exception) {}
+                    file.delete()
+                }
+            }
+        } catch (_: Exception) {
+        }
+        recordingDao.deleteRecordingByFilePath(filePath)
     }
 
     suspend fun deleteRecordings(recordings: List<RecordingEntity>) = withContext(Dispatchers.IO) {
@@ -58,11 +90,18 @@ class RecordingRepository(
             try {
                 val file = File(recording.filePath)
                 if (file.exists()) {
-                    file.delete()
+                    val deleted = file.delete()
+                    if (!deleted) {
+                        try {
+                            java.io.FileOutputStream(file).close()
+                        } catch (_: Exception) {}
+                        file.delete()
+                    }
                 }
             } catch (_: Exception) {
             }
             recordingDao.deleteRecording(recording)
+            recordingDao.deleteRecordingByFilePath(recording.filePath)
         }
     }
 
@@ -74,11 +113,18 @@ class RecordingRepository(
             try {
                 val file = File(recording.filePath)
                 if (file.exists()) {
-                    file.delete()
+                    val deleted = file.delete()
+                    if (!deleted) {
+                        try {
+                            java.io.FileOutputStream(file).close()
+                        } catch (_: Exception) {}
+                        file.delete()
+                    }
                 }
             } catch (_: Exception) {
             }
             recordingDao.deleteRecording(recording)
+            recordingDao.deleteRecordingByFilePath(recording.filePath)
         }
         expired.size
     }

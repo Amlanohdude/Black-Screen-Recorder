@@ -93,7 +93,6 @@ val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 val savedCustomCovers by viewModel.savedCustomCovers.collectAsStateWithLifecycle()
 val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
 val isPro = entitlements.isPro
-val canUseCustom = isPro || entitlements.customCoverCredits > 0
 val activeCover = settings.activeCover
 
 var selectedCoverToView by remember(activeCover) { mutableStateOf(activeCover) }
@@ -152,6 +151,7 @@ Text("Cancel", color = TextSecondary)
 
 if (showCustomCoversLockedDialog) {
 val activity = context as? Activity
+val coverToActivate = pendingCustomCoverToActivate ?: selectedCoverToView
 AlertDialog(
 onDismissRequest = {
 showCustomCoversLockedDialog = false
@@ -162,14 +162,14 @@ shape = RoundedCornerShape(16.dp),
 title = {
 Row(verticalAlignment = Alignment.CenterVertically) {
 Icon(
-imageVector = Icons.Default.Lock,
+imageVector = Icons.Default.PlayCircle,
 contentDescription = null,
 tint = AccentRed,
 modifier = Modifier.size(22.dp)
 )
 Spacer(modifier = Modifier.width(8.dp))
 Text(
-text = "Custom Covers are PRO",
+text = "Activate Custom Cover",
 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
 color = TextPrimary
 )
@@ -178,14 +178,9 @@ color = TextPrimary
 text = {
 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 Text(
-text = "Custom covers require PRO or 1 use pass per recording session.",
+text = "Watch a short ad to activate \"${coverToActivate.name}\", or upgrade to PRO for unlimited custom covers.",
 style = MaterialTheme.typography.bodyMedium,
 color = TextSecondary
-)
-Text(
-text = "Watch a short sponsored ad to unlock 1 use pass, or upgrade to PRO for unlimited custom covers and ad-free experience.",
-style = MaterialTheme.typography.bodySmall,
-color = TextMuted
 )
 }
 },
@@ -193,13 +188,28 @@ confirmButton = {
 Button(
 onClick = {
 showCustomCoversLockedDialog = false
+if (activity != null) {
+RewardedAdManager.showAd(
+activity = activity,
+onUserEarnedReward = {
+viewModel.setActiveCover(coverToActivate)
+android.widget.Toast.makeText(context, "\"${coverToActivate.name}\" activated!", android.widget.Toast.LENGTH_SHORT).show()
 pendingCustomCoverToActivate = null
-onNavigateToPro()
+}
+)
+}
 },
 colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
 shape = RoundedCornerShape(8.dp)
 ) {
-Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+Icon(
+imageVector = Icons.Default.PlayCircle,
+contentDescription = null,
+tint = Color.White,
+modifier = Modifier.size(16.dp)
+)
+Spacer(modifier = Modifier.width(6.dp))
+Text("Watch Ad & Activate", color = Color.White, fontWeight = FontWeight.Bold)
 }
 },
 dismissButton = {
@@ -216,31 +226,21 @@ Spacer(modifier = Modifier.width(4.dp))
 Button(
 onClick = {
 showCustomCoversLockedDialog = false
-if (activity != null) {
-RewardedAdManager.showAd(
-activity = activity,
-onUserEarnedReward = {
-EntitlementManager.addCustomCoverCredit()
-pendingCustomCoverToActivate?.let { cover ->
-viewModel.setActiveCover(cover)
-}
 pendingCustomCoverToActivate = null
-}
-)
-}
+onNavigateToPro()
 },
 colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
 shape = RoundedCornerShape(8.dp)
 ) {
 Icon(
-imageVector = Icons.Default.PlayCircle,
+imageVector = Icons.Default.WorkspacePremium,
 contentDescription = null,
-tint = AccentRed,
+tint = Color(0xFFFFD54F),
 modifier = Modifier.size(15.dp)
 )
 Spacer(modifier = Modifier.width(5.dp))
 Text(
-text = "Watch Ad (1 Pass)",
+text = "Go PRO",
 color = TextPrimary,
 fontWeight = FontWeight.SemiBold,
 fontSize = 12.sp
@@ -333,83 +333,28 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                             }
                         }
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (isPro) {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(Color(0xFFFFD54F).copy(alpha = 0.15f))
-                                        .border(0.5.dp, Color(0xFFFFD54F).copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 6.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.WorkspacePremium,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFFD54F),
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Text(
-                                        text = "PRO · Unlimited",
-                                        color = Color(0xFFFFD54F),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            } else {
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(SurfaceSecondary)
-                                        .border(0.5.dp, BorderSubtle, RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 6.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${entitlements.customCoverCredits} ${if (entitlements.customCoverCredits == 1) "Pass" else "Passes"}",
-                                        color = if (entitlements.customCoverCredits > 0) Color.White else TextMuted,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-
-                                val activity = context as? Activity
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(AccentRed.copy(alpha = 0.15f))
-                                        .border(0.5.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                                        .clickable {
-                                            if (activity != null) {
-                                                RewardedAdManager.showAd(
-                                                    activity = activity,
-                                                    onUserEarnedReward = {
-                                                        EntitlementManager.addCustomCoverCredit()
-                                                    }
-                                                )
-                                            }
-                                        }
-                                        .padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayCircle,
-                                        contentDescription = null,
-                                        tint = AccentRed,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Text(
-                                        text = "+ Get Pass",
-                                        color = AccentRed,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                        if (isPro) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color(0xFFFFD54F).copy(alpha = 0.15f))
+                                    .border(0.5.dp, Color(0xFFFFD54F).copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.WorkspacePremium,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD54F),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = "PRO · Unlimited",
+                                    color = Color(0xFFFFD54F),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -433,14 +378,15 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                         cover = customCover,
                         isActive = isCurrentActive,
                         isSelected = isCardSelected,
-                        isLocked = !canUseCustom,
                         onClick = {
                             selectedCoverToView = customCover
-                            if (!canUseCustom) {
-                                pendingCustomCoverToActivate = customCover
-                                showCustomCoversLockedDialog = true
-                            } else {
-                                viewModel.setActiveCover(customCover)
+                            if (!isCurrentActive) {
+                                if (isPro) {
+                                    viewModel.setActiveCover(customCover)
+                                } else {
+                                    pendingCustomCoverToActivate = customCover
+                                    showCustomCoversLockedDialog = true
+                                }
                             }
                         },
                         onEdit = {
@@ -516,11 +462,13 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
 
                         Button(
                             onClick = {
-                                if (selectedCoverToView.isCustom && !canUseCustom) {
-                                    pendingCustomCoverToActivate = selectedCoverToView
-                                    showCustomCoversLockedDialog = true
-                                } else {
-                                    viewModel.setActiveCover(selectedCoverToView)
+                                if (!isCurrentlyActive) {
+                                    if (selectedCoverToView.isCustom && !isPro) {
+                                        pendingCustomCoverToActivate = selectedCoverToView
+                                        showCustomCoversLockedDialog = true
+                                    } else {
+                                        viewModel.setActiveCover(selectedCoverToView)
+                                    }
                                 }
                             },
                             shape = RoundedCornerShape(8.dp),
@@ -536,7 +484,7 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                                 .testTag("use_cover_button")
                         ) {
                             Text(
-                                text = if (isCurrentlyActive) "Active \u2713" else "Use Cover",
+                                text = if (isCurrentlyActive) "Active \u2713" else if (selectedCoverToView.isCustom && !isPro) "Use (Ad)" else "Use Cover",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -623,7 +571,6 @@ private fun CustomCoverCard(
     cover: CoverConfig,
     isActive: Boolean,
     isSelected: Boolean,
-    isLocked: Boolean = false,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -655,36 +602,6 @@ private fun CustomCoverCard(
                     cover = cover,
                     isCardPreview = true
                 )
-
-                if (isLocked) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(6.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black.copy(alpha = 0.75f))
-                            .padding(horizontal = 5.dp, vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Pass required",
-                                tint = AccentRed,
-                                modifier = Modifier.size(10.dp)
-                            )
-                            Text(
-                                text = "PASS",
-                                color = Color.White,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
 
                 if (isActive) {
                     Box(

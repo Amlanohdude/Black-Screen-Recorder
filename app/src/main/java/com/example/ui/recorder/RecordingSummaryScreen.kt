@@ -25,9 +25,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +68,7 @@ import com.example.storage.SettingsPreferences
 import com.example.ui.MainViewModel
 import com.example.ui.recordings.ExportProgressDialog
 import com.example.ui.recordings.RecordingDetailDialog
+import com.example.ui.recordings.VideoThumbnailLoader
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BgDark
 import com.example.ui.theme.BorderSubtle
@@ -80,6 +84,7 @@ import java.io.File
 @Composable
 fun RecordingSummaryScreen(
     summary: RecordingSummaryInfo,
+    viewModel: MainViewModel? = null,
     onDone: () -> Unit,
     onNavigateToRecordings: () -> Unit,
     modifier: Modifier = Modifier
@@ -87,6 +92,7 @@ fun RecordingSummaryScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var showPlayerDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     val prefs = remember { SettingsPreferences(context.applicationContext) }
     val settings by prefs.settings.collectAsStateWithLifecycle()
     var isExported by remember { mutableStateOf(false) }
@@ -331,6 +337,22 @@ fun RecordingSummaryScreen(
             ) {
                 Text("Done", fontWeight = FontWeight.Bold, color = TextPrimary)
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { showDeleteConfirmDialog = true },
+                modifier = Modifier.fillMaxWidth().testTag("summary_delete_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = AccentRed.copy(alpha = 0.85f),
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Delete Recording", color = AccentRed.copy(alpha = 0.85f), fontSize = 13.sp)
+            }
         }
 
         exportProgressState?.let { progress ->
@@ -356,8 +378,78 @@ fun RecordingSummaryScreen(
                 recording = dummyEntity,
                 onDismiss = { showPlayerDialog = false },
                 onShare = { shareRecording() },
-                onRename = {},
-                onDelete = {}
+                onRename = { newTitle ->
+                    viewModel?.let { vm ->
+                        coroutineScope.launch {
+                            val entity = vm.repository.getRecordingByFilePath(summary.filePath)
+                            if (entity != null) {
+                                vm.renameRecording(entity, newTitle)
+                            }
+                        }
+                    }
+                },
+                onDelete = {
+                    showPlayerDialog = false
+                    try {
+                        val file = File(summary.filePath)
+                        if (file.exists()) {
+                            file.delete()
+                        }
+                    } catch (_: Exception) {}
+                    viewModel?.deleteRecordingByFilePath(summary.filePath)
+                    VideoThumbnailLoader.remove(summary.filePath)
+                    Toast.makeText(context, "Recording deleted", Toast.LENGTH_SHORT).show()
+                    onDone()
+                }
+            )
+        }
+
+        if (showDeleteConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmDialog = false },
+                containerColor = SurfacePrimary,
+                shape = RoundedCornerShape(14.dp),
+                title = {
+                    Text(
+                        text = "Delete Recording",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete this recording? It will be permanently removed.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDeleteConfirmDialog = false
+                            try {
+                                val file = File(summary.filePath)
+                                if (file.exists()) {
+                                    file.delete()
+                                }
+                            } catch (_: Exception) {}
+                            viewModel?.deleteRecordingByFilePath(summary.filePath)
+                            VideoThumbnailLoader.remove(summary.filePath)
+                            Toast.makeText(context, "Recording deleted", Toast.LENGTH_SHORT).show()
+                            onDone()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.testTag("confirm_summary_delete_button")
+                    ) {
+                        Text("Delete", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
             )
         }
     }

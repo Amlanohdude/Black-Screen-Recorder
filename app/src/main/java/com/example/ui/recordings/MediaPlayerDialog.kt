@@ -5,6 +5,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.widget.VideoView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Mic
@@ -57,8 +59,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -198,18 +202,34 @@ fun RecordingDetailDialog(
                         }
                     }
 
-                    IconButton(
-                        onClick = {
-                            mediaPlayer?.stop()
-                            onDismiss()
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel",
-                            tint = TextSecondary
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { showDeleteConfirmDialog = true },
+                            modifier = Modifier
+                                .size(32.dp)
+                                .testTag("detail_top_delete_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = "Delete Recording",
+                                tint = AccentRed,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        IconButton(
+                            onClick = {
+                                mediaPlayer?.stop()
+                                onDismiss()
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cancel",
+                                tint = TextSecondary
+                            )
+                        }
                     }
                 }
 
@@ -349,80 +369,112 @@ fun RecordingDetailDialog(
 
                 // Actions: Share, Export, Rename, Delete
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Share
-                    TextButton(
-                        onClick = onShare,
-                        modifier = Modifier.testTag("detail_share_button")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onShare)
+                            .padding(vertical = 8.dp)
+                            .testTag("detail_share_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = null,
                             tint = TextSecondary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stringResource(R.string.action_share),
-                            color = TextSecondary
+                            color = TextSecondary,
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                     }
 
                     // Export
                     if (onExport != null) {
-                        TextButton(
-                            onClick = onExport,
-                            modifier = Modifier.testTag("detail_export_button")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = onExport)
+                                .padding(vertical = 8.dp)
+                                .testTag("detail_export_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FileDownload,
                                 contentDescription = null,
                                 tint = TextSecondary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Export",
-                                color = TextSecondary
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1
                             )
                         }
                     }
 
                     // Rename
-                    TextButton(
-                        onClick = { showRenameDialog = true },
-                        modifier = Modifier.testTag("detail_rename_button")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showRenameDialog = true }
+                            .padding(vertical = 8.dp)
+                            .testTag("detail_rename_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
                             tint = TextSecondary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stringResource(R.string.action_rename),
-                            color = TextSecondary
+                            color = TextSecondary,
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                     }
 
                     // Delete
-                    TextButton(
-                        onClick = { showDeleteConfirmDialog = true },
-                        modifier = Modifier.testTag("detail_delete_button")
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showDeleteConfirmDialog = true }
+                            .padding(vertical = 8.dp)
+                            .testTag("detail_delete_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = null,
                             tint = AccentRed,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stringResource(R.string.action_delete),
-                            color = AccentRed
+                            color = AccentRed,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                     }
                 }
@@ -522,6 +574,7 @@ fun RecordingDetailDialog(
                             mediaPlayer?.release()
                             mediaPlayer = null
                             videoViewRef?.stopPlayback()
+                            videoViewRef?.setVideoURI(null)
                         } catch (_: Exception) {}
                         onDelete()
                         onDismiss()

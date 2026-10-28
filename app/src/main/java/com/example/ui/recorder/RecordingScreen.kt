@@ -112,7 +112,6 @@ fun RecordingScreen(
     val status by viewModel.recordingStatus.collectAsStateWithLifecycle()
     val settings by viewModel.userSettings.collectAsStateWithLifecycle()
     val rawCover = settings.activeCover
-    var hasConsumedCoverCredit by rememberSaveable { mutableStateOf(false) }
     var hasConsumedAutoStopCredit by rememberSaveable { mutableStateOf(false) }
 
     // Stop protection state
@@ -177,29 +176,7 @@ fun RecordingScreen(
         }
     }
 
-    // Auto-consume custom cover single-use pass when recording starts
-    val activeCover = remember(rawCover) {
-        if (rawCover.isCustom && !EntitlementManager.canUseCustomCovers()) {
-            CoverConfig.PURE_BLACK_PRESET
-        } else {
-            rawCover
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (rawCover.isCustom) {
-            if (!EntitlementManager.canUseCustomCovers()) {
-                android.widget.Toast.makeText(
-                    context,
-                    "Custom cover requires a pass or PRO. Reverted to Pure Black.",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-            } else if (!hasConsumedCoverCredit && !EntitlementManager.isPro()) {
-                EntitlementManager.consumeCustomCoverCredit()
-                hasConsumedCoverCredit = true
-            }
-        }
-    }
+    val activeCover = rawCover
 
     val isAutoStopEffective = remember(settings.autoStopSeconds) {
         settings.autoStopSeconds > 0 && EntitlementManager.canUseAutoStop()

@@ -44,9 +44,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.Videocam
+import com.example.covers.CoverConfig
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -58,6 +60,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.SurfacePrimary
+import com.example.ui.theme.SurfaceSecondary
 import com.example.ui.theme.TextPrimary
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
@@ -227,6 +230,8 @@ var isProScreenVisible by remember { mutableStateOf(false) }
 val recordingStatus by viewModel.recordingStatus.collectAsStateWithLifecycle()
 val coverToCustomize by viewModel.coverToCustomize.collectAsStateWithLifecycle()
 var showExitConfirmDialog by remember { mutableStateOf(false) }
+var showActivateCoverDialog by remember { mutableStateOf(false) }
+var pendingCustomCoverToActivate by remember { mutableStateOf<CoverConfig?>(null) }
 
 // Navigation Back Hierarchy: Return to RECORD tab when on other tabs
 BackHandler(
@@ -275,6 +280,7 @@ activeRecordingType = null
 } else if (completedSummary != null) {
 RecordingSummaryScreen(
 summary = completedSummary!!,
+viewModel = viewModel,
 onDone = {
 completedSummary = null
 },
@@ -289,26 +295,26 @@ initialCover = coverToCustomize!!,
 onDismiss = { viewModel.closeCoverDesigner() },
 onSaveOnly = { newCover ->
 viewModel.saveCustomCover(newCover)
+android.widget.Toast.makeText(context, "Cover saved to My Custom Covers!", android.widget.Toast.LENGTH_SHORT).show()
 viewModel.closeCoverDesigner()
 },
 onSaveAndApply = { newCover ->
 viewModel.saveCustomCover(newCover)
+if (EntitlementManager.isPro()) {
 viewModel.setActiveCover(newCover)
-if (!EntitlementManager.canUseCustomCovers()) {
-    android.widget.Toast.makeText(
-        context,
-        "Custom cover saved! A pass or PRO is needed to record with it.",
-        android.widget.Toast.LENGTH_SHORT
-    ).show()
-}
+android.widget.Toast.makeText(context, "Cover saved and applied!", android.widget.Toast.LENGTH_SHORT).show()
 viewModel.closeCoverDesigner()
+} else {
+pendingCustomCoverToActivate = newCover
+showActivateCoverDialog = true
+}
 },
-onNavigateToPro = {
-viewModel.closeCoverDesigner()
-isProScreenVisible = true
-}
-)
-} else if (isProScreenVisible) {
+                    onNavigateToPro = {
+                        viewModel.closeCoverDesigner()
+                        isProScreenVisible = true
+                    }
+                )
+            } else if (isProScreenVisible) {
 ProScreen(
 onBack = { isProScreenVisible = false },
 onNavigateToCovers = {
@@ -378,6 +384,99 @@ onNavigateToPro = { isProScreenVisible = true }
 }
 }
 }
+
+        if (showActivateCoverDialog && pendingCustomCoverToActivate != null) {
+            val cover = pendingCustomCoverToActivate!!
+            val activity = context as? Activity
+            AlertDialog(
+                onDismissRequest = {
+                    showActivateCoverDialog = false
+                    pendingCustomCoverToActivate = null
+                    viewModel.closeCoverDesigner()
+                },
+                containerColor = SurfacePrimary,
+                shape = RoundedCornerShape(16.dp),
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircle,
+                            contentDescription = null,
+                            tint = AccentRed,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Activate Custom Cover",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = TextPrimary
+                        )
+                    }
+                },
+                text = {
+                    Text(
+                        text = "Your cover \"${cover.name}\" is saved! Watch a short ad to make it your active cover now, or upgrade to PRO.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showActivateCoverDialog = false
+                            viewModel.closeCoverDesigner()
+                            if (activity != null) {
+                                RewardedAdManager.showAd(
+                                    activity = activity,
+                                    onUserEarnedReward = {
+                                        viewModel.setActiveCover(cover)
+                                        android.widget.Toast.makeText(context, "\"${cover.name}\" activated!", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                            pendingCustomCoverToActivate = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Watch Ad & Activate", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = {
+                                showActivateCoverDialog = false
+                                pendingCustomCoverToActivate = null
+                                viewModel.closeCoverDesigner()
+                                android.widget.Toast.makeText(context, "Saved to My Custom Covers!", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Save Only", color = TextSecondary)
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Button(
+                            onClick = {
+                                showActivateCoverDialog = false
+                                pendingCustomCoverToActivate = null
+                                viewModel.closeCoverDesigner()
+                                isProScreenVisible = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Go PRO", color = TextPrimary, fontSize = 12.sp)
+                        }
+                    }
+                }
+            )
+        }
 
     if (showExitConfirmDialog) {
         AlertDialog(

@@ -68,9 +68,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isRecordingsUnlocked: StateFlow<Boolean> = _isRecordingsUnlocked.asStateFlow()
 
     init {
-        runAutoDeleteCheck()
-        reconcileOrphanFiles()
-        refreshStorageStats()
+        viewModelScope.launch {
+            repository.reconcileOrphanFiles()
+            val settings = userSettings.value
+            if (settings.autoDeleteEnabled && settings.autoDeleteDays > 0) {
+                repository.purgeRecordingsOlderThan(settings.autoDeleteDays)
+            }
+            refreshStorageStats()
+        }
         viewModelScope.launch {
             recordings.collect {
                 refreshStorageStats()
@@ -154,6 +159,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteRecording(recording: RecordingEntity) {
         viewModelScope.launch {
             repository.deleteRecording(recording)
+        }
+    }
+
+    fun deleteRecordingByFilePath(filePath: String) {
+        viewModelScope.launch {
+            repository.deleteRecordingByFilePath(filePath)
         }
     }
 
