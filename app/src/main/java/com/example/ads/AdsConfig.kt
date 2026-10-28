@@ -1,14 +1,17 @@
 package com.example.ads
 
+import com.example.BuildConfig
+import com.example.storage.EntitlementManager
+
 object AdsConfig {
     const val TEST_APP_ID = "ca-app-pub-3940256099942544~3347511713"
-    const val TEST_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
+    const val TEST_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/1044960115"
     const val TEST_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
     const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
 
-    private const val PROD_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
-    private const val PROD_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
-    private const val PROD_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
+    private const val PROD_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
+    private const val PROD_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ"
+    private const val PROD_REWARDED_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW"
 
     const val showInCovers: Boolean = true
     const val coversFrequency: Int = 4
@@ -26,12 +29,16 @@ object AdsConfig {
     const val showInActiveRecording: Boolean = false
     const val showOnLockScreen: Boolean = false
 
-    fun isAdsEnabled(): Boolean = true
-    fun isTestMode(): Boolean = true
+    fun isAdsEnabled(): Boolean = !EntitlementManager.isPro()
+    fun isTestMode(): Boolean = BuildConfig.DEBUG
 
-    fun getNativeAdUnitId(preferVideo: Boolean = false): String {
-        return if (preferVideo) TEST_NATIVE_VIDEO_AD_UNIT_ID else TEST_NATIVE_STATIC_AD_UNIT_ID
+    fun getNativeAdUnitId(preferVideo: Boolean = true): String {
+        return if (isTestMode()) {
+            if (preferVideo) TEST_NATIVE_VIDEO_AD_UNIT_ID else TEST_NATIVE_STATIC_AD_UNIT_ID
+        } else {
+            if (preferVideo) PROD_NATIVE_VIDEO_AD_UNIT_ID else PROD_NATIVE_STATIC_AD_UNIT_ID
+        }
     }
 
-    fun getRewardedAdUnitId(): String = TEST_REWARDED_AD_UNIT_ID
+    fun getRewardedAdUnitId(): String = if (isTestMode()) TEST_REWARDED_AD_UNIT_ID else PROD_REWARDED_AD_UNIT_ID
 }

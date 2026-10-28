@@ -1,6 +1,8 @@
 package com.example.ui.covers
 
 import com.example.ui.theme.*
+import com.example.ads.AdScreen
+import com.example.ads.NativeAdCard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -175,22 +177,30 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
 )
 }
 
-items(builtInPresets, key = { "preset_${it.presetId.name}" }) { preset ->
-val isCurrentActive = (activeCover.id == preset.id || (activeCover.presetId == preset.presetId && activeCover.presetId != CoverPresetId.CUSTOM))
-val isCardSelected = (selectedCoverToView.id == preset.id)
+                items(builtInPresets, key = { "preset_${it.presetId.name}" }) { preset ->
+                    val isCurrentActive = (activeCover.id == preset.id || (activeCover.presetId == preset.presetId && activeCover.presetId != CoverPresetId.CUSTOM))
+                    val isCardSelected = (selectedCoverToView.id == preset.id)
 
-CoverCard(
-cover = preset,
-isActive = isCurrentActive,
-isSelected = isCardSelected,
-onClick = {
-selectedCoverToView = preset
-viewModel.setActiveCover(preset)
-}
-)
-}
+                    CoverCard(
+                        cover = preset,
+                        isActive = isCurrentActive,
+                        isSelected = isCardSelected,
+                        onClick = {
+                            selectedCoverToView = preset
+                            viewModel.setActiveCover(preset)
+                        }
+                    )
+                }
 
-// Section 2: MY CUSTOM COVERS
+                // Native Ad Card
+                item(key = "native_ad_covers", span = { GridItemSpan(2) }) {
+                    NativeAdCard(
+                        screen = AdScreen.COVERS,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                // Section 2: MY CUSTOM COVERS
 item(span = { GridItemSpan(2) }) {
 Row(
 modifier = Modifier

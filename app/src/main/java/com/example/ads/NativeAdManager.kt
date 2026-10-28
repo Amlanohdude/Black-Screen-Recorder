@@ -6,6 +6,7 @@ import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.VideoOptions
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -117,34 +118,45 @@ object NativeAdManager {
         }
         if (currentAd != null) return
 
+        initialize(context)
         setLoading(screen, true)
         Log.d(TAG, "Loading native ad for $screen (preferVideo=$preferVideo)")
 
         val adUnitId = AdsConfig.getNativeAdUnitId(preferVideo)
-        val adLoader = AdLoader.Builder(context, adUnitId)
-            .forNativeAd { nativeAd ->
-                when (screen) {
-                    AdScreen.COVERS -> _coversAd.value = nativeAd
-                    AdScreen.RECORDINGS -> _recordingsAd.value = nativeAd
-                    AdScreen.RECORDINGS_AUDIO -> _recordingsAudioAd.value = nativeAd
-                    AdScreen.SETTINGS -> _settingsAd.value = nativeAd
-                    AdScreen.PLAYBACK -> _playbackAd.value = nativeAd
-                }
-                setLoading(screen, false)
-            }
-            .withAdListener(object : AdListener() {
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    Log.e(TAG, "Failed to load native ad for $screen: ${loadAdError.message}")
-                    setLoading(screen, false)
-                }
-            })
-            .withNativeAdOptions(
-                NativeAdOptions.Builder()
-                    .build()
-            )
+        val videoOptions = VideoOptions.Builder()
+            .setStartMuted(true)
+            .build()
+        val nativeAdOptions = NativeAdOptions.Builder()
+            .setMediaAspectRatio(NativeAdOptions.NATIVE_MEDIA_ASPECT_RATIO_ANY)
+            .setVideoOptions(videoOptions)
             .build()
 
-        adLoader.loadAd(AdRequest.Builder().build())
+        try {
+            val adLoader = AdLoader.Builder(context.applicationContext, adUnitId)
+                .forNativeAd { nativeAd ->
+                    when (screen) {
+                        AdScreen.COVERS -> _coversAd.value = nativeAd
+                        AdScreen.RECORDINGS -> _recordingsAd.value = nativeAd
+                        AdScreen.RECORDINGS_AUDIO -> _recordingsAudioAd.value = nativeAd
+                        AdScreen.SETTINGS -> _settingsAd.value = nativeAd
+                        AdScreen.PLAYBACK -> _playbackAd.value = nativeAd
+                    }
+                    setLoading(screen, false)
+                }
+                .withAdListener(object : AdListener() {
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        Log.w(TAG, "Failed to load native ad for $screen: [${loadAdError.code}] ${loadAdError.message}")
+                        setLoading(screen, false)
+                    }
+                })
+                .withNativeAdOptions(nativeAdOptions)
+                .build()
+
+            adLoader.loadAd(AdRequest.Builder().build())
+        } catch (e: Exception) {
+            Log.w(TAG, "Error initiating ad load for $screen: ${e.message}")
+            setLoading(screen, false)
+        }
     }
 
     fun destroyAd(screen: AdScreen) {
