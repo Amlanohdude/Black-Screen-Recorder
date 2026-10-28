@@ -586,7 +586,7 @@ fun SettingsScreen(
                     // Version Row
                     SettingsInfoRow(
                         title = "Version",
-                        value = "1.0.0",
+                        value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                         modifier = Modifier
                             .testTag("settings_version_row")
                             .clickable {
