@@ -328,28 +328,34 @@ class RecordingService : LifecycleService() {
             audioRecorder = null
 
             if (audioFile != null && audioFile.exists() && audioFile.length() > 0) {
-                serviceScope.launch {
-                    val db = AppDatabase.getInstance(applicationContext)
-                    val repo = RecordingRepository(db.recordingDao(), applicationContext)
+                serviceScope.launch(Dispatchers.IO) {
                     val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
-                    repo.insertRecording(
-                        title = "Audio $title",
-                        file = audioFile,
-                        durationSeconds = maxOf(1L, duration),
-                        type = "AUDIO"
-                    )
+                    try {
+                        val db = AppDatabase.getInstance(applicationContext)
+                        val repo = RecordingRepository(db.recordingDao(), applicationContext)
+                        repo.insertRecording(
+                            title = "Audio $title",
+                            file = audioFile,
+                            durationSeconds = maxOf(1L, duration),
+                            type = "AUDIO"
+                        )
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error saving audio to db", e)
+                    }
 
-                    _recordingStatus.value = RecordingStatus(
-                        stage = RecordingStage.IDLE,
-                        isRecording = false,
-                        type = null,
-                        durationSeconds = 0L,
-                        lastSavedFilePath = audioFile.absolutePath,
-                        lastSavedTitle = "Audio $title",
-                        lastSavedDurationSeconds = duration,
-                        lastSavedSizeBytes = audioFile.length()
-                    )
-                    cleanupAndStop()
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        _recordingStatus.value = RecordingStatus(
+                            stage = RecordingStage.IDLE,
+                            isRecording = false,
+                            type = null,
+                            durationSeconds = 0L,
+                            lastSavedFilePath = audioFile.absolutePath,
+                            lastSavedTitle = "Audio $title",
+                            lastSavedDurationSeconds = duration,
+                            lastSavedSizeBytes = audioFile.length()
+                        )
+                        cleanupAndStop()
+                    }
                 }
             } else {
                 _recordingStatus.value = RecordingStatus(
@@ -385,28 +391,34 @@ class RecordingService : LifecycleService() {
         val duration = maxOf(1L, _recordingStatus.value.durationSeconds)
 
         if (success && file != null && file.exists() && file.length() > 0) {
-            serviceScope.launch {
-                val db = AppDatabase.getInstance(applicationContext)
-                val repo = RecordingRepository(db.recordingDao(), applicationContext)
+            serviceScope.launch(Dispatchers.IO) {
                 val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
-                repo.insertRecording(
-                    title = "Video $title",
-                    file = file,
-                    durationSeconds = duration,
-                    type = "VIDEO"
-                )
+                try {
+                    val db = AppDatabase.getInstance(applicationContext)
+                    val repo = RecordingRepository(db.recordingDao(), applicationContext)
+                    repo.insertRecording(
+                        title = "Video $title",
+                        file = file,
+                        durationSeconds = duration,
+                        type = "VIDEO"
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saving video to db", e)
+                }
 
-                _recordingStatus.value = RecordingStatus(
-                    stage = RecordingStage.IDLE,
-                    isRecording = false,
-                    type = null,
-                    durationSeconds = 0L,
-                    lastSavedFilePath = file.absolutePath,
-                    lastSavedTitle = "Video $title",
-                    lastSavedDurationSeconds = duration,
-                    lastSavedSizeBytes = file.length()
-                )
-                cleanupAndStop()
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    _recordingStatus.value = RecordingStatus(
+                        stage = RecordingStage.IDLE,
+                        isRecording = false,
+                        type = null,
+                        durationSeconds = 0L,
+                        lastSavedFilePath = file.absolutePath,
+                        lastSavedTitle = "Video $title",
+                        lastSavedDurationSeconds = duration,
+                        lastSavedSizeBytes = file.length()
+                    )
+                    cleanupAndStop()
+                }
             }
             return
         }
@@ -427,28 +439,34 @@ class RecordingService : LifecycleService() {
         watchdogJob = null
         val file = File(path)
         if (file.exists() && file.length() > 0) {
-            serviceScope.launch {
-                val db = AppDatabase.getInstance(applicationContext)
-                val repo = RecordingRepository(db.recordingDao(), applicationContext)
+            serviceScope.launch(Dispatchers.IO) {
                 val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
-                repo.insertRecording(
-                    title = "Video $title",
-                    file = file,
-                    durationSeconds = maxOf(1L, duration),
-                    type = "VIDEO"
-                )
+                try {
+                    val db = AppDatabase.getInstance(applicationContext)
+                    val repo = RecordingRepository(db.recordingDao(), applicationContext)
+                    repo.insertRecording(
+                        title = "Video $title",
+                        file = file,
+                        durationSeconds = maxOf(1L, duration),
+                        type = "VIDEO"
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error saving completed video to db", e)
+                }
 
-                _recordingStatus.value = RecordingStatus(
-                    stage = RecordingStage.IDLE,
-                    isRecording = false,
-                    type = null,
-                    durationSeconds = 0L,
-                    lastSavedFilePath = file.absolutePath,
-                    lastSavedTitle = "Video $title",
-                    lastSavedDurationSeconds = duration,
-                    lastSavedSizeBytes = file.length()
-                )
-                cleanupAndStop()
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    _recordingStatus.value = RecordingStatus(
+                        stage = RecordingStage.IDLE,
+                        isRecording = false,
+                        type = null,
+                        durationSeconds = 0L,
+                        lastSavedFilePath = file.absolutePath,
+                        lastSavedTitle = "Video $title",
+                        lastSavedDurationSeconds = duration,
+                        lastSavedSizeBytes = file.length()
+                    )
+                    cleanupAndStop()
+                }
             }
         } else {
             _recordingStatus.value = RecordingStatus(
@@ -532,6 +550,15 @@ class RecordingService : LifecycleService() {
             .build()
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        // If background recording is turned off, swiping away the task immediately stops and saves recording cleanly
+        if (!prefs.backgroundRecordingEnabled && _recordingStatus.value.isRecording) {
+            stopActiveRecording()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         watchdogJob?.cancel()
@@ -540,6 +567,33 @@ class RecordingService : LifecycleService() {
         timerJob = null
         amplitudeJob?.cancel()
         amplitudeJob = null
+
+        // Emergency flush: if service is killed unexpectedly by OS while recording, finalize and flush
+        if (_recordingStatus.value.isRecording) {
+            try {
+                videoManager?.stopRecording()
+                val audioFile = audioRecorder?.stop()
+                if (audioFile != null && audioFile.exists() && audioFile.length() > 0) {
+                    kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                        try {
+                            val db = AppDatabase.getInstance(applicationContext)
+                            val title = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date())
+                            db.recordingDao().insertRecording(
+                                com.example.storage.RecordingEntity(
+                                    title = "Audio $title",
+                                    filePath = audioFile.absolutePath,
+                                    durationSeconds = maxOf(1L, _recordingStatus.value.durationSeconds),
+                                    fileSizeBytes = audioFile.length(),
+                                    timestamp = System.currentTimeMillis(),
+                                    type = "AUDIO"
+                                )
+                            )
+                        } catch (_: Exception) {}
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
         videoManager?.release()
         videoManager = null
         activeVideoManager = null

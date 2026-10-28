@@ -69,6 +69,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         runAutoDeleteCheck()
+        reconcileOrphanFiles()
         refreshStorageStats()
         viewModelScope.launch {
             recordings.collect {
@@ -81,6 +82,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     refreshStorageStats()
                 }
             }
+        }
+    }
+
+    fun reconcileOrphanFiles() {
+        viewModelScope.launch {
+            repository.reconcileOrphanFiles()
         }
     }
 

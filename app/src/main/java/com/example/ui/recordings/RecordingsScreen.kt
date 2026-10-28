@@ -159,6 +159,10 @@ return
     var showExportAdDialog by remember { mutableStateOf(false) }
     var pendingExportAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    LaunchedEffect(Unit) {
+        viewModel.reconcileOrphanFiles()
+    }
+
     val totalCount = recordings.size
     val videoCount = remember(recordings) { recordings.count { it.type == "VIDEO" } }
     val audioCount = remember(recordings) { recordings.count { it.type == "AUDIO" } }

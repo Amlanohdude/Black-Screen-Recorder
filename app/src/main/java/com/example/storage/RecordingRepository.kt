@@ -2,12 +2,17 @@ package com.example.storage
 
 import android.content.Context
 import android.content.Intent
+import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class RecordingRepository(
     private val recordingDao: RecordingDao,
@@ -76,6 +81,71 @@ class RecordingRepository(
             recordingDao.deleteRecording(recording)
         }
         expired.size
+    }
+
+    /**
+     * Automatic reconciliation & crash recovery:
+     * Scans the internal recordings directory to discover any audio/video files that exist on disk
+     * but are not registered in the Room database (e.g. if the process was terminated, device restarted,
+     * or battery died before DB insertion). Safely indexes them so recordings NEVER vanish.
+     */
+    suspend fun reconcileOrphanFiles(): Int = withContext(Dispatchers.IO) {
+        var recoveredCount = 0
+        try {
+            val dir = File(context.filesDir, "recordings")
+            if (!dir.exists() || !dir.isDirectory) return@withContext 0
+            val files = dir.listFiles() ?: return@withContext 0
+            for (file in files) {
+                if (!file.isFile) continue
+                if (file.length() == 0L) {
+                    // Safe cleanup of abandoned 0-byte corrupt files
+                    file.delete()
+                    continue
+                }
+                val isMp4 = file.name.endsWith(".mp4", ignoreCase = true)
+                val isM4a = file.name.endsWith(".m4a", ignoreCase = true)
+                if (!isMp4 && !isM4a) continue
+
+                val count = recordingDao.hasRecordingWithPath(file.absolutePath)
+                if (count == 0) {
+                    val durationSeconds = extractDurationSeconds(file)
+                    val isVideo = isMp4
+                    val type = if (isVideo) "VIDEO" else "AUDIO"
+                    val dateFormatted = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault()).format(Date(file.lastModified()))
+                    val title = (if (isVideo) "Video " else "Audio ") + dateFormatted
+                    val entity = RecordingEntity(
+                        title = title,
+                        filePath = file.absolutePath,
+                        durationSeconds = maxOf(1L, durationSeconds),
+                        fileSizeBytes = file.length(),
+                        timestamp = file.lastModified(),
+                        type = type
+                    )
+                    recordingDao.insertRecording(entity)
+                    recoveredCount++
+                    Log.i("RecordingRepository", "Successfully recovered orphan recording: ${file.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("RecordingRepository", "Error reconciling orphan files", e)
+        }
+        recoveredCount
+    }
+
+    private fun extractDurationSeconds(file: File): Long {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(file.absolutePath)
+            val durStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+            val durMs = durStr?.toLongOrNull() ?: 0L
+            maxOf(1L, durMs / 1000L)
+        } catch (_: Exception) {
+            1L
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {}
+        }
     }
 
     suspend fun exportRecordingToCustomFolder(

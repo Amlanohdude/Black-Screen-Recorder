@@ -275,6 +275,15 @@ fun RecordingScreen(
         }
     }
 
+    // Universal error observer (startup error, runtime error, or finalization error)
+    LaunchedEffect(status.stage, status.error) {
+        if (status.stage == RecordingStage.ERROR) {
+            isFinalizing = false
+            isQuickExitRequested = false
+            finalizationErrorMessage = status.error ?: "Recording encountered an unexpected error."
+        }
+    }
+
     // Quick exit safe completion observer
     LaunchedEffect(isFinalizing, isQuickExitRequested, status.stage, status.isRecording, status.lastSavedFilePath) {
         if (isFinalizing && isQuickExitRequested) {
@@ -864,7 +873,10 @@ fun RecordingScreen(
 
         if (finalizationErrorMessage != null) {
             AlertDialog(
-                onDismissRequest = { finalizationErrorMessage = null },
+                onDismissRequest = {
+                    finalizationErrorMessage = null
+                    onRecordingFinished(null)
+                },
                 title = {
                     Text("Recording Error", color = AccentRed, fontWeight = FontWeight.Bold)
                 },
@@ -873,7 +885,10 @@ fun RecordingScreen(
                 },
                 confirmButton = {
                     Button(
-                        onClick = { finalizationErrorMessage = null },
+                        onClick = {
+                            finalizationErrorMessage = null
+                            onRecordingFinished(null)
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                     ) {
                         Text("OK")

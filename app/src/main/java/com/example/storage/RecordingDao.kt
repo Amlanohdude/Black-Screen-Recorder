@@ -28,6 +28,9 @@ interface RecordingDao {
     @Query("DELETE FROM recordings WHERE id = :id")
     suspend fun deleteRecordingById(id: Long)
 
+    @Query("SELECT COUNT(*) FROM recordings WHERE filePath = :filePath")
+    suspend fun hasRecordingWithPath(filePath: String): Int
+
     @Query("SELECT * FROM recordings WHERE timestamp < :cutoffTimestamp")
     suspend fun getRecordingsOlderThan(cutoffTimestamp: Long): List<RecordingEntity>
 }
