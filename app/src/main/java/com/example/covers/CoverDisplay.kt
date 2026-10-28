@@ -5,6 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.BatteryManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -67,8 +71,10 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 @Composable
 fun CoverDisplay(
@@ -1032,6 +1038,150 @@ private fun DashcamHudCoverPreview(
     }
 }
 
+private data class DashcamSensorState(
+    val heading: Int = 45,
+    val speedKmh: Int = 0,
+    val pitch: Int = 0,
+    val roll: Int = 0,
+    val gForce: Float = 1.0f
+)
+
+@Composable
+private fun rememberDashcamSensorState(): DashcamSensorState {
+    val context = LocalContext.current
+    var sensorState by remember { mutableStateOf(DashcamSensorState()) }
+
+    DisposableEffect(context) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        if (sensorManager == null) {
+            return@DisposableEffect onDispose {}
+        }
+
+        val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val linearAccelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
+
+        var lastHeading = 45
+        var lastPitch = 0
+        var lastRoll = 0
+        var smoothedG = 1.0f
+        var currentSpeed = 0f
+        var lastTimestamp = System.currentTimeMillis()
+
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                when (event.sensor.type) {
+                    Sensor.TYPE_ROTATION_VECTOR -> {
+                        val rotationMatrix = FloatArray(9)
+                        SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                        val orientation = FloatArray(3)
+                        SensorManager.getOrientation(rotationMatrix, orientation)
+
+                        var azimuthDeg = Math.toDegrees(orientation[0].toDouble()).toFloat()
+                        if (azimuthDeg < 0) azimuthDeg += 360f
+
+                        val pitchDeg = Math.toDegrees(orientation[1].toDouble()).toInt()
+                        val rollDeg = Math.toDegrees(orientation[2].toDouble()).toInt()
+
+                        lastHeading = azimuthDeg.toInt().coerceIn(0, 359)
+                        lastPitch = pitchDeg.coerceIn(-90, 90)
+                        lastRoll = rollDeg.coerceIn(-180, 180)
+
+                        sensorState = sensorState.copy(
+                            heading = lastHeading,
+                            pitch = lastPitch,
+                            roll = lastRoll
+                        )
+                    }
+                    Sensor.TYPE_ACCELEROMETER -> {
+                        val ax = event.values[0]
+                        val ay = event.values[1]
+                        val az = event.values[2]
+                        val totalAcc = sqrt(ax * ax + ay * ay + az * az)
+                        val rawG = totalAcc / SensorManager.GRAVITY_EARTH
+                        smoothedG = smoothedG * 0.82f + rawG * 0.18f
+
+                        if (linearAccelSensor == null) {
+                            val now = System.currentTimeMillis()
+                            val dt = ((now - lastTimestamp).coerceIn(10L, 500L)) / 1000f
+                            lastTimestamp = now
+
+                            val linMag = abs(rawG - 1.0f) * 9.80665f
+                            if (linMag > 0.35f) {
+                                currentSpeed = (currentSpeed + linMag * dt * 2.8f).coerceIn(0f, 140f)
+                            } else {
+                                currentSpeed = (currentSpeed - 4.5f * dt).coerceAtLeast(0f)
+                            }
+
+                            sensorState = sensorState.copy(
+                                gForce = smoothedG,
+                                speedKmh = currentSpeed.toInt()
+                            )
+                        } else {
+                            sensorState = sensorState.copy(gForce = smoothedG)
+                        }
+                    }
+                    Sensor.TYPE_LINEAR_ACCELERATION -> {
+                        val lx = event.values[0]
+                        val ly = event.values[1]
+                        val lz = event.values[2]
+                        val linMag = sqrt(lx * lx + ly * ly + lz * lz)
+
+                        val now = System.currentTimeMillis()
+                        val dt = ((now - lastTimestamp).coerceIn(10L, 500L)) / 1000f
+                        lastTimestamp = now
+
+                        if (linMag > 0.35f) {
+                            currentSpeed = (currentSpeed + linMag * dt * 3.5f).coerceIn(0f, 140f)
+                        } else {
+                            currentSpeed = (currentSpeed - 4.0f * dt).coerceAtLeast(0f)
+                        }
+
+                        sensorState = sensorState.copy(
+                            speedKmh = currentSpeed.toInt()
+                        )
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+
+        rotationSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+        accelSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+        linearAccelSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+
+        onDispose {
+            sensorManager.unregisterListener(listener)
+        }
+    }
+
+    return sensorState
+}
+
+private fun formatCompassTape(heading: Int): String {
+    val cardinal = getShortCardinal(heading)
+    val leftAngle = (heading - 45 + 360) % 360
+    val rightAngle = (heading + 45) % 360
+    val leftLabel = getShortCardinal(leftAngle)
+    val rightLabel = getShortCardinal(rightAngle)
+    return String.format(Locale.US, "%s · · · ▲ %s %03d° · · · %s", leftLabel, cardinal, heading, rightLabel)
+}
+
+private fun getShortCardinal(angle: Int): String {
+    return when (angle) {
+        in 338..360, in 0..22 -> "N"
+        in 23..67 -> "NE"
+        in 68..112 -> "E"
+        in 113..157 -> "SE"
+        in 158..202 -> "S"
+        in 203..247 -> "SW"
+        in 248..292 -> "W"
+        in 293..337 -> "NW"
+        else -> "N"
+    }
+}
+
 @Composable
 private fun DashcamHudCoverFullScreen(
     isRecording: Boolean,
@@ -1040,6 +1190,8 @@ private fun DashcamHudCoverFullScreen(
     driftYPx: Float,
     modifier: Modifier = Modifier
 ) {
+    val sensorState = rememberDashcamSensorState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -1058,7 +1210,7 @@ private fun DashcamHudCoverFullScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "W · · NW · · ▲ N 045° NE · · E",
+                text = formatCompassTape(sensorState.heading),
                 color = Color(0xFFFFB300),
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
@@ -1083,7 +1235,7 @@ private fun DashcamHudCoverFullScreen(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "0",
+                    text = "${sensorState.speedKmh}",
                     color = Color.White,
                     fontSize = 84.sp,
                     fontFamily = FontFamily.Monospace,
@@ -1099,7 +1251,7 @@ private fun DashcamHudCoverFullScreen(
                 )
             }
             Text(
-                text = "GPS LOCK · 3D ACTIVE",
+                text = "SENSOR LOCK · 3D ACTIVE",
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -1134,14 +1286,16 @@ private fun DashcamHudCoverFullScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val pitchSign = if (sensorState.pitch >= 0) "+${sensorState.pitch}" else "${sensorState.pitch}"
+                val rollSign = if (sensorState.roll >= 0) "+${sensorState.roll}" else "${sensorState.roll}"
                 Text(
-                    text = "ELEV: 124m · PITCH: 0°",
+                    text = "PITCH: ${pitchSign}° · ROLL: ${rollSign}°",
                     color = Color.White.copy(alpha = 0.45f),
                     fontSize = 10.5.sp,
                     fontFamily = FontFamily.Monospace
                 )
                 Text(
-                    text = "G-FORCE: 1.0G",
+                    text = String.format(Locale.US, "G-FORCE: %.2fG", sensorState.gForce),
                     color = Color.White.copy(alpha = 0.45f),
                     fontSize = 10.5.sp,
                     fontFamily = FontFamily.Monospace
