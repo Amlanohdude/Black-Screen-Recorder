@@ -13,6 +13,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -74,6 +75,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ShareCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.ads.AdScreen
@@ -93,6 +95,7 @@ import com.example.storage.StopBehavior
 import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
+import com.example.ui.onboarding.OnboardingScreen
 import com.example.ui.theme.*
 
 @Composable
@@ -133,6 +136,7 @@ fun SettingsScreen(
     var devTapCount by remember { mutableIntStateOf(0) }
     var lastDevTapTime by remember { mutableLongStateOf(0L) }
     var showDevQaDialog by remember { mutableStateOf(false) }
+    var showOnboardingPreview by remember { mutableStateOf(false) }
 
     val openFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -241,11 +245,13 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsSwitchRow(
-                        title = "Background Recording",
+                        title = "Background recording",
                         checked = settings.backgroundRecordingEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.updateBackgroundRecordingEnabled(enabled)
-                        }
+                        },
+                        subtitle = "Continue recording when you leave the app",
+                        testTag = "settings_background_recording_switch"
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -301,8 +307,8 @@ fun SettingsScreen(
                     )
                 }
 
-                // Section 2: DISPLAY & COVER
-                SettingsGroup(title = "DISPLAY & COVER") {
+                // Section 2: COVER DISPLAY
+                SettingsGroup(title = "COVER DISPLAY") {
                     SettingsClickableRow(
                         title = "Default cover",
                         value = settings.activeCover.name,
@@ -358,161 +364,59 @@ fun SettingsScreen(
 
                 // Section 3: STORAGE & DATA
                 SettingsGroup(title = "STORAGE & DATA") {
-                    // Storage used
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Storage used",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            ),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = MainViewModel.formatFileSize(storageStats.usedBytes),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            ),
-                            color = TextSecondary
-                        )
-                    }
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    // Available storage
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Available",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            ),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = MainViewModel.formatFileSize(storageStats.availableBytes),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            ),
-                            color = TextSecondary
-                        )
-                    }
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    // Estimated recording time
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Estimated time left",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            ),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            ),
-                            color = AccentRed
-                        )
-                    }
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    // Private Storage
                     SettingsClickableRow(
-                        title = "Private Storage",
-                        value = "Default",
-                        subtitle = "Recordings are stored securely inside the app.",
+                        title = "Storage location",
+                        value = "App Sandbox (Private)",
                         onClick = { showStorageLocationDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    // Export to Custom Folder
                     val hasCustomFolder = settings.hasCustomExportFolder
                     val customFolderName = settings.customExportFolderName
+                    val folderDisplay = if (!hasCustomFolder) "Not configured" else customFolderName ?: "Configured"
                     SettingsClickableRow(
                         title = "Export to Custom Folder",
-                        value = if (hasCustomFolder) "Change Folder" else "Not configured",
-                        subtitle = if (hasCustomFolder) "Accessible copies saved to: ${customFolderName ?: "Configured folder"}" else "Choose a folder to save accessible copies.",
+                        value = folderDisplay,
                         onClick = { openFolderLauncher.launch(null) }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    // Auto delete toggle
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Auto delete",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp
-                                ),
-                                color = TextPrimary
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (settings.autoDeleteEnabled) {
-                                    "Deletes recordings older than ${settings.autoDeleteDays} days"
-                                } else {
-                                    "Off (Keep indefinitely)"
-                                },
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                color = TextSecondary
-                            )
-                        }
+                    SettingsInfoRow(
+                        title = "Storage used",
+                        value = MainViewModel.formatFileSize(storageStats.usedBytes)
+                    )
 
-                        Switch(
-                            checked = settings.autoDeleteEnabled,
-                            onCheckedChange = { enabled ->
-                                viewModel.updateAutoDeleteEnabled(enabled)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = AccentRed,
-                                uncheckedThumbColor = TextMuted,
-                                uncheckedTrackColor = SurfaceSecondary
-                            ),
-                            modifier = Modifier.testTag("auto_delete_option")
-                        )
-                    }
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsInfoRow(
+                        title = "Available",
+                        value = MainViewModel.formatFileSize(storageStats.availableBytes)
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsInfoRow(
+                        title = "Estimated recording time",
+                        value = StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds),
+                        valueColor = AccentRed
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = "Auto delete",
+                        checked = settings.autoDeleteEnabled,
+                        onCheckedChange = { viewModel.updateAutoDeleteEnabled(it) },
+                        testTag = "auto_delete_switch"
+                    )
 
                     if (settings.autoDeleteEnabled) {
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsClickableRow(
-                            title = "Delete after",
+                            title = "Retention period",
                             value = "${settings.autoDeleteDays} days",
                             onClick = { showAutoDeleteDaysDialog = true }
                         )
@@ -522,7 +426,7 @@ fun SettingsScreen(
                 // Section 4: PRIVACY & SECURITY
                 SettingsGroup(title = "PRIVACY & SECURITY") {
                     SettingsSwitchRow(
-                        title = "App PIN lock",
+                        title = "Recording Library Lock",
                         checked = settings.lockEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled) {
@@ -534,6 +438,7 @@ fun SettingsScreen(
                                     currentPinInput = ""
                                     newPinInput = ""
                                     confirmPinInput = ""
+                                    pinDialogBiometricOption = true
                                     pinChangeError = null
                                     showPinDialog = true
                                 }
@@ -541,15 +446,15 @@ fun SettingsScreen(
                                 viewModel.updateLockEnabled(false)
                             }
                         },
-                        subtitle = if (settings.lockEnabled) "App requires PIN to open vault" else "Off (Open access)"
+                        testTag = "lock_recordings_switch"
                     )
 
-                    if (settings.lockEnabled) {
+                    if (settings.hasPinSet) {
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsClickableRow(
                             title = "Change PIN",
-                            value = "****",
+                            value = "••••",
                             onClick = {
                                 isChangingExistingPin = true
                                 pinDialogStep = 1
@@ -564,43 +469,46 @@ fun SettingsScreen(
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsSwitchRow(
-                            title = "Biometric unlock",
+                            title = "Fingerprint / Biometrics",
                             checked = settings.biometricEnabled,
                             onCheckedChange = { enabled ->
                                 viewModel.updateBiometricEnabled(enabled)
                             },
-                            subtitle = "Use fingerprint or face unlock"
+                            testTag = "biometric_switch"
                         )
                     }
                 }
 
-                // Native Ad (Lower Settings, before APP section)
-                if (AdsConfig.showInSettings) {
-                    NativeAdCard(
-                        screen = AdScreen.SETTINGS,
-                        style = NativeAdStyle.COMPACT,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
-                }
+                // Native Ad (Lower Settings, before ABOUT & SUPPORT section)
+                NativeAdCard(
+                    screen = AdScreen.SETTINGS,
+                    style = NativeAdStyle.COMPACT,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
 
                 // Section 5: ABOUT & SUPPORT
                 SettingsGroup(title = "ABOUT & SUPPORT") {
                     SettingsClickableRow(
                         title = "Share App",
-                        subtitle = "Recommend Black Screen Recorder to friends",
                         value = "Share",
                         onClick = {
                             try {
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, AppLinks.SHARE_APP_TEXT)
-                                    type = "text/plain"
+                                val activity = (context as? Activity)
+                                val shareBuilder = ShareCompat.IntentBuilder(activity ?: context)
+                                    .setType("text/plain")
+                                    .setText(AppLinks.SHARE_APP_TEXT)
+                                    .setSubject("Black Screen Recorder for Android")
+                                    .setChooserTitle("Share Black Screen Recorder")
+                                shareBuilder.intent.putExtra(Intent.EXTRA_TITLE, "Black Screen Recorder")
+                                val chooserIntent = shareBuilder.createChooserIntent().apply {
+                                    putExtra(Intent.EXTRA_TITLE, "Black Screen Recorder")
+                                    if (activity == null) {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
                                 }
-                                val shareIntent = Intent.createChooser(sendIntent, "Share Black Screen Recorder")
-                                shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                context.startActivity(shareIntent)
+                                context.startActivity(chooserIntent)
                             } catch (_: Exception) {
-                                Toast.makeText(context, "Unable to open share menu", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Could not open share sheet.", Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -608,20 +516,33 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Rate App",
-                        subtitle = "Help us improve on Google Play Store",
-                        value = "Rate",
+                        title = "Feedback & Bug Report",
+                        value = "Open",
                         onClick = {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PLAY_STORE_URL)).apply {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.getBugReportUrl())).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 context.startActivity(intent)
                             } catch (_: Exception) {
-                                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PLAY_STORE_URL)).apply {
+                                Toast.makeText(context, "Could not open web browser.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Request a Feature",
+                        value = "Open",
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.getFeatureRequestUrl())).apply {
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
-                                context.startActivity(webIntent)
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Could not open web browser.", Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -630,30 +551,66 @@ fun SettingsScreen(
 
                     SettingsClickableRow(
                         title = "Privacy policy",
-                        value = "Read",
-                        onClick = { showPrivacyDialog = true }
+                        value = "View",
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PRIVACY_POLICY_URL)).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                showPrivacyDialog = true
+                            }
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Terms & conditions",
+                        value = "View",
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.TERMS_AND_CONDITIONS_URL)).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Could not open web browser.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     // Version Row
-                    SettingsClickableRow(
+                    SettingsInfoRow(
                         title = "Version",
                         value = "1.0.0",
-                        onClick = {
-                            val currentTime = System.currentTimeMillis()
-                            if (currentTime - lastDevTapTime > 2500L) {
-                                devTapCount = 1
-                            } else {
-                                devTapCount++
-                            }
-                            lastDevTapTime = currentTime
+                        modifier = Modifier
+                            .testTag("settings_version_row")
+                            .clickable {
+                                val currentTime = System.currentTimeMillis()
+                                if (currentTime - lastDevTapTime > 2500L) {
+                                    devTapCount = 1
+                                } else {
+                                    devTapCount++
+                                }
+                                lastDevTapTime = currentTime
 
-                            if (devTapCount >= 5) {
-                                devTapCount = 0
-                                Toast.makeText(context, "Developer mode activated", Toast.LENGTH_SHORT).show()
+                                if (devTapCount in 2..4) {
+                                    val remaining = 5 - devTapCount
+                                    Toast.makeText(
+                                        context,
+                                        "$remaining tap${if (remaining > 1) "s" else ""} away from Developer QA Mode",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else if (devTapCount >= 5) {
+                                    devTapCount = 0
+                                    showDevQaDialog = true
+                                    Toast.makeText(context, "Developer QA Mode Unlocked", Toast.LENGTH_SHORT).show()
+                                }
                             }
-                        }
                     )
                 }
 
@@ -1236,6 +1193,21 @@ fun SettingsScreen(
             shape = RoundedCornerShape(14.dp)
         )
     }
+
+    if (showDevQaDialog) {
+        DeveloperQaDialog(
+            viewModel = viewModel,
+            onPreviewOnboarding = {
+                showDevQaDialog = false
+                showOnboardingPreview = true
+            },
+            onDismiss = { showDevQaDialog = false }
+        )
+    }
+
+    if (showOnboardingPreview) {
+        OnboardingScreen(onFinished = { showOnboardingPreview = false })
+    }
 }
 
 @Composable
@@ -1306,17 +1278,41 @@ private fun ProSettingsCard(
 
                 Text(
                     text = if (isPro) "All features unlocked & ads removed" else "Unlock more control & remove ads",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
                     color = TextSecondary
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = if (isPro) goldColor else AccentRed,
-                modifier = Modifier.size(14.dp)
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isPro) SurfaceSecondary else goldColor.copy(alpha = 0.15f))
+                    .border(
+                        0.5.dp,
+                        if (isPro) BorderSubtle else goldColor.copy(alpha = 0.3f),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = if (isPro) "Manage" else "Explore",
+                    color = if (isPro) goldColor else AccentRed,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = if (isPro) goldColor else AccentRed
+                )
+            }
         }
     }
 }
@@ -1459,6 +1455,336 @@ private fun SettingsSwitchRow(
             modifier = if (testTag != null) Modifier.testTag(testTag) else Modifier
         )
     }
+}
+
+@Composable
+private fun SettingsInfoRow(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = TextSecondary
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = TextPrimary
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = valueColor
+        )
+    }
+}
+
+@Composable
+private fun DeveloperQaDialog(
+    viewModel: MainViewModel,
+    onPreviewOnboarding: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
+    val isPro = entitlements.isPro
+    val goldColor = Color(0xFFFFD54F)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("dev_qa_done_button")
+            ) {
+                Text(
+                    text = "Close",
+                    color = AccentRed,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = AccentRed,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Developer QA Testing",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Section 1: CURRENT ENTITLEMENTS
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "CURRENT ENTITLEMENTS",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = AccentRed
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "PRO Status",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = if (isPro) "PRO ACTIVE (Lifetime)" else "FREE TIER",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (isPro) goldColor else TextMuted
+                        )
+                    }
+
+                    HorizontalDivider(
+                        color = BorderSubtle.copy(alpha = 0.5f),
+                        thickness = 0.5.dp
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "Custom Covers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = if (isPro) "Unlimited (PRO)" else "${entitlements.customCoverCredits} passes",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = if (isPro || entitlements.customCoverCredits > 0) TextPrimary else TextMuted
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "Custom Folder Export",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = if (isPro) "Unlimited (PRO)" else "${entitlements.customFolderExportCredits} passes",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = if (isPro || entitlements.customFolderExportCredits > 0) TextPrimary else TextMuted
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "Auto Stop Timer",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = if (isPro) "Unlimited (PRO)" else "${entitlements.autoStopCredits} passes",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = if (isPro || entitlements.autoStopCredits > 0) TextPrimary else TextMuted
+                        )
+                    }
+                }
+
+                // Simulate PRO switch card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Simulate PRO Lifetime",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Unlocks all features & kills ads",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = TextSecondary
+                            )
+                        }
+
+                        Switch(
+                            checked = isPro,
+                            onCheckedChange = { checked ->
+                                EntitlementManager.grantPro(checked)
+                            },
+                            modifier = Modifier.testTag("dev_qa_pro_switch"),
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AccentRed,
+                                uncheckedThumbColor = TextMuted,
+                                uncheckedTrackColor = SurfacePrimary
+                            )
+                        )
+                    }
+                }
+
+                // Passes button
+                Button(
+                    onClick = {
+                        EntitlementManager.addCustomCoverCredit(3)
+                        EntitlementManager.addCustomFolderExportCredit(3)
+                        EntitlementManager.addAutoStopCredit(3)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("dev_qa_add_passes_button"),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Text(
+                        text = "+3 Passes to All Features",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = TextPrimary
+                    )
+                }
+
+                // Reset Entitlements button
+                Button(
+                    onClick = {
+                        EntitlementManager.resetEntitlementsForTesting()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("dev_qa_reset_button"),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.15f)),
+                    border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = "Reset All Entitlements (Free Tier)",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = AccentRed
+                    )
+                }
+
+                // Section 2: ONBOARDING & FIRST-RUN CAROUSEL
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "ONBOARDING & FIRST-RUN CAROUSEL",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = AccentRed
+                    )
+
+                    Button(
+                        onClick = onPreviewOnboarding,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_preview_onboarding_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Preview Onboarding Carousel",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.resetOnboardingState()
+                            Toast.makeText(context, "Onboarding state reset. Relaunch app to see first-run carousel.", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_reset_onboarding_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.15f)),
+                        border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "Reset Onboarding State (First-Run)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = AccentRed
+                        )
+                    }
+                }
+            }
+        },
+        shape = RoundedCornerShape(14.dp),
+        containerColor = SurfacePrimary
+    )
 }
 
 @Composable
