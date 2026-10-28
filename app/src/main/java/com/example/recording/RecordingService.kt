@@ -19,6 +19,7 @@ import androidx.lifecycle.LifecycleService
 import com.example.MainActivity
 import com.example.R
 import com.example.storage.AppDatabase
+import com.example.storage.EntitlementManager
 import com.example.storage.PrivateAppStorageProvider
 import com.example.storage.RecordingRepository
 import com.example.storage.SettingsPreferences
@@ -294,6 +295,13 @@ class RecordingService : LifecycleService() {
                 delay(1000)
                 val duration = (System.currentTimeMillis() - recordingStartTime) / 1000
                 _recordingStatus.value = _recordingStatus.value.copy(durationSeconds = duration)
+
+                val prefs = SettingsPreferences(applicationContext).settings.value
+                val maxSeconds = prefs.autoStopSeconds
+                if (maxSeconds > 0 && EntitlementManager.canUseAutoStop() && duration >= maxSeconds) {
+                    stopActiveRecording()
+                    break
+                }
             }
         }
     }

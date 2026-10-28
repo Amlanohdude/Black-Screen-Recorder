@@ -517,6 +517,12 @@ fun RecordingDetailDialog(
                 Button(
                     onClick = {
                         showDeleteConfirmDialog = false
+                        try {
+                            mediaPlayer?.stop()
+                            mediaPlayer?.release()
+                            mediaPlayer = null
+                            videoViewRef?.stopPlayback()
+                        } catch (_: Exception) {}
                         onDelete()
                         onDismiss()
                     },

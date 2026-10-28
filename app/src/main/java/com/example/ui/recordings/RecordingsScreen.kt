@@ -156,7 +156,6 @@ return
     var selectedRecording by remember { mutableStateOf<RecordingEntity?>(null) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf(RecordingFilterType.ALL) }
-    var showBatchDeleteConfirm by remember { mutableStateOf(false) }
     var showExportAdDialog by remember { mutableStateOf(false) }
     var pendingExportAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -430,7 +429,7 @@ executeSingleExport(recording, folderUri, folderName)
 
                         IconButton(
                             onClick = {
-                                showBatchDeleteConfirm = true
+                                showDeleteConfirmDialog = true
                             },
                             enabled = selectedIds.isNotEmpty(),
                             modifier = Modifier.testTag("delete_selected_recordings_button")
