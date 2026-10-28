@@ -187,9 +187,17 @@ fun RecordingScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (rawCover.isCustom && !hasConsumedCoverCredit && !EntitlementManager.isPro()) {
-            EntitlementManager.consumeCustomCoverCredit()
-            hasConsumedCoverCredit = true
+        if (rawCover.isCustom) {
+            if (!EntitlementManager.canUseCustomCovers()) {
+                android.widget.Toast.makeText(
+                    context,
+                    "Custom cover requires a pass or PRO. Reverted to Pure Black.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            } else if (!hasConsumedCoverCredit && !EntitlementManager.isPro()) {
+                EntitlementManager.consumeCustomCoverCredit()
+                hasConsumedCoverCredit = true
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package com.example.ui.record
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,6 +14,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayCircle
+import com.example.ads.RewardedAdManager
+import com.example.covers.CoverConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -127,7 +132,10 @@ fun RecordTabScreen(
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
     var showFirstRecordingSafetyDialog by remember { mutableStateOf(false) }
+    var showCoverPassNeededDialog by remember { mutableStateOf(false) }
     var pendingRecordingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    val isCoverPassNeeded = activeCover.isCustom && !EntitlementManager.canUseCustomCovers()
 
     val isStorageCritical = remember(storageStats.availableBytes) {
         StorageCapacityEstimator.isStorageCriticallyLow(storageStats.availableBytes)
@@ -222,6 +230,11 @@ fun RecordTabScreen(
     fun startCurrentRecording() {
         if (isStorageCritical) {
             showCriticalStorageDialog = true
+            return
+        }
+
+        if (isCoverPassNeeded) {
+            showCoverPassNeededDialog = true
             return
         }
 
@@ -748,13 +761,22 @@ fun RecordTabScreen(
 
                 // Cover Preview Card
                 Card(
-                    onClick = onNavigateToCovers,
+                    onClick = {
+                        if (isCoverPassNeeded) {
+                            showCoverPassNeededDialog = true
+                        } else {
+                            onNavigateToCovers()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("cover_preview_card"),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
-                    border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderSubtle)
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = if (isCoverPassNeeded) 1.dp else 0.5.dp,
+                        color = if (isCoverPassNeeded) AccentRed.copy(alpha = 0.6f) else BorderSubtle
+                    )
                 ) {
                     Row(
                         modifier = Modifier
@@ -776,6 +798,36 @@ fun RecordTabScreen(
                                 cover = activeCover,
                                 isCardPreview = true
                             )
+
+                            if (isCoverPassNeeded) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(6.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.Black.copy(alpha = 0.8f))
+                                        .padding(horizontal = 5.dp, vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Pass required",
+                                            tint = AccentRed,
+                                            modifier = Modifier.size(10.dp)
+                                        )
+                                        Text(
+                                            text = "PASS",
+                                            color = Color.White,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Column(
@@ -788,15 +840,35 @@ fun RecordTabScreen(
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text(
-                                    text = "COVER",
-                                    color = TextSecondary,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 1.2.sp
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "COVER",
+                                        color = TextSecondary,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 1.2.sp
+                                        )
                                     )
-                                )
+                                    if (isCoverPassNeeded) {
+                                        Text(
+                                            text = "PASS NEEDED",
+                                            color = AccentRed,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.5.sp
+                                            ),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(AccentRed.copy(alpha = 0.15f))
+                                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = activeCover.name,
                                     color = Color.White,
@@ -814,6 +886,16 @@ fun RecordTabScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                                if (isCoverPassNeeded) {
+                                    Text(
+                                        text = "Tap to unlock with Ad or PRO",
+                                        color = AccentRed,
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    )
+                                }
                             }
 
                             Row(
@@ -925,6 +1007,102 @@ fun RecordTabScreen(
             },
             shape = RoundedCornerShape(16.dp),
             containerColor = SurfacePrimary
+        )
+    }
+
+    // Custom Cover Pass Needed Dialog
+    if (showCoverPassNeededDialog) {
+        val activity = context as? Activity
+        AlertDialog(
+            onDismissRequest = { showCoverPassNeededDialog = false },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = AccentRed,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Custom Cover Pass Needed",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Your active cover \"${activeCover.name}\" requires 1 use pass or PRO.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = "Watch a short sponsored ad to unlock it for this recording session, or continue using Pure Black.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCoverPassNeededDialog = false
+                        if (activity != null) {
+                            RewardedAdManager.showAd(
+                                activity = activity,
+                                onUserEarnedReward = {
+                                    EntitlementManager.addCustomCoverCredit()
+                                    if (!settings.firstRecordingExplanationShown) {
+                                        pendingRecordingAction = { executeRecordingAction() }
+                                        showFirstRecordingSafetyDialog = true
+                                    } else {
+                                        executeRecordingAction()
+                                    }
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayCircle,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Watch Ad & Record", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { showCoverPassNeededDialog = false }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Button(
+                        onClick = {
+                            showCoverPassNeededDialog = false
+                            viewModel.setActiveCover(CoverConfig.PURE_BLACK_PRESET)
+                            if (!settings.firstRecordingExplanationShown) {
+                                pendingRecordingAction = { executeRecordingAction() }
+                                showFirstRecordingSafetyDialog = true
+                            } else {
+                                executeRecordingAction()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Use Pure Black", color = TextPrimary, fontSize = 12.sp)
+                    }
+                }
+            }
         )
     }
 

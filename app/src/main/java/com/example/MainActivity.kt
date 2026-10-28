@@ -294,6 +294,13 @@ viewModel.closeCoverDesigner()
 onSaveAndApply = { newCover ->
 viewModel.saveCustomCover(newCover)
 viewModel.setActiveCover(newCover)
+if (!EntitlementManager.canUseCustomCovers()) {
+    android.widget.Toast.makeText(
+        context,
+        "Custom cover saved! A pass or PRO is needed to record with it.",
+        android.widget.Toast.LENGTH_SHORT
+    ).show()
+}
 viewModel.closeCoverDesigner()
 },
 onNavigateToPro = {

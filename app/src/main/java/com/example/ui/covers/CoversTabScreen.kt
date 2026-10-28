@@ -26,11 +26,17 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.app.Activity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.WorkspacePremium
+import com.example.ads.RewardedAdManager
+import com.example.storage.EntitlementManager
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -85,11 +91,15 @@ modifier: Modifier = Modifier
 val context = LocalContext.current
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 val savedCustomCovers by viewModel.savedCustomCovers.collectAsStateWithLifecycle()
+val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
+val isPro = entitlements.isPro
+val canUseCustom = isPro || entitlements.customCoverCredits > 0
 val activeCover = settings.activeCover
 
 var selectedCoverToView by remember(activeCover) { mutableStateOf(activeCover) }
 var coverToDelete by remember { mutableStateOf<CoverConfig?>(null) }
 var showCustomCoversLockedDialog by remember { mutableStateOf(false) }
+var pendingCustomCoverToActivate by remember { mutableStateOf<CoverConfig?>(null) }
 
 val builtInPresets = remember {
     CoverConfig.ALL_PRESETS
@@ -135,6 +145,107 @@ Text("Delete", color = Color.White)
 dismissButton = {
 TextButton(onClick = { coverToDelete = null }) {
 Text("Cancel", color = TextSecondary)
+}
+}
+)
+}
+
+if (showCustomCoversLockedDialog) {
+val activity = context as? Activity
+AlertDialog(
+onDismissRequest = {
+showCustomCoversLockedDialog = false
+pendingCustomCoverToActivate = null
+},
+containerColor = SurfacePrimary,
+shape = RoundedCornerShape(16.dp),
+title = {
+Row(verticalAlignment = Alignment.CenterVertically) {
+Icon(
+imageVector = Icons.Default.Lock,
+contentDescription = null,
+tint = AccentRed,
+modifier = Modifier.size(22.dp)
+)
+Spacer(modifier = Modifier.width(8.dp))
+Text(
+text = "Custom Covers are PRO",
+style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+color = TextPrimary
+)
+}
+},
+text = {
+Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+Text(
+text = "Custom covers require PRO or 1 use pass per recording session.",
+style = MaterialTheme.typography.bodyMedium,
+color = TextSecondary
+)
+Text(
+text = "Watch a short sponsored ad to unlock 1 use pass, or upgrade to PRO for unlimited custom covers and ad-free experience.",
+style = MaterialTheme.typography.bodySmall,
+color = TextMuted
+)
+}
+},
+confirmButton = {
+Button(
+onClick = {
+showCustomCoversLockedDialog = false
+pendingCustomCoverToActivate = null
+onNavigateToPro()
+},
+colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+shape = RoundedCornerShape(8.dp)
+) {
+Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+}
+},
+dismissButton = {
+Row(verticalAlignment = Alignment.CenterVertically) {
+TextButton(
+onClick = {
+showCustomCoversLockedDialog = false
+pendingCustomCoverToActivate = null
+}
+) {
+Text("Cancel", color = TextSecondary)
+}
+Spacer(modifier = Modifier.width(4.dp))
+Button(
+onClick = {
+showCustomCoversLockedDialog = false
+if (activity != null) {
+RewardedAdManager.showAd(
+activity = activity,
+onUserEarnedReward = {
+EntitlementManager.addCustomCoverCredit()
+pendingCustomCoverToActivate?.let { cover ->
+viewModel.setActiveCover(cover)
+}
+pendingCustomCoverToActivate = null
+}
+)
+}
+},
+colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+shape = RoundedCornerShape(8.dp)
+) {
+Icon(
+imageVector = Icons.Default.PlayCircle,
+contentDescription = null,
+tint = AccentRed,
+modifier = Modifier.size(15.dp)
+)
+Spacer(modifier = Modifier.width(5.dp))
+Text(
+text = "Watch Ad (1 Pass)",
+color = TextPrimary,
+fontWeight = FontWeight.SemiBold,
+fontSize = 12.sp
+)
+}
 }
 }
 )
@@ -194,33 +305,115 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                 }
 
                 // Section 2: MY CUSTOM COVERS
-item(span = { GridItemSpan(2) }) {
-Row(
-modifier = Modifier
-.fillMaxWidth()
-.padding(start = 2.dp, top = 14.dp, bottom = 4.dp),
-horizontalArrangement = Arrangement.SpaceBetween,
-verticalAlignment = Alignment.CenterVertically
-) {
-Text(
-text = "MY CUSTOM COVERS",
-style = MaterialTheme.typography.labelMedium.copy(
-fontWeight = FontWeight.Bold,
-letterSpacing = 1.2.sp,
-fontSize = 11.sp
-),
-color = TextSecondary
-)
-if (savedCustomCovers.isNotEmpty()) {
-Text(
-text = "${savedCustomCovers.size} saved",
-style = MaterialTheme.typography.labelSmall,
-color = TextMuted,
-fontSize = 11.sp
-)
-}
-}
-}
+                item(span = { GridItemSpan(2) }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 2.dp, top = 14.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "MY CUSTOM COVERS",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.2.sp,
+                                    fontSize = 11.sp
+                                ),
+                                color = TextSecondary
+                            )
+                            if (savedCustomCovers.isNotEmpty()) {
+                                Text(
+                                    text = "${savedCustomCovers.size} saved",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextMuted,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (isPro) {
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFFFFD54F).copy(alpha = 0.15f))
+                                        .border(0.5.dp, Color(0xFFFFD54F).copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.WorkspacePremium,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD54F),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = "PRO · Unlimited",
+                                        color = Color(0xFFFFD54F),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(SurfaceSecondary)
+                                        .border(0.5.dp, BorderSubtle, RoundedCornerShape(6.dp))
+                                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${entitlements.customCoverCredits} ${if (entitlements.customCoverCredits == 1) "Pass" else "Passes"}",
+                                        color = if (entitlements.customCoverCredits > 0) Color.White else TextMuted,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+
+                                val activity = context as? Activity
+                                Row(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(AccentRed.copy(alpha = 0.15f))
+                                        .border(0.5.dp, AccentRed.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                        .clickable {
+                                            if (activity != null) {
+                                                RewardedAdManager.showAd(
+                                                    activity = activity,
+                                                    onUserEarnedReward = {
+                                                        EntitlementManager.addCustomCoverCredit()
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayCircle,
+                                        contentDescription = null,
+                                        tint = AccentRed,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = "+ Get Pass",
+                                        color = AccentRed,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // "+ Design New Cover" Card
                 item {
@@ -240,9 +433,15 @@ fontSize = 11.sp
                         cover = customCover,
                         isActive = isCurrentActive,
                         isSelected = isCardSelected,
+                        isLocked = !canUseCustom,
                         onClick = {
                             selectedCoverToView = customCover
-                            viewModel.setActiveCover(customCover)
+                            if (!canUseCustom) {
+                                pendingCustomCoverToActivate = customCover
+                                showCustomCoversLockedDialog = true
+                            } else {
+                                viewModel.setActiveCover(customCover)
+                            }
                         },
                         onEdit = {
                             viewModel.openCoverDesigner(customCover)
@@ -316,7 +515,14 @@ fontSize = 11.sp
                         }
 
                         Button(
-                            onClick = { viewModel.setActiveCover(selectedCoverToView) },
+                            onClick = {
+                                if (selectedCoverToView.isCustom && !canUseCustom) {
+                                    pendingCustomCoverToActivate = selectedCoverToView
+                                    showCustomCoversLockedDialog = true
+                                } else {
+                                    viewModel.setActiveCover(selectedCoverToView)
+                                }
+                            },
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isCurrentlyActive) SurfaceSecondary else AccentRed,
@@ -417,6 +623,7 @@ private fun CustomCoverCard(
     cover: CoverConfig,
     isActive: Boolean,
     isSelected: Boolean,
+    isLocked: Boolean = false,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -448,6 +655,36 @@ private fun CustomCoverCard(
                     cover = cover,
                     isCardPreview = true
                 )
+
+                if (isLocked) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.75f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Pass required",
+                                tint = AccentRed,
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                text = "PASS",
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 if (isActive) {
                     Box(

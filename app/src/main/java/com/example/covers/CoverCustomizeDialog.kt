@@ -91,7 +91,20 @@ fun CoverCustomizeDialog(
     onNavigateToPro: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var cover by remember { mutableStateOf(initialCover) }
+    var cover by remember {
+        mutableStateOf(
+            if (!initialCover.isCustom) {
+                initialCover.copy(
+                    id = java.util.UUID.randomUUID().toString(),
+                    presetId = CoverPresetId.CUSTOM,
+                    name = "${initialCover.name} (Custom)",
+                    isCustom = true
+                )
+            } else {
+                initialCover
+            }
+        )
+    }
     var selectedTab by remember { mutableStateOf(DesignerTab.ELEMENTS) }
     var selectedElement by remember { mutableStateOf("Clock") }
 
