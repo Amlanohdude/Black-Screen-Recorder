@@ -5,8 +5,10 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -82,6 +84,24 @@ class RecordingService : LifecycleService() {
     private var timerJob: Job? = null
     private var amplitudeJob: Job? = null
     private var watchdogJob: Job? = null
+    private var storageSafetyJob: Job? = null
+    private var pendingSafetyStopReason: SafetyStopReason? = null
+    private var pendingSafetyDetailValue: Int = 0
+    private var isBatteryReceiverRegistered = false
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!_recordingStatus.value.isRecording) return
+            val settings = SettingsPreferences(applicationContext).settings.value
+            if (!settings.safetyGuardrailsEnabled) return
+
+            val battery = SafetyGuardrailManager.getBatteryInfoFromIntent(intent)
+            if (!battery.isCharging && battery.percentage <= settings.lowBatteryStopThresholdPct) {
+                Log.w(TAG, "Battery dropped to ${battery.percentage}%. Triggering Safety Guardrail stop.")
+                triggerSafetyGuardrailStop(SafetyStopReason.BATTERY_LOW, battery.percentage)
+            }
+        }
+    }
 
     private var audioRecorder: AudioRecorder? = null
     private var videoManager: VideoRecordingManager? = null
@@ -154,6 +174,24 @@ class RecordingService : LifecycleService() {
             return
         }
 
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        val preflight = SafetyGuardrailManager.checkPreflight(applicationContext, prefs)
+        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.ERROR,
+                isRecording = false,
+                error = preflight.message
+            )
+            val detail = if (preflight.reason == SafetyStopReason.BATTERY_LOW) {
+                SafetyGuardrailManager.getBatteryInfo(applicationContext).percentage
+            } else {
+                (SafetyGuardrailManager.getAvailableStorageBytes(applicationContext) / (1024 * 1024)).toInt()
+            }
+            showSafetyNotification(preflight.reason, detail)
+            stopSelf()
+            return
+        }
+
         wakeLock?.acquire(3 * 60 * 60 * 1000L)
         val notification = createNotification("Audio Recording · Screen kept dark")
 
@@ -163,7 +201,6 @@ class RecordingService : LifecycleService() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        val prefs = SettingsPreferences(applicationContext).settings.value
         val audioConfig = AudioRecordingConfig(
             microphone = AudioMicSource.fromId(prefs.preferredMicrophone),
             quality = AudioQuality.fromId(prefs.audioQuality),
@@ -190,6 +227,8 @@ class RecordingService : LifecycleService() {
             if (settings.hapticFeedbackEnabled) {
                 BlindOperationHaptics.vibrateStarted(applicationContext)
             }
+            registerBatteryReceiver()
+            startStorageSafetyMonitoring()
             startTimer()
             startAmplitudeMonitoring()
         } else {
@@ -243,6 +282,24 @@ class RecordingService : LifecycleService() {
             return
         }
 
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        val preflight = SafetyGuardrailManager.checkPreflight(applicationContext, prefs)
+        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.ERROR,
+                isRecording = false,
+                error = preflight.message
+            )
+            val detail = if (preflight.reason == SafetyStopReason.BATTERY_LOW) {
+                SafetyGuardrailManager.getBatteryInfo(applicationContext).percentage
+            } else {
+                (SafetyGuardrailManager.getAvailableStorageBytes(applicationContext) / (1024 * 1024)).toInt()
+            }
+            showSafetyNotification(preflight.reason, detail)
+            stopSelf()
+            return
+        }
+
         wakeLock?.acquire(3 * 60 * 60 * 1000L)
         val notification = createNotification("Video Recording · Screen kept dark")
 
@@ -266,7 +323,6 @@ class RecordingService : LifecycleService() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        val prefs = SettingsPreferences(applicationContext).settings.value
         val manager = VideoRecordingManager(applicationContext, PrivateAppStorageProvider(applicationContext))
         this.videoManager = manager
         activeVideoManager = manager
@@ -295,6 +351,8 @@ class RecordingService : LifecycleService() {
                     if (settings.hapticFeedbackEnabled) {
                         BlindOperationHaptics.vibrateStarted(applicationContext)
                     }
+                    registerBatteryReceiver()
+                    startStorageSafetyMonitoring()
                     startTimer()
                 } else {
                     _recordingStatus.value = RecordingStatus(
@@ -387,6 +445,9 @@ class RecordingService : LifecycleService() {
         timerJob = null
         amplitudeJob?.cancel()
         amplitudeJob = null
+        storageSafetyJob?.cancel()
+        storageSafetyJob = null
+        unregisterBatteryReceiver()
         _liveAudioLevel.value = 0f
         _stopEvent.tryEmit(Unit)
 
@@ -424,6 +485,11 @@ class RecordingService : LifecycleService() {
                         if (settings.hapticFeedbackEnabled) {
                             BlindOperationHaptics.vibrateSaved(applicationContext)
                         }
+                        val safetyReason = pendingSafetyStopReason
+                        val detailVal = pendingSafetyDetailValue
+                        pendingSafetyStopReason = null
+                        pendingSafetyDetailValue = 0
+
                         _recordingStatus.value = RecordingStatus(
                             stage = RecordingStage.IDLE,
                             isRecording = false,
@@ -432,8 +498,12 @@ class RecordingService : LifecycleService() {
                             lastSavedFilePath = audioFile.absolutePath,
                             lastSavedTitle = "Audio $title",
                             lastSavedDurationSeconds = duration,
-                            lastSavedSizeBytes = audioFile.length()
+                            lastSavedSizeBytes = audioFile.length(),
+                            safetyStopReason = safetyReason
                         )
+                        if (safetyReason != null) {
+                            showSafetyNotification(safetyReason, detailVal)
+                        }
                         cleanupAndStop()
                     }
                 }
@@ -491,6 +561,11 @@ class RecordingService : LifecycleService() {
                     if (settings.hapticFeedbackEnabled) {
                         BlindOperationHaptics.vibrateSaved(applicationContext)
                     }
+                    val safetyReason = pendingSafetyStopReason
+                    val detailVal = pendingSafetyDetailValue
+                    pendingSafetyStopReason = null
+                    pendingSafetyDetailValue = 0
+
                     _recordingStatus.value = RecordingStatus(
                         stage = RecordingStage.IDLE,
                         isRecording = false,
@@ -499,8 +574,12 @@ class RecordingService : LifecycleService() {
                         lastSavedFilePath = file.absolutePath,
                         lastSavedTitle = "Video $title",
                         lastSavedDurationSeconds = duration,
-                        lastSavedSizeBytes = file.length()
+                        lastSavedSizeBytes = file.length(),
+                        safetyStopReason = safetyReason
                     )
+                    if (safetyReason != null) {
+                        showSafetyNotification(safetyReason, detailVal)
+                    }
                     cleanupAndStop()
                 }
             }
@@ -543,6 +622,11 @@ class RecordingService : LifecycleService() {
                     if (settings.hapticFeedbackEnabled) {
                         BlindOperationHaptics.vibrateSaved(applicationContext)
                     }
+                    val safetyReason = pendingSafetyStopReason
+                    val detailVal = pendingSafetyDetailValue
+                    pendingSafetyStopReason = null
+                    pendingSafetyDetailValue = 0
+
                     _recordingStatus.value = RecordingStatus(
                         stage = RecordingStage.IDLE,
                         isRecording = false,
@@ -551,8 +635,12 @@ class RecordingService : LifecycleService() {
                         lastSavedFilePath = file.absolutePath,
                         lastSavedTitle = "Video $title",
                         lastSavedDurationSeconds = duration,
-                        lastSavedSizeBytes = file.length()
+                        lastSavedSizeBytes = file.length(),
+                        safetyStopReason = safetyReason
                     )
+                    if (safetyReason != null) {
+                        showSafetyNotification(safetyReason, detailVal)
+                    }
                     cleanupAndStop()
                 }
             }
@@ -572,6 +660,12 @@ class RecordingService : LifecycleService() {
         timerJob = null
         amplitudeJob?.cancel()
         amplitudeJob = null
+        storageSafetyJob?.cancel()
+        storageSafetyJob = null
+        unregisterBatteryReceiver()
+        storageSafetyJob?.cancel()
+        storageSafetyJob = null
+        unregisterBatteryReceiver()
         _liveAudioLevel.value = 0f
 
         videoManager?.release()
@@ -655,6 +749,9 @@ class RecordingService : LifecycleService() {
         timerJob = null
         amplitudeJob?.cancel()
         amplitudeJob = null
+        storageSafetyJob?.cancel()
+        storageSafetyJob = null
+        unregisterBatteryReceiver()
 
         // Emergency flush: if service is killed unexpectedly by OS while recording, finalize and flush
         if (_recordingStatus.value.isRecording) {
@@ -694,6 +791,84 @@ class RecordingService : LifecycleService() {
         } catch (_: Exception) {}
 
         QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
+    }
+
+    private fun registerBatteryReceiver() {
+        if (!isBatteryReceiverRegistered) {
+            try {
+                registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                isBatteryReceiverRegistered = true
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register battery receiver", e)
+            }
+        }
+    }
+
+    private fun unregisterBatteryReceiver() {
+        if (isBatteryReceiverRegistered) {
+            try {
+                unregisterReceiver(batteryReceiver)
+            } catch (_: Exception) {}
+            isBatteryReceiverRegistered = false
+        }
+    }
+
+    private fun startStorageSafetyMonitoring() {
+        storageSafetyJob?.cancel()
+        storageSafetyJob = serviceScope.launch {
+            while (isActive && _recordingStatus.value.isRecording) {
+                delay(4000L)
+                val settings = SettingsPreferences(applicationContext).settings.value
+                if (settings.safetyGuardrailsEnabled) {
+                    val availableBytes = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                        SafetyGuardrailManager.getAvailableStorageBytes(applicationContext)
+                    }
+                    val thresholdBytes = settings.lowStorageStopThresholdMb * 1024L * 1024L
+                    if (availableBytes < thresholdBytes) {
+                        val freeMb = (availableBytes / (1024 * 1024)).toInt()
+                        Log.w(TAG, "Storage dropped to ${freeMb}MB. Triggering Safety Guardrail stop.")
+                        triggerSafetyGuardrailStop(SafetyStopReason.STORAGE_LOW, freeMb)
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    private fun triggerSafetyGuardrailStop(reason: SafetyStopReason, detailValue: Int) {
+        if (!_recordingStatus.value.isRecording) return
+        pendingSafetyStopReason = reason
+        pendingSafetyDetailValue = detailValue
+        stopActiveRecording()
+    }
+
+    private fun showSafetyNotification(reason: SafetyStopReason, detailValue: Int) {
+        try {
+            val (title, text) = SafetyGuardrailManager.formatSafetyNotification(reason, detailValue)
+            val openAppIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val openPendingIntent = PendingIntent.getActivity(
+                this,
+                2,
+                openAppIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(openPendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build()
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.notify(1002, notification)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to show safety notification", e)
+        }
     }
 
     override fun onBind(intent: Intent): IBinder? {

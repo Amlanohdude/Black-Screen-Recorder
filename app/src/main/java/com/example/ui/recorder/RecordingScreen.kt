@@ -262,7 +262,9 @@ fun RecordingScreen(
 
     // Universal error observer (startup error, runtime error, or finalization error)
     LaunchedEffect(status.stage, status.error) {
-        if (status.stage == RecordingStage.ERROR) {
+        if (status.stage == RecordingStage.FINALIZING) {
+            isFinalizing = true
+        } else if (status.stage == RecordingStage.ERROR) {
             isFinalizing = false
             isQuickExitRequested = false
             finalizationErrorMessage = status.error ?: "Recording encountered an unexpected error."
@@ -312,7 +314,8 @@ fun RecordingScreen(
                     durationSeconds = maxOf(1L, status.lastSavedDurationSeconds),
                     fileSizeBytes = file.length(),
                     qualityOrFormat = qualityOrFormat,
-                    coverName = activeCover.name
+                    coverName = activeCover.name,
+                    safetyStopReason = status.safetyStopReason
                 )
                 onRecordingFinished(summary)
             } else {

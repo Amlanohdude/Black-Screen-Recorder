@@ -256,6 +256,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateAudioChannels(channels: Int) = settingsPrefs.updateAudioChannels(channels)
     fun updateAudioBitrate(bitrate: Int) = settingsPrefs.updateAudioBitrate(bitrate)
     fun updateAudioSampleRate(sampleRate: Int) = settingsPrefs.updateAudioSampleRate(sampleRate)
+    fun updateSafetyGuardrailsEnabled(enabled: Boolean) = settingsPrefs.updateSafetyGuardrailsEnabled(enabled)
+    fun updateLowBatteryStopThresholdPct(threshold: Int) = settingsPrefs.updateLowBatteryStopThresholdPct(threshold)
+    fun updateLowStorageStopThresholdMb(threshold: Int) = settingsPrefs.updateLowStorageStopThresholdMb(threshold)
 
     fun unlockRecordings() {
         _isRecordingsUnlocked.value = true

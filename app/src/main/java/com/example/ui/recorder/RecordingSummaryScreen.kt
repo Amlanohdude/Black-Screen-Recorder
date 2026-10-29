@@ -25,10 +25,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -244,6 +246,62 @@ fun RecordingSummaryScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
+
+            if (summary.safetyStopReason != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                val isBattery = summary.safetyStopReason == com.example.recording.SafetyStopReason.BATTERY_LOW
+                val bannerTitle = if (isBattery) "Saved by Battery Guardrail" else "Saved by Storage Guardrail"
+                val bannerDesc = if (isBattery) {
+                    "Recording was automatically finalized before critical battery cutoff. Your file is completely intact."
+                } else {
+                    "Recording was automatically finalized before storage ran out. Your file is completely intact."
+                }
+                val bannerIcon = if (isBattery) Icons.Default.BatteryAlert else Icons.Default.SdStorage
+
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2216)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5A93C).copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color(0xFFE5A93C).copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = bannerIcon,
+                                contentDescription = bannerTitle,
+                                tint = Color(0xFFE5A93C),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = bannerTitle,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFFF5D082)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = bannerDesc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFD8C29D)
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

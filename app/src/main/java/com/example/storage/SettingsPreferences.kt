@@ -79,6 +79,9 @@ data class UserSettings(
     val activeAudioPreset: RecordingPresetId = RecordingPresetId.GENERAL_AUDIO,
     val activeVideoPreset: RecordingPresetId = RecordingPresetId.DISCREET_VIDEO,
     val hapticFeedbackEnabled: Boolean = true,
+    val safetyGuardrailsEnabled: Boolean = true,
+    val lowBatteryStopThresholdPct: Int = 3,
+    val lowStorageStopThresholdMb: Int = 200,
     val onboardingCompleted: Boolean = true,
     val firstRecordingExplanationShown: Boolean = false
 ) {
@@ -209,6 +212,9 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
             activeAudioPreset = activeAudioPreset,
             activeVideoPreset = activeVideoPreset,
             hapticFeedbackEnabled = prefs.getBoolean("haptic_feedback_enabled", true),
+            safetyGuardrailsEnabled = prefs.getBoolean("safety_guardrails_enabled", true),
+            lowBatteryStopThresholdPct = prefs.getInt("low_battery_stop_threshold_pct", 3),
+            lowStorageStopThresholdMb = prefs.getInt("low_storage_stop_threshold_mb", 200),
             onboardingCompleted = onboardingCompleted,
             firstRecordingExplanationShown = firstRecordingExplanationShown
         )
@@ -494,6 +500,21 @@ customExportFolderUri = null,
 customExportFolderName = null
 )
 }
+
+    fun updateSafetyGuardrailsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("safety_guardrails_enabled", enabled).apply()
+        _settings.value = _settings.value.copy(safetyGuardrailsEnabled = enabled)
+    }
+
+    fun updateLowBatteryStopThresholdPct(threshold: Int) {
+        prefs.edit().putInt("low_battery_stop_threshold_pct", threshold).apply()
+        _settings.value = _settings.value.copy(lowBatteryStopThresholdPct = threshold)
+    }
+
+    fun updateLowStorageStopThresholdMb(threshold: Int) {
+        prefs.edit().putInt("low_storage_stop_threshold_mb", threshold).apply()
+        _settings.value = _settings.value.copy(lowStorageStopThresholdMb = threshold)
+    }
 
     fun completeOnboarding() {
         prefs.edit().putBoolean("onboarding_completed", true).apply()
