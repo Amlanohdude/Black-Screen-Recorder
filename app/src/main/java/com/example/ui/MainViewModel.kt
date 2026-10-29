@@ -164,6 +164,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         context.startService(intent)
     }
 
+    fun getBatchShareIntent(recordings: List<RecordingEntity>): Intent? {
+        return repository.getBatchShareIntent(recordings)
+    }
+
     fun renameRecording(recording: RecordingEntity, newTitle: String) {
         viewModelScope.launch {
             repository.updateTitle(recording, newTitle)

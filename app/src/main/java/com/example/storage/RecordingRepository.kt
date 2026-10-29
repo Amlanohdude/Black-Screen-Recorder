@@ -233,4 +233,43 @@ class RecordingRepository(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
+
+    fun getBatchShareIntent(recordings: List<RecordingEntity>): Intent? {
+        if (recordings.isEmpty()) return null
+        val uris = ArrayList<Uri>()
+        var hasVideo = false
+        var hasAudio = false
+
+        for (rec in recordings) {
+            val file = File(rec.filePath)
+            if (file.exists()) {
+                try {
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+                    uris.add(uri)
+                    if (rec.type.equals("VIDEO", ignoreCase = true)) hasVideo = true else hasAudio = true
+                } catch (e: Exception) {
+                    Log.w("RecordingRepository", "Could not get Uri for file: ${rec.filePath}", e)
+                }
+            }
+        }
+
+        if (uris.isEmpty()) return null
+
+        val mimeType = when {
+            hasVideo && !hasAudio -> "video/*"
+            !hasVideo && hasAudio -> "audio/*"
+            else -> "*/*"
+        }
+
+        val shareIntent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = mimeType
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        return Intent.createChooser(shareIntent, "Share ${uris.size} recordings")
+    }
 }

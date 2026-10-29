@@ -17,9 +17,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -365,14 +367,19 @@ executeSingleExport(recording, folderUri, folderName)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .padding(horizontal = 16.dp),
+                        .height(60.dp)
+                        .background(SurfacePrimary)
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         IconButton(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 isSelectionMode = false
                                 selectedIds = emptySet()
                             },
@@ -385,24 +392,46 @@ executeSingleExport(recording, folderUri, folderName)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(6.dp))
+                        val selectedItems = remember(selectedIds, recordings) {
+                            recordings.filter { it.id in selectedIds }
+                        }
+                        val totalSelectedBytes = remember(selectedItems) {
+                            selectedItems.sumOf { it.fileSizeBytes }
+                        }
 
-                        Text(
-                            text = "${selectedIds.size} selected",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            ),
-                            color = TextPrimary
-                        )
+                        Column {
+                            Text(
+                                text = "${selectedIds.size} selected",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                ),
+                                color = TextPrimary
+                            )
+                            if (selectedIds.isNotEmpty() && totalSelectedBytes > 0) {
+                                Text(
+                                    text = MainViewModel.formatFileSize(totalSelectedBytes),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
                         val currentViewIds = filteredRecordings.map { it.id }.toSet()
                         val isAllInViewSelected = currentViewIds.isNotEmpty() && selectedIds.containsAll(currentViewIds)
 
+                        // 1. Select All / Deselect All
                         IconButton(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 selectedIds = if (isAllInViewSelected) {
                                     selectedIds - currentViewIds
                                 } else {
@@ -411,21 +440,47 @@ executeSingleExport(recording, folderUri, folderName)
                                 if (selectedIds.isEmpty()) {
                                     isSelectionMode = false
                                 }
-                            }
+                            },
+                            modifier = Modifier.testTag("select_all_recordings_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SelectAll,
-                                contentDescription = "Select all in view",
+                                contentDescription = if (isAllInViewSelected) "Deselect all" else "Select all",
                                 tint = if (isAllInViewSelected) AccentRed else TextSecondary
                             )
                         }
 
+                        // 2. Share Selected (using ACTION_SEND_MULTIPLE)
                         IconButton(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                val itemsToShare = recordings.filter { it.id in selectedIds }
+                                val shareIntent = viewModel.getBatchShareIntent(itemsToShare)
+                                if (shareIntent != null) {
+                                    context.startActivity(shareIntent)
+                                } else {
+                                    Toast.makeText(context, "No shareable files found", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            enabled = selectedIds.isNotEmpty(),
+                            modifier = Modifier.testTag("share_selected_recordings_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share selected",
+                                tint = if (selectedIds.isNotEmpty()) TextPrimary else TextMuted
+                            )
+                        }
+
+                        // 3. Export Selected to Folder
+                        IconButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 val itemsToExport = filteredRecordings.filter { selectedIds.contains(it.id) }
                                 startBatchExport(itemsToExport)
                             },
-                            enabled = selectedIds.isNotEmpty()
+                            enabled = selectedIds.isNotEmpty(),
+                            modifier = Modifier.testTag("export_selected_recordings_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FileDownload,
@@ -434,8 +489,10 @@ executeSingleExport(recording, folderUri, folderName)
                             )
                         }
 
+                        // 4. Delete Selected
                         IconButton(
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 showDeleteConfirmDialog = true
                             },
                             enabled = selectedIds.isNotEmpty(),
@@ -660,12 +717,14 @@ if (onNavigateToRecord != null) {
                         isSelected = isSelected,
                         onClick = {
                             if (isSelectionMode) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 toggleSelection(item.id)
                             } else {
                                 selectedRecording = item
                             }
                         },
                         onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             if (!isSelectionMode) {
                                 isSelectionMode = true
                                 selectedIds = setOf(item.id)
@@ -725,49 +784,67 @@ startSingleExport(recording)
 
 // Multiple Deletion Confirmation Dialog
 if (showDeleteConfirmDialog) {
-AlertDialog(
-onDismissRequest = { showDeleteConfirmDialog = false },
-title = {
-Text(
-text = "Delete ${selectedIds.size} ${if (selectedIds.size == 1) "recording" else "recordings"}?",
-style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-color = TextPrimary
-)
-},
-text = {
-Text(
-text = "This will permanently remove the selected file(s) from your device.",
-style = MaterialTheme.typography.bodyMedium,
-color = TextSecondary
-)
-},
-confirmButton = {
-TextButton(
-onClick = {
-val itemsToDelete = recordings.filter { it.id in selectedIds }
-itemsToDelete.forEach { VideoThumbnailLoader.remove(it.filePath) }
-viewModel.deleteRecordings(itemsToDelete)
-selectedIds = emptySet()
-isSelectionMode = false
-showDeleteConfirmDialog = false
-},
-modifier = Modifier.testTag("confirm_delete_multiple_button")
-) {
-Text(
-text = "Delete",
-color = AccentRed,
-fontWeight = FontWeight.Bold
-)
-}
-},
-dismissButton = {
-TextButton(onClick = { showDeleteConfirmDialog = false }) {
-Text(text = "Cancel", color = TextSecondary)
-}
-},
-containerColor = SurfacePrimary,
-shape = RoundedCornerShape(14.dp)
-)
+    val itemsToDelete = remember(selectedIds, recordings) {
+        recordings.filter { it.id in selectedIds }
+    }
+    val totalBytes = remember(itemsToDelete) {
+        itemsToDelete.sumOf { it.fileSizeBytes }
+    }
+    val formattedSize = remember(totalBytes) {
+        MainViewModel.formatFileSize(totalBytes)
+    }
+
+    AlertDialog(
+        onDismissRequest = { showDeleteConfirmDialog = false },
+        title = {
+            Text(
+                text = "Delete ${itemsToDelete.size} ${if (itemsToDelete.size == 1) "recording" else "recordings"}?",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "This will permanently remove ${itemsToDelete.size} ${if (itemsToDelete.size == 1) "recording" else "recordings"} ($formattedSize) from your private storage.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "This action cannot be undone.",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = AccentRed
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    itemsToDelete.forEach { VideoThumbnailLoader.remove(it.filePath) }
+                    viewModel.deleteRecordings(itemsToDelete)
+                    selectedIds = emptySet()
+                    isSelectionMode = false
+                    showDeleteConfirmDialog = false
+                    Toast.makeText(context, "${itemsToDelete.size} recordings deleted", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.testTag("confirm_delete_multiple_button")
+            ) {
+                Text(
+                    text = "Delete",
+                    color = AccentRed,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                Text(text = "Cancel", color = TextSecondary)
+            }
+        },
+        containerColor = SurfacePrimary,
+        shape = RoundedCornerShape(14.dp)
+    )
 }
 
 // Export Progress Dialog
@@ -946,6 +1023,10 @@ private fun RecordingListItem(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) SurfaceSecondary else SurfacePrimary
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 1.dp else 0.5.dp,
+            color = if (isSelected) AccentRed.copy(alpha = 0.8f) else BorderSubtle.copy(alpha = 0.4f)
         ),
         modifier = Modifier
             .fillMaxWidth()
