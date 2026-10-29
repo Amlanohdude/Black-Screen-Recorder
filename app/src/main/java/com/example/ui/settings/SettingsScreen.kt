@@ -98,7 +98,9 @@ import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.growth.InAppReviewManager
+import com.example.widget.QuickAudioWidgetProvider
 import com.example.widget.QuickRecordWidgetProvider
+import com.example.widget.QuickVideoWidgetProvider
 import com.example.ui.onboarding.OnboardingScreen
 import com.example.ui.theme.*
 
@@ -142,6 +144,7 @@ fun SettingsScreen(
     var lastDevTapTime by remember { mutableLongStateOf(0L) }
     var showDevQaDialog by remember { mutableStateOf(false) }
     var showOnboardingPreview by remember { mutableStateOf(false) }
+    var showWidgetDialog by remember { mutableStateOf(false) }
 
     val openFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -325,16 +328,8 @@ fun SettingsScreen(
 
                     SettingsClickableRow(
                         title = "1-Tap Home Screen Widget",
-                        value = "Add",
-                        onClick = {
-                            val appWidgetManager = context.getSystemService(android.appwidget.AppWidgetManager::class.java)
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true) {
-                                val provider = android.content.ComponentName(context, QuickRecordWidgetProvider::class.java)
-                                appWidgetManager.requestPinAppWidget(provider, null, null)
-                            } else {
-                                Toast.makeText(context, "Touch and hold your home screen, tap Widgets, and add Quick Record.", Toast.LENGTH_LONG).show()
-                            }
-                        }
+                        value = "Choose",
+                        onClick = { showWidgetDialog = true }
                     )
                 }
 
@@ -648,6 +643,138 @@ fun SettingsScreen(
     }
 
     // Dialogs
+    if (showWidgetDialog) {
+        val appWidgetManager = context.getSystemService(android.appwidget.AppWidgetManager::class.java)
+        val canPin = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true
+
+        fun pinWidget(providerClass: Class<*>, widgetName: String) {
+            if (canPin && appWidgetManager != null) {
+                val provider = android.content.ComponentName(context, providerClass)
+                appWidgetManager.requestPinAppWidget(provider, null, null)
+            } else {
+                Toast.makeText(context, "Touch and hold home screen, tap Widgets, and add $widgetName.", Toast.LENGTH_LONG).show()
+            }
+            showWidgetDialog = false
+        }
+
+        AlertDialog(
+            onDismissRequest = { showWidgetDialog = false },
+            title = {
+                Text(
+                    text = "Add 1-Tap Widget",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Choose which 1-tap widget to pin to your home screen:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Audio Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(QuickAudioWidgetProvider::class.java, "Quick Audio") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "🎙️", fontSize = 22.sp, modifier = Modifier.padding(end = 12.dp))
+                            Column {
+                                Text(
+                                    text = "Quick Audio (1×1)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Always starts discreet audio recording",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    // Video Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(QuickVideoWidgetProvider::class.java, "Quick Video") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "📹", fontSize = 22.sp, modifier = Modifier.padding(end = 12.dp))
+                            Column {
+                                Text(
+                                    text = "Quick Video (1×1)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Always starts discreet video recording",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    // Universal Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(QuickRecordWidgetProvider::class.java, "Quick Record") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "⚡", fontSize = 22.sp, modifier = Modifier.padding(end = 12.dp))
+                            Column {
+                                Text(
+                                    text = "Quick Record (1×1)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Uses default mode (${settings.defaultRecordingType})",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showWidgetDialog = false }) {
+                    Text(text = "Cancel", color = AccentRed)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     if (showCameraDialog) {
         SelectionDialog(
             title = "Camera",

@@ -57,6 +57,32 @@
                 android:resource="@xml/quick_record_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.QuickAudioWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_quick_audio_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_audio_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.QuickVideoWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_quick_video_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_video_widget_info" />
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

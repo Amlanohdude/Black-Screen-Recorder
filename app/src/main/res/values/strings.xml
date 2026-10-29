@@ -14,4 +14,8 @@
     <string name="action_delete">Delete</string>
     <string name="widget_quick_record_name">Quick Record</string>
     <string name="widget_quick_record_description">1-Tap discreet recording shortcut with blind operation haptics.</string>
+    <string name="widget_quick_audio_name">Quick Audio</string>
+    <string name="widget_quick_audio_description">1-Tap discreet audio recording shortcut with blind operation haptics.</string>
+    <string name="widget_quick_video_name">Quick Video</string>
+    <string name="widget_quick_video_description">1-Tap discreet video recording shortcut with blind operation haptics.</string>
 </resources>

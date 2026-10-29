@@ -23,12 +23,16 @@ import org.robolectric.annotation.Config
 class QuickRecordWidgetTest {
 
     private lateinit var context: Context
-    private lateinit var provider: QuickRecordWidgetProvider
+    private lateinit var universalProvider: QuickRecordWidgetProvider
+    private lateinit var audioProvider: QuickAudioWidgetProvider
+    private lateinit var videoProvider: QuickVideoWidgetProvider
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        provider = QuickRecordWidgetProvider()
+        universalProvider = QuickRecordWidgetProvider()
+        audioProvider = QuickAudioWidgetProvider()
+        videoProvider = QuickVideoWidgetProvider()
         // Reset recording status to IDLE
         RecordingService.updateStatus(
             RecordingStatus(
@@ -42,16 +46,16 @@ class QuickRecordWidgetTest {
 
     @Test
     fun actionConstant_isConfiguredCorrectly() {
-        assertEquals("com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD", QuickRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        assertEquals("com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD", BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
     }
 
     @Test
     fun updateAllWidgets_runsWithoutCrashing() {
-        QuickRecordWidgetProvider.updateAllWidgets(context)
+        BaseRecordWidgetProvider.updateAllWidgets(context)
     }
 
     @Test
-    fun updateWidget_handlesIdleStateCorrectly() {
+    fun updateWidget_handlesIdleStateForAudioVideoAndUniversal() {
         RecordingService.updateStatus(
             RecordingStatus(
                 stage = RecordingStage.IDLE,
@@ -62,12 +66,19 @@ class QuickRecordWidgetTest {
         )
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val shadow = Shadows.shadowOf(appWidgetManager)
-        val widgetId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
-        QuickRecordWidgetProvider.updateWidget(context, appWidgetManager, widgetId)
+
+        val audioId = shadow.createWidget(QuickAudioWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, audioId, WidgetRecordMode.AUDIO, QuickAudioWidgetProvider::class.java)
+
+        val videoId = shadow.createWidget(QuickVideoWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, videoId, WidgetRecordMode.VIDEO, QuickVideoWidgetProvider::class.java)
+
+        val universalId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, universalId, WidgetRecordMode.DEFAULT, QuickRecordWidgetProvider::class.java)
     }
 
     @Test
-    fun updateWidget_handlesActiveRecordingStateCorrectly() {
+    fun updateWidget_handlesActiveRecordingStateForAudioVideoAndUniversal() {
         RecordingService.updateStatus(
             RecordingStatus(
                 stage = RecordingStage.RECORDING,
@@ -78,14 +89,27 @@ class QuickRecordWidgetTest {
         )
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val shadow = Shadows.shadowOf(appWidgetManager)
-        val widgetId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
-        QuickRecordWidgetProvider.updateWidget(context, appWidgetManager, widgetId)
+
+        val audioId = shadow.createWidget(QuickAudioWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, audioId, WidgetRecordMode.AUDIO, QuickAudioWidgetProvider::class.java)
+
+        val videoId = shadow.createWidget(QuickVideoWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, videoId, WidgetRecordMode.VIDEO, QuickVideoWidgetProvider::class.java)
+
+        val universalId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, universalId, WidgetRecordMode.DEFAULT, QuickRecordWidgetProvider::class.java)
     }
 
     @Test
     fun onReceive_toggleIntentWhenIdle_handlesGracefully() {
-        val intent = Intent(QuickRecordWidgetProvider.ACTION_TOGGLE_RECORD)
-        provider.onReceive(context, intent)
+        val audioIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        audioProvider.onReceive(context, audioIntent)
+
+        val videoIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        videoProvider.onReceive(context, videoIntent)
+
+        val universalIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        universalProvider.onReceive(context, universalIntent)
     }
 
     @Test
@@ -98,7 +122,7 @@ class QuickRecordWidgetTest {
                 durationSeconds = 5L
             )
         )
-        val intent = Intent(QuickRecordWidgetProvider.ACTION_TOGGLE_RECORD)
-        provider.onReceive(context, intent)
+        val intent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        audioProvider.onReceive(context, intent)
     }
 }

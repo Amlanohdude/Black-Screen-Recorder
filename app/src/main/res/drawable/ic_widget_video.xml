@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Outer accent ring -->
+    <path
+        android:strokeColor="#FF3B30"
+        android:strokeWidth="1.6"
+        android:pathData="M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2Z" />
+    <!-- Video camera body and lens -->
+    <path
+        android:fillColor="#FF3B30"
+        android:pathData="M15,8v2.5l3,-3v9l-3,-3V16c0,0.55 -0.45,1 -1,1H7c-0.55,0 -1,-0.45 -1,-1V8c0,-0.55 0.45,-1 1,-1h7c0.55,0 1,0.45 1,1z" />
+</vector>

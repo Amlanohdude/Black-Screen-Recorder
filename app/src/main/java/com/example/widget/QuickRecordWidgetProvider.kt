@@ -18,97 +18,122 @@ import com.example.MainActivity
 import com.example.R
 import com.example.recording.BlindOperationHaptics
 import com.example.recording.RecordingService
+import com.example.recording.RecordingType
 import com.example.storage.SettingsPreferences
 
 /**
- * 1-Tap Home Screen Widget for Instant Discreet Recording
+ * Recording mode handled by a widget instance
+ */
+enum class WidgetRecordMode {
+    AUDIO,
+    VIDEO,
+    DEFAULT
+}
+
+/**
+ * Base Provider for 1-Tap Home Screen Recording Widgets
  *
- * Provides a tactile, 1-tap toggle on the home screen:
+ * Provides tactile, 1-tap toggling directly from the home screen:
  * - Tap to Start: Immediately begins background recording with 1 crisp vibration.
  * - Tap to Stop: Safely finalizes and saves the file with 1 long smooth vibration.
  * - Live State Synchronization: Automatically reflects active recording state
- *   even when triggered from inside the app or the notification shade.
+ *   across all instances and modes.
  */
-class QuickRecordWidgetProvider : AppWidgetProvider() {
+abstract class BaseRecordWidgetProvider(
+    private val mode: WidgetRecordMode
+) : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (appWidgetId in appWidgetIds) {
-            updateWidget(context, appWidgetManager, appWidgetId)
+            updateWidget(context, appWidgetManager, appWidgetId, mode, this::class.java)
         }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == ACTION_TOGGLE_RECORD) {
-            handleToggleRecord(context)
+            handleToggleRecord(context, mode)
         }
-    }
-
-    private fun handleToggleRecord(context: Context) {
-        val currentStatus = RecordingService.recordingStatus.value
-        val isRecording = currentStatus.isRecording
-
-        if (isRecording) {
-            // STOP RECORDING
-            val stopIntent = Intent(context, RecordingService::class.java).apply {
-                action = RecordingService.ACTION_STOP
-            }
-            context.startService(stopIntent)
-            val settings = SettingsPreferences(context).settings.value
-            if (settings.hapticFeedbackEnabled) {
-                BlindOperationHaptics.vibrateSaved(context)
-            }
-            Toast.makeText(context, "Recording stopped and saved", Toast.LENGTH_SHORT).show()
-        } else {
-            // START RECORDING
-            val settings = SettingsPreferences(context).settings.value
-            val isVideo = settings.defaultRecordingType.equals("VIDEO", ignoreCase = true)
-
-            // Permission checks
-            val hasMic = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            val hasCamera = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-
-            if (isVideo && (!hasCamera || !hasMic)) {
-                Toast.makeText(context, "Camera & microphone permissions required", Toast.LENGTH_LONG).show()
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                }
-                context.startActivity(launchIntent)
-                return
-            } else if (!isVideo && !hasMic) {
-                Toast.makeText(context, "Microphone permission required", Toast.LENGTH_LONG).show()
-                val launchIntent = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                }
-                context.startActivity(launchIntent)
-                return
-            }
-
-            val startIntent = Intent(context, RecordingService::class.java).apply {
-                action = if (isVideo) RecordingService.ACTION_START_VIDEO else RecordingService.ACTION_START_AUDIO
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(startIntent)
-            } else {
-                context.startService(startIntent)
-            }
-
-            if (settings.hapticFeedbackEnabled) {
-                BlindOperationHaptics.vibrateStarted(context)
-            }
-            val modeName = if (isVideo) "Video" else "Audio"
-            Toast.makeText(context, "$modeName recording started (screen dark)", Toast.LENGTH_SHORT).show()
-        }
-
-        // Immediately update all widgets
-        updateAllWidgets(context)
     }
 
     companion object {
         const val ACTION_TOGGLE_RECORD = "com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD"
-        private const val TAG = "QuickRecordWidget"
+        private const val TAG = "BaseRecordWidget"
 
-        fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
+        fun handleToggleRecord(context: Context, mode: WidgetRecordMode) {
+            val currentStatus = RecordingService.recordingStatus.value
+            val isRecording = currentStatus.isRecording
+
+            if (isRecording) {
+                // STOP RECORDING
+                val stopIntent = Intent(context, RecordingService::class.java).apply {
+                    action = RecordingService.ACTION_STOP
+                }
+                context.startService(stopIntent)
+                val settings = SettingsPreferences(context).settings.value
+                if (settings.hapticFeedbackEnabled) {
+                    BlindOperationHaptics.vibrateSaved(context)
+                }
+                Toast.makeText(context, "Recording stopped and saved", Toast.LENGTH_SHORT).show()
+            } else {
+                // START RECORDING
+                val isVideo = when (mode) {
+                    WidgetRecordMode.AUDIO -> false
+                    WidgetRecordMode.VIDEO -> true
+                    WidgetRecordMode.DEFAULT -> {
+                        val settings = SettingsPreferences(context).settings.value
+                        settings.defaultRecordingType.equals("VIDEO", ignoreCase = true)
+                    }
+                }
+
+                // Permission checks
+                val hasMic = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                val hasCamera = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+                if (isVideo && (!hasCamera || !hasMic)) {
+                    Toast.makeText(context, "Camera & microphone permissions required", Toast.LENGTH_LONG).show()
+                    val launchIntent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    context.startActivity(launchIntent)
+                    return
+                } else if (!isVideo && !hasMic) {
+                    Toast.makeText(context, "Microphone permission required", Toast.LENGTH_LONG).show()
+                    val launchIntent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    }
+                    context.startActivity(launchIntent)
+                    return
+                }
+
+                val startIntent = Intent(context, RecordingService::class.java).apply {
+                    action = if (isVideo) RecordingService.ACTION_START_VIDEO else RecordingService.ACTION_START_AUDIO
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(startIntent)
+                } else {
+                    context.startService(startIntent)
+                }
+
+                val settings = SettingsPreferences(context).settings.value
+                if (settings.hapticFeedbackEnabled) {
+                    BlindOperationHaptics.vibrateStarted(context)
+                }
+                val modeName = if (isVideo) "Video" else "Audio"
+                Toast.makeText(context, "$modeName recording started (screen dark)", Toast.LENGTH_SHORT).show()
+            }
+
+            // Immediately update all widgets across all types
+            updateAllWidgets(context)
+        }
+
+        fun updateWidget(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+            mode: WidgetRecordMode,
+            providerClass: Class<*>
+        ) {
             val views = RemoteViews(context.packageName, R.layout.widget_quick_record)
             val currentStatus = RecordingService.recordingStatus.value
             val isRecording = currentStatus.isRecording
@@ -116,21 +141,31 @@ class QuickRecordWidgetProvider : AppWidgetProvider() {
             if (isRecording) {
                 views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_background_recording)
                 views.setImageViewResource(R.id.widget_icon, R.drawable.ic_widget_stop)
-                views.setTextViewText(R.id.widget_title, "RECORDING")
+                val title = when {
+                    currentStatus.type == RecordingType.AUDIO && mode == WidgetRecordMode.AUDIO -> "AUDIO REC"
+                    currentStatus.type == RecordingType.VIDEO && mode == WidgetRecordMode.VIDEO -> "VIDEO REC"
+                    else -> "RECORDING"
+                }
+                views.setTextViewText(R.id.widget_title, title)
                 views.setTextColor(R.id.widget_title, Color.parseColor("#FF453A"))
                 views.setTextViewText(R.id.widget_subtitle, "Tap to Stop")
                 views.setTextColor(R.id.widget_subtitle, Color.parseColor("#FF9F9B"))
             } else {
                 views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_background_idle)
-                views.setImageViewResource(R.id.widget_icon, R.drawable.ic_widget_rec_idle)
-                views.setTextViewText(R.id.widget_title, "Quick Record")
+                val (iconRes, titleText) = when (mode) {
+                    WidgetRecordMode.AUDIO -> Pair(R.drawable.ic_widget_mic, "Quick Audio")
+                    WidgetRecordMode.VIDEO -> Pair(R.drawable.ic_widget_video, "Quick Video")
+                    WidgetRecordMode.DEFAULT -> Pair(R.drawable.ic_widget_rec_idle, "Quick Record")
+                }
+                views.setImageViewResource(R.id.widget_icon, iconRes)
+                views.setTextViewText(R.id.widget_title, titleText)
                 views.setTextColor(R.id.widget_title, Color.parseColor("#F5F5F7"))
                 views.setTextViewText(R.id.widget_subtitle, "Tap to Start")
                 views.setTextColor(R.id.widget_subtitle, Color.parseColor("#8E8E93"))
             }
 
-            // Click pending intent
-            val toggleIntent = Intent(context, QuickRecordWidgetProvider::class.java).apply {
+            // Click pending intent targets the specific provider class
+            val toggleIntent = Intent(context, providerClass).apply {
                 action = ACTION_TOGGLE_RECORD
             }
             val pendingFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -149,19 +184,46 @@ class QuickRecordWidgetProvider : AppWidgetProvider() {
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
 
-        fun updateAllWidgets(context: Context) {
+        fun updateWidgetsForProvider(context: Context, providerClass: Class<*>, mode: WidgetRecordMode) {
             try {
                 val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
-                val componentName = ComponentName(context, QuickRecordWidgetProvider::class.java)
+                val componentName = ComponentName(context, providerClass)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
                 if (appWidgetIds != null && appWidgetIds.isNotEmpty()) {
                     for (id in appWidgetIds) {
-                        updateWidget(context, appWidgetManager, id)
+                        updateWidget(context, appWidgetManager, id, mode, providerClass)
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Error updating widgets", e)
+                Log.w(TAG, "Error updating widgets for ${providerClass.simpleName}", e)
             }
+        }
+
+        fun updateAllWidgets(context: Context) {
+            updateWidgetsForProvider(context, QuickAudioWidgetProvider::class.java, WidgetRecordMode.AUDIO)
+            updateWidgetsForProvider(context, QuickVideoWidgetProvider::class.java, WidgetRecordMode.VIDEO)
+            updateWidgetsForProvider(context, QuickRecordWidgetProvider::class.java, WidgetRecordMode.DEFAULT)
+        }
+    }
+}
+
+/**
+ * Dedicated 1-Tap Audio Recording Widget
+ */
+class QuickAudioWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.AUDIO)
+
+/**
+ * Dedicated 1-Tap Video Recording Widget
+ */
+class QuickVideoWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.VIDEO)
+
+/**
+ * Universal 1-Tap Quick Recording Widget (uses default settings)
+ */
+class QuickRecordWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.DEFAULT) {
+    companion object {
+        fun updateAllWidgets(context: Context) {
+            BaseRecordWidgetProvider.updateAllWidgets(context)
         }
     }
 }
