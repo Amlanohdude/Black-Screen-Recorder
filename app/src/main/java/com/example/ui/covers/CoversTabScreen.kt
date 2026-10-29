@@ -47,6 +47,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -95,7 +96,6 @@ val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle(
 val isPro = entitlements.isPro
 val activeCover = settings.activeCover
 
-var selectedCoverToView by remember(activeCover) { mutableStateOf(activeCover) }
 var coverToDelete by remember { mutableStateOf<CoverConfig?>(null) }
 var showCustomCoversLockedDialog by remember { mutableStateOf(false) }
 var pendingCustomCoverToActivate by remember { mutableStateOf<CoverConfig?>(null) }
@@ -131,8 +131,8 @@ confirmButton = {
 Button(
 onClick = {
 viewModel.deleteCustomCover(cover.id)
-if (selectedCoverToView.id == cover.id) {
-selectedCoverToView = CoverConfig.PURE_BLACK_PRESET
+if (activeCover.id == cover.id) {
+    viewModel.setActiveCover(CoverConfig.PURE_BLACK_PRESET)
 }
 coverToDelete = null
 },
@@ -151,7 +151,7 @@ Text("Cancel", color = TextSecondary)
 
 if (showCustomCoversLockedDialog) {
 val activity = context as? Activity
-val coverToActivate = pendingCustomCoverToActivate ?: selectedCoverToView
+val coverToActivate = pendingCustomCoverToActivate ?: activeCover
 AlertDialog(
 onDismissRequest = {
 showCustomCoversLockedDialog = false
@@ -260,11 +260,11 @@ TabTopHeader(title = "RECORDING COVERS")
 
 LazyVerticalGrid(
 columns = GridCells.Fixed(2),
-contentPadding = PaddingValues(16.dp),
+contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
 horizontalArrangement = Arrangement.spacedBy(12.dp),
 verticalArrangement = Arrangement.spacedBy(14.dp),
 modifier = Modifier
-.weight(1f)
+.fillMaxSize()
 .testTag("covers_grid")
 ) {
 // Section 1: BUILT-IN PRESETS
@@ -283,15 +283,15 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
 
                 items(builtInPresets, key = { "preset_${it.presetId.name}" }) { preset ->
                     val isCurrentActive = (activeCover.id == preset.id || (activeCover.presetId == preset.presetId && activeCover.presetId != CoverPresetId.CUSTOM))
-                    val isCardSelected = (selectedCoverToView.id == preset.id)
 
                     CoverCard(
                         cover = preset,
                         isActive = isCurrentActive,
-                        isSelected = isCardSelected,
                         onClick = {
-                            selectedCoverToView = preset
                             viewModel.setActiveCover(preset)
+                        },
+                        onCustomize = {
+                            viewModel.openCoverDesigner(preset)
                         }
                     )
                 }
@@ -372,14 +372,11 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                 // Saved Custom Covers
                 items(savedCustomCovers, key = { "custom_${it.id}" }) { customCover ->
                     val isCurrentActive = (activeCover.id == customCover.id)
-                    val isCardSelected = (selectedCoverToView.id == customCover.id)
 
                     CustomCoverCard(
                         cover = customCover,
                         isActive = isCurrentActive,
-                        isSelected = isCardSelected,
                         onClick = {
-                            selectedCoverToView = customCover
                             if (!isCurrentActive) {
                                 if (isPro) {
                                     viewModel.setActiveCover(customCover)
@@ -398,100 +395,6 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                     )
                 }
             }
-
-            // Compact Action Bar
-            val isCurrentlyActive = (activeCover.id == selectedCoverToView.id ||
-                    (activeCover.presetId == selectedCoverToView.presetId && activeCover.presetId != CoverPresetId.CUSTOM))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = selectedCoverToView.name,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            ),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = if (isCurrentlyActive) "Active Cover" else "Previewing",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isCurrentlyActive) AccentRed else TextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.openCoverDesigner(selectedCoverToView)
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
-                            modifier = Modifier
-                                .height(40.dp)
-                                .testTag("customize_cover_action")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = TextSecondary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (selectedCoverToView.presetId == CoverPresetId.CUSTOM) "Edit" else "Customize",
-                                fontSize = 13.sp
-                            )
-                        }
-
-                        Button(
-                            onClick = {
-                                if (!isCurrentlyActive) {
-                                    if (selectedCoverToView.isCustom && !isPro) {
-                                        pendingCustomCoverToActivate = selectedCoverToView
-                                        showCustomCoversLockedDialog = true
-                                    } else {
-                                        viewModel.setActiveCover(selectedCoverToView)
-                                    }
-                                }
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isCurrentlyActive) SurfaceSecondary else AccentRed,
-                                contentColor = if (isCurrentlyActive) AccentRed else Color.White,
-                                disabledContainerColor = SurfaceSecondary,
-                                disabledContentColor = AccentRed
-                            ),
-                            enabled = !isCurrentlyActive,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .testTag("use_cover_button")
-                        ) {
-                            Text(
-                                text = if (isCurrentlyActive) "Active \u2713" else if (selectedCoverToView.isCustom && !isPro) "Use (Ad)" else "Use Cover",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -499,16 +402,16 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
 private fun CoverCard(
     cover: CoverConfig,
     isActive: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onCustomize: () -> Unit
 ) {
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
         border = androidx.compose.foundation.BorderStroke(
-            width = if (isActive) 1.5.dp else if (isSelected) 1.dp else 0.5.dp,
-            color = if (isActive) AccentRed else if (isSelected) Color.White.copy(alpha = 0.4f) else BorderSubtle
+            width = if (isActive) 1.5.dp else 0.5.dp,
+            color = if (isActive) AccentRed else BorderSubtle
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -551,17 +454,57 @@ private fun CoverCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = cover.name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 13.sp
-                ),
-                color = if (isActive) Color.White else TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = cover.name,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 13.sp
+                    ),
+                    color = if (isActive) Color.White else TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp)
+                )
+
+                Surface(
+                    onClick = onCustomize,
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isActive) AccentRed.copy(alpha = 0.15f) else SurfaceSecondary,
+                    border = androidx.compose.foundation.BorderStroke(
+                        0.5.dp,
+                        if (isActive) AccentRed.copy(alpha = 0.4f) else BorderSubtle
+                    ),
+                    modifier = Modifier.testTag("customize_cover_${cover.presetId.name.lowercase()}")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = if (isActive) AccentRed else TextSecondary,
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Text(
+                            text = "Edit",
+                            fontSize = 11.sp,
+                            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isActive) AccentRed else TextSecondary
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -570,7 +513,6 @@ private fun CoverCard(
 private fun CustomCoverCard(
     cover: CoverConfig,
     isActive: Boolean,
-    isSelected: Boolean,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -580,8 +522,8 @@ private fun CustomCoverCard(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
         border = androidx.compose.foundation.BorderStroke(
-            width = if (isActive) 1.5.dp else if (isSelected) 1.dp else 0.5.dp,
-            color = if (isActive) AccentRed else if (isSelected) Color.White.copy(alpha = 0.4f) else BorderSubtle
+            width = if (isActive) 1.5.dp else 0.5.dp,
+            color = if (isActive) AccentRed else BorderSubtle
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -625,7 +567,9 @@ private fun CustomCoverCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -638,27 +582,49 @@ private fun CustomCoverCard(
                     color = if (isActive) Color.White else TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp)
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Surface(
                         onClick = onEdit,
-                        modifier = Modifier
-                            .size(26.dp)
-                            .testTag("edit_custom_cover_${cover.id}")
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isActive) AccentRed.copy(alpha = 0.15f) else SurfaceSecondary,
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp,
+                            if (isActive) AccentRed.copy(alpha = 0.4f) else BorderSubtle
+                        ),
+                        modifier = Modifier.testTag("edit_custom_cover_${cover.id}")
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = if (isActive) AccentRed else TextSecondary,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "Edit",
+                                fontSize = 11.sp,
+                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isActive) AccentRed else TextSecondary
+                            )
+                        }
                     }
+
                     IconButton(
                         onClick = onDelete,
                         modifier = Modifier
-                            .size(26.dp)
+                            .size(24.dp)
                             .testTag("delete_custom_cover_${cover.id}")
                     ) {
                         Icon(
@@ -729,15 +695,23 @@ private fun NewCoverActionCard(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "+ Design New",
-                color = AccentRed,
-                maxLines = 1,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "+ Design New",
+                    color = AccentRed,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
-            )
+            }
         }
     }
 }
