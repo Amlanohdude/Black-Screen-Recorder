@@ -152,8 +152,6 @@ fun SettingsScreen(
     var showDevQaDialog by remember { mutableStateOf(false) }
     var showOnboardingPreview by remember { mutableStateOf(false) }
     var showWidgetDialog by remember { mutableStateOf(false) }
-    var showLowBatteryDialog by remember { mutableStateOf(false) }
-    var showLowStorageDialog by remember { mutableStateOf(false) }
 
     val openFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -464,46 +462,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // Section 4: SAFETY GUARDRAILS
-                SettingsGroup(title = "SAFETY GUARDRAILS") {
-                    SettingsSwitchRow(
-                        title = "Safety Guardrails",
-                        checked = settings.safetyGuardrailsEnabled,
-                        onCheckedChange = { enabled ->
-                            viewModel.updateSafetyGuardrailsEnabled(enabled)
-                        },
-                        subtitle = "Auto-save and seal files before low battery shutdown or storage overflow",
-                        testTag = "settings_safety_guardrails_switch"
-                    )
-
-                    if (settings.safetyGuardrailsEnabled) {
-                        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                        val batteryDisplay = when (settings.lowBatteryStopThresholdPct) {
-                            3 -> "3% (Recommended)"
-                            else -> "${settings.lowBatteryStopThresholdPct}%"
-                        }
-                        SettingsClickableRow(
-                            title = "Low battery auto-stop",
-                            value = batteryDisplay,
-                            onClick = { showLowBatteryDialog = true }
-                        )
-
-                        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                        val storageDisplay = when (settings.lowStorageStopThresholdMb) {
-                            200 -> "200 MB (Recommended)"
-                            else -> "${settings.lowStorageStopThresholdMb} MB"
-                        }
-                        SettingsClickableRow(
-                            title = "Low storage auto-stop",
-                            value = storageDisplay,
-                            onClick = { showLowStorageDialog = true }
-                        )
-                    }
-                }
-
-                // Section 5: PRIVACY & SECURITY
+                // Section 4: PRIVACY & SECURITY
                 SettingsGroup(title = "PRIVACY & SECURITY") {
                     SettingsSwitchRow(
                         title = "Recording Library Lock",
@@ -956,40 +915,6 @@ fun SettingsScreen(
             },
             containerColor = SurfacePrimary,
             shape = RoundedCornerShape(16.dp)
-        )
-    }
-
-    if (showLowBatteryDialog) {
-        SelectionDialog(
-            title = "Low battery auto-stop",
-            options = listOf(
-                3 to "3% (Recommended) - Maximum record time",
-                5 to "5% - Balanced caution margin",
-                10 to "10% - Early warning margin"
-            ),
-            selected = settings.lowBatteryStopThresholdPct,
-            onSelect = {
-                viewModel.updateLowBatteryStopThresholdPct(it)
-                showLowBatteryDialog = false
-            },
-            onDismiss = { showLowBatteryDialog = false }
-        )
-    }
-
-    if (showLowStorageDialog) {
-        SelectionDialog(
-            title = "Low storage auto-stop",
-            options = listOf(
-                100 to "100 MB - Minimal buffer",
-                200 to "200 MB (Recommended) - Safe MP4 buffer",
-                500 to "500 MB - Large buffer for HD video"
-            ),
-            selected = settings.lowStorageStopThresholdMb,
-            onSelect = {
-                viewModel.updateLowStorageStopThresholdMb(it)
-                showLowStorageDialog = false
-            },
-            onDismiss = { showLowStorageDialog = false }
         )
     }
 
