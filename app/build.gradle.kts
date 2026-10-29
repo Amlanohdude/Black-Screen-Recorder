@@ -110,6 +110,8 @@ dependencies {
   implementation(libs.play.services.ads)
   implementation(libs.user.messaging.platform)
   implementation(libs.billing.ktx)
+  implementation(libs.play.app.update)
+  implementation(libs.play.app.update.ktx)
   // implementation(libs.coil.compose)
   // implementation(libs.converter.moshi)
   // implementation(libs.firebase.ai)

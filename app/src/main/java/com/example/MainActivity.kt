@@ -37,12 +37,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import com.example.update.InAppUpdateManager
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Settings
@@ -145,6 +150,9 @@ RewardedAdManager.loadAd(applicationContext)
 }
 }
 
+// Non-blocking, 100% offline-safe in-app update check
+InAppUpdateManager.checkForUpdateSilently(this)
+
 setContent {
 MyApplicationTheme {
 var showSplash by remember { mutableStateOf(true) }
@@ -205,11 +213,13 @@ return super.onKeyDown(keyCode, event)
 override fun onResume() {
 super.onResume()
 BillingManager.onResume()
+InAppUpdateManager.onResume(this)
 }
 
 override fun onDestroy() {
 super.onDestroy()
 NativeAdManager.destroyAll()
+InAppUpdateManager.onDestroy()
 }
 
 companion object {
@@ -228,6 +238,7 @@ var activeRecordingType by remember { mutableStateOf<RecordingType?>(null) }
 var completedSummary by remember { mutableStateOf<RecordingSummaryInfo?>(null) }
 var isProScreenVisible by remember { mutableStateOf(false) }
 val recordingStatus by viewModel.recordingStatus.collectAsStateWithLifecycle()
+val isUpdateDownloaded by InAppUpdateManager.isUpdateDownloaded.collectAsStateWithLifecycle()
 val coverToCustomize by viewModel.coverToCustomize.collectAsStateWithLifecycle()
 var showExitConfirmDialog by remember { mutableStateOf(false) }
 var showActivateCoverDialog by remember { mutableStateOf(false) }
@@ -334,10 +345,18 @@ selectedTab = MainTab.RECORDINGS
 Scaffold(
 modifier = Modifier.fillMaxSize(),
 bottomBar = {
+Column {
+if (isUpdateDownloaded && !recordingStatus.isRecording) {
+UpdateDownloadedBanner(
+onRestart = { InAppUpdateManager.completeUpdate() },
+onDismiss = { InAppUpdateManager.dismissDownloadedBanner() }
+)
+}
 CustomBottomNavigationBar(
 currentTab = selectedTab,
 onTabSelected = { selectedTab = it }
 )
+}
 }
 ) { innerPadding ->
 Box(
@@ -654,5 +673,78 @@ private fun CustomBottomNavItem(
                 .clip(CircleShape)
                 .background(AccentRed)
         )
+    }
+}
+
+@Composable
+fun UpdateDownloadedBanner(
+    onRestart: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp)),
+        color = SurfaceSecondary
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FileDownload,
+                    contentDescription = null,
+                    tint = AccentRed,
+                    modifier = Modifier.size(22.dp)
+                )
+                Column {
+                    Text(
+                        text = "Update downloaded",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = "Restart app to complete update",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Button(
+                    onClick = onRestart,
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Restart", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Dismiss",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
     }
 }

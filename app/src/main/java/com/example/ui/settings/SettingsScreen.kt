@@ -78,6 +78,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.app.ShareCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
+import com.example.update.InAppUpdateManager
 import com.example.ads.AdScreen
 import com.example.ads.AdsConfig
 import com.example.ads.NativeAdCard
@@ -575,6 +576,19 @@ fun SettingsScreen(
                                 context.startActivity(intent)
                             } catch (_: Exception) {
                                 Toast.makeText(context, "Could not open web browser.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Check for updates",
+                        value = "Check",
+                        onClick = {
+                            val activity = context as? Activity
+                            if (activity != null) {
+                                InAppUpdateManager.checkManualUpdate(activity)
                             }
                         }
                     )
