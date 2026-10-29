@@ -11,9 +11,12 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
 import com.example.ads.RewardedAdManager
@@ -63,6 +66,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
@@ -89,6 +93,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
 import com.example.covers.CoverDisplay
 import com.example.presets.RecordingPresetId
+import com.example.recording.AudioMicSource
+import com.example.recording.AudioQuality
 import com.example.storage.EntitlementManager
 import com.example.storage.ExitMethod
 import com.example.storage.StorageCapacityEstimator
@@ -128,6 +134,8 @@ fun RecordTabScreen(
     val scrollState = rememberScrollState()
 
     var showQualityDropdown by remember { mutableStateOf(false) }
+    var showAudioFormatDropdown by remember { mutableStateOf(false) }
+    var showAudioQualityDropdown by remember { mutableStateOf(false) }
     var showCriticalStorageDialog by remember { mutableStateOf(false) }
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
@@ -502,7 +510,6 @@ fun RecordTabScreen(
                     }
                 } else {
                     Card(
-                        onClick = { showAudioSettingsSheet = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("quick_config_bar"),
@@ -513,33 +520,204 @@ fun RecordTabScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // 1. Microphone Source Indicator
+                            val currentMic = AudioMicSource.fromId(settings.preferredMicrophone)
+                            val micIcon = when (currentMic) {
+                                AudioMicSource.PHONE_MIC -> Icons.Default.Mic
+                                AudioMicSource.WIRED_HEADSET -> Icons.Default.Headphones
+                                AudioMicSource.BLUETOOTH_MIC -> Icons.Default.Bluetooth
+                            }
+                            val micLabel = when (currentMic) {
+                                AudioMicSource.PHONE_MIC -> "Built-in Mic"
+                                AudioMicSource.WIRED_HEADSET -> "Wired Mic"
+                                AudioMicSource.BLUETOOTH_MIC -> "Bluetooth Mic"
+                            }
+
                             Row(
+                                modifier = Modifier
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        showAudioSettingsSheet = true
+                                    }
+                                    .padding(vertical = 4.dp)
+                                    .testTag("quick_audio_mic"),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.SettingsVoice,
-                                    contentDescription = null,
+                                    imageVector = micIcon,
+                                    contentDescription = "Microphone Settings",
                                     tint = AccentRed,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "Audio Settings",
+                                    text = micLabel,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = TextPrimary
                                 )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = "Configure Mic",
+                                    tint = TextSecondary.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(14.dp)
+                                )
                             }
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = TextSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
+
+                            // 2 & 3. Contextual Audio Controls: Format Chip + Bitrate / Quality Dropdown Badge
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val isWav = settings.audioFormat.contains("wav", ignoreCase = true)
+                                val currentQuality = AudioQuality.fromId(settings.audioQuality)
+                                val bitrateLabel = when (currentQuality) {
+                                    AudioQuality.HIGH -> "256 kbps"
+                                    AudioQuality.STANDARD -> "128 kbps"
+                                    AudioQuality.VOICE -> "64 kbps"
+                                }
+
+                                // Audio Format Chip
+                                Box {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = SurfaceSecondary,
+                                        border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderSubtle),
+                                        modifier = Modifier
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                showAudioFormatDropdown = true
+                                            }
+                                            .testTag("quick_select_audio_format")
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isWav) "WAV" else "M4A",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = TextPrimary
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.ArrowDropDown,
+                                                contentDescription = "Select Format",
+                                                tint = TextSecondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = showAudioFormatDropdown,
+                                        onDismissRequest = { showAudioFormatDropdown = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Column {
+                                                    Text(
+                                                        text = "M4A (AAC)",
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (!isWav) AccentRed else TextPrimary
+                                                    )
+                                                    Text(
+                                                        text = "Standard AAC · Small file size",
+                                                        fontSize = 11.sp,
+                                                        color = TextSecondary
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                viewModel.updateAudioFormat("m4a")
+                                                showAudioFormatDropdown = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Column {
+                                                    Text(
+                                                        text = "WAV Lossless",
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isWav) AccentRed else TextPrimary
+                                                    )
+                                                    Text(
+                                                        text = "Uncompressed · Studio fidelity",
+                                                        fontSize = 11.sp,
+                                                        color = TextSecondary
+                                                    )
+                                                }
+                                            },
+                                            onClick = {
+                                                viewModel.updateAudioFormat("wav")
+                                                showAudioFormatDropdown = false
+                                            }
+                                        )
+                                    }
+                                }
+
+                                // Bitrate / Quality Dropdown Badge
+                                Box {
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                showAudioQualityDropdown = true
+                                            }
+                                            .padding(vertical = 4.dp)
+                                            .testTag("quick_select_audio_quality"),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(
+                                            text = bitrateLabel,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AccentRed
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Select Quality",
+                                            tint = TextSecondary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+
+                                    DropdownMenu(
+                                        expanded = showAudioQualityDropdown,
+                                        onDismissRequest = { showAudioQualityDropdown = false }
+                                    ) {
+                                        AudioQuality.entries.forEach { quality ->
+                                            val isSelected = (currentQuality == quality)
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Column {
+                                                        Text(
+                                                            text = quality.title,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (isSelected) AccentRed else TextPrimary
+                                                        )
+                                                        Text(
+                                                            text = quality.description,
+                                                            fontSize = 11.sp,
+                                                            color = TextSecondary
+                                                        )
+                                                    }
+                                                },
+                                                onClick = {
+                                                    viewModel.updateAudioQuality(quality.id)
+                                                    showAudioQualityDropdown = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

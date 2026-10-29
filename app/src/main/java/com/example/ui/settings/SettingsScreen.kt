@@ -214,7 +214,7 @@ fun SettingsScreen(
 
                     SettingsClickableRow(
                         title = "Audio format",
-                        value = "M4A (AAC)",
+                        value = if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
                         onClick = { showAudioDialog = true }
                     )
 

@@ -568,7 +568,11 @@ fun AudioSettingsSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("Format", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            Text("M4A (AAC)", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                            Text(
+                                if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = TextPrimary
+                            )
                         }
 
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.5f), thickness = 0.5.dp)
