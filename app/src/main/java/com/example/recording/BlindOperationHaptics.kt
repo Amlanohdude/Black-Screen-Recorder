@@ -20,24 +20,28 @@ object BlindOperationHaptics {
 
     private const val TAG = "BlindOperationHaptics"
 
+    // Tactile vibration constants engineered for blind pocket/hand operation:
+    // - 1 crisp: 110ms punchy pulse (replaces micro-click which is imperceptible in hand/pocket)
+    // - 2 short: 85ms on, 140ms off, 85ms on (ample motor spin-down so 2 pulses are clearly felt)
+    // - 1 long: 400ms solid reassuring vibration
+    const val STARTED_DURATION_MS = 110L
+    val PAUSED_PATTERN_MS = longArrayOf(0L, 85L, 140L, 85L)
+    const val SAVED_DURATION_MS = 400L
+
     /**
      * 1 crisp vibration: Recording started successfully.
-     * Crisp, punchy tactile pulse (~75ms).
+     * Snappy, punchy tactile pulse (110ms) easily perceptible in hand or pocket.
      */
     fun vibrateStarted(context: Context) {
         try {
             val vibrator = getVibrator(context) ?: return
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try {
-                    vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-                    return
-                } catch (_: Exception) {}
-            }
+            if (!vibrator.hasVibrator()) return
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(75L, VibrationEffect.DEFAULT_AMPLITUDE))
+                vibrator.vibrate(VibrationEffect.createOneShot(STARTED_DURATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(75L)
+                vibrator.vibrate(STARTED_DURATION_MS)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error performing vibrateStarted", e)
@@ -46,17 +50,19 @@ object BlindOperationHaptics {
 
     /**
      * 2 short vibrations: Recording paused.
-     * Double tactile pulse (50ms on, 70ms off, 50ms on).
+     * Double tactile pulse (85ms on, 140ms off, 85ms on) with sufficient spin-down
+     * time so human touch distinctly perceives two separate pulses.
      */
     fun vibratePaused(context: Context) {
         try {
             val vibrator = getVibrator(context) ?: return
-            val pattern = longArrayOf(0, 50, 70, 50)
+            if (!vibrator.hasVibrator()) return
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+                vibrator.vibrate(VibrationEffect.createWaveform(PAUSED_PATTERN_MS, -1))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, -1)
+                vibrator.vibrate(PAUSED_PATTERN_MS, -1)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error performing vibratePaused", e)
@@ -65,16 +71,18 @@ object BlindOperationHaptics {
 
     /**
      * 1 long smooth vibration: Recording safely saved.
-     * Reassuring solid pulse (~380ms) confirming file is verified on disk and database.
+     * Reassuring solid pulse (400ms) confirming file is verified on disk and database.
      */
     fun vibrateSaved(context: Context) {
         try {
             val vibrator = getVibrator(context) ?: return
+            if (!vibrator.hasVibrator()) return
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(380L, VibrationEffect.DEFAULT_AMPLITUDE))
+                vibrator.vibrate(VibrationEffect.createOneShot(SAVED_DURATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator.vibrate(380L)
+                vibrator.vibrate(SAVED_DURATION_MS)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Error performing vibrateSaved", e)
@@ -85,7 +93,7 @@ object BlindOperationHaptics {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-                vibratorManager?.defaultVibrator
+                vibratorManager?.defaultVibrator ?: (context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator)
             } else {
                 @Suppress("DEPRECATION")
                 context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
