@@ -208,6 +208,7 @@ return
             exportProgressState = null
             when (result) {
                 is ExportResult.Success -> {
+                    EntitlementManager.consumeCustomFolderExportCredit()
                     Toast.makeText(
                         context,
                         "Recording exported to ${result.destinationFolderName}.",

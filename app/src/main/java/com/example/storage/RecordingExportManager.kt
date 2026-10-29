@@ -180,8 +180,12 @@ object RecordingExportManager {
         isCancelled: () -> Boolean
     ): CopyFileResult {
         val isVideo = recordingType.equals("VIDEO", ignoreCase = true)
-        val mimeType = if (isVideo) "video/mp4" else "audio/mp4"
         val originalName = sourceFile.name
+        val mimeType = when {
+            isVideo -> "video/mp4"
+            originalName.endsWith(".wav", ignoreCase = true) -> "audio/wav"
+            else -> "audio/mp4"
+        }
         val safeDestinationName = resolveConflictName(destinationTree, originalName)
 
         val destinationDoc = destinationTree.createFile(mimeType, safeDestinationName)

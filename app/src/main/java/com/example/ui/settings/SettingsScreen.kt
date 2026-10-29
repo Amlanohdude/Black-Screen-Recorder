@@ -132,6 +132,7 @@ fun SettingsScreen(
     var pinChangeError by remember { mutableStateOf<String?>(null) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showStorageLocationDialog by remember { mutableStateOf(false) }
+    var showCustomFolderOptionsDialog by remember { mutableStateOf(false) }
     var showAutoStopLockedDialog by remember { mutableStateOf(false) }
     var showExitMethodDialog by remember { mutableStateOf(false) }
     var showExitGestureDialog by remember { mutableStateOf(false) }
@@ -390,7 +391,13 @@ fun SettingsScreen(
                     SettingsClickableRow(
                         title = "Export to Custom Folder",
                         value = folderDisplay,
-                        onClick = { openFolderLauncher.launch(null) }
+                        onClick = {
+                            if (hasCustomFolder) {
+                                showCustomFolderOptionsDialog = true
+                            } else {
+                                openFolderLauncher.launch(null)
+                            }
+                        }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -993,6 +1000,71 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { showStorageLocationDialog = false }) {
                     Text("OK", color = AccentRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(14.dp)
+        )
+    }
+
+    if (showCustomFolderOptionsDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomFolderOptionsDialog = false },
+            title = {
+                Text(
+                    text = "Custom Export Folder",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Current export location:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = settings.customExportFolderName ?: "Configured",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = AccentRed
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Recordings you export will be copied here while originals remain securely in app storage. You can change the target folder or reset it back to private sandbox.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                        color = TextSecondary
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCustomFolderOptionsDialog = false
+                        openFolderLauncher.launch(null)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Change Folder", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = {
+                            showCustomFolderOptionsDialog = false
+                            viewModel.clearCustomExportFolder()
+                            Toast.makeText(context, "Custom export folder cleared.", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text("Reset / Clear", color = AccentRed)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showCustomFolderOptionsDialog = false }) {
+                        Text("Cancel", color = TextSecondary)
+                    }
                 }
             },
             containerColor = SurfacePrimary,

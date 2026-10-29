@@ -1,5 +1,6 @@
 package com.example.ui.recorder
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -58,7 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ads.RewardedAdManager
 import com.example.recording.RecordingType
+import com.example.storage.EntitlementManager
 import com.example.storage.ExportErrorType
 import com.example.storage.ExportProgress
 import com.example.storage.ExportResult
@@ -99,6 +102,7 @@ fun RecordingSummaryScreen(
     var exportProgressState by remember { mutableStateOf<ExportProgress?>(null) }
     var currentExportJob by remember { mutableStateOf<Job?>(null) }
     var isExportCancelled by remember { mutableStateOf(false) }
+    var showExportAdDialog by remember { mutableStateOf(false) }
 
     BackHandler {
         onDone()
@@ -147,6 +151,7 @@ fun RecordingSummaryScreen(
             exportProgressState = null
             when (result) {
                 is ExportResult.Success -> {
+                    EntitlementManager.consumeCustomFolderExportCredit()
                     isExported = true
                     Toast.makeText(context, "Recording exported to $folderName.", Toast.LENGTH_SHORT).show()
                 }
@@ -178,7 +183,25 @@ fun RecordingSummaryScreen(
             val folderName = RecordingExportManager.getFolderDisplayName(context, uri)
             prefs.updateCustomExportFolder(uri.toString(), folderName)
             Toast.makeText(context, "Custom export folder selected.", Toast.LENGTH_SHORT).show()
-            executeExport(uri.toString(), folderName)
+            if (EntitlementManager.canUseCustomFolderExport()) {
+                executeExport(uri.toString(), folderName)
+            } else {
+                showExportAdDialog = true
+            }
+        }
+    }
+
+    fun startExport() {
+        if (!EntitlementManager.canUseCustomFolderExport()) {
+            showExportAdDialog = true
+            return
+        }
+        val customUri = settings.customExportFolderUri
+        val customName = settings.customExportFolderName
+        if (!customUri.isNullOrEmpty()) {
+            executeExport(customUri, customName ?: "Custom Folder")
+        } else {
+            pickFolderLauncher.launch(null)
         }
     }
 
@@ -306,15 +329,7 @@ fun RecordingSummaryScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedButton(
-                onClick = {
-                    val customUri = settings.customExportFolderUri
-                    val customName = settings.customExportFolderName
-                    if (!customUri.isNullOrEmpty() && !customName.isNullOrEmpty()) {
-                        executeExport(customUri, customName)
-                    } else {
-                        pickFolderLauncher.launch(null)
-                    }
-                },
+                onClick = { startExport() },
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().height(48.dp).testTag("summary_export_button")
             ) {
@@ -448,6 +463,54 @@ fun RecordingSummaryScreen(
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirmDialog = false }) {
                         Text("Cancel", color = TextSecondary)
+                    }
+                }
+            )
+        }
+
+        if (showExportAdDialog) {
+            AlertDialog(
+                onDismissRequest = { showExportAdDialog = false },
+                containerColor = SurfacePrimary,
+                shape = RoundedCornerShape(14.dp),
+                title = {
+                    Text(
+                        text = "Custom Folder Export",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Exporting recordings to an external custom folder requires 1 export credit or Pro. Watch an ad to earn 1 export credit.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showExportAdDialog = false
+                            val activity = context as? Activity
+                            if (activity != null) {
+                                RewardedAdManager.showAd(
+                                    activity = activity,
+                                    onUserEarnedReward = {
+                                        EntitlementManager.addCustomFolderExportCredit()
+                                        startExport()
+                                    }
+                                )
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = "Watch Ad · 1 Use", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showExportAdDialog = false }) {
+                        Text(text = "Cancel", color = TextSecondary)
                     }
                 }
             )
