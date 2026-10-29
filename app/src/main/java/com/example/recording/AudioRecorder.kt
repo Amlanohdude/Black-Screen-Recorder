@@ -79,6 +79,28 @@ class AudioRecorder(
         }
     }
 
+    fun pause() {
+        if (!isRecording) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                mediaRecorder?.pause()
+            } catch (e: Exception) {
+                Log.e("AudioRecorder", "Error pausing audio recorder", e)
+            }
+        }
+    }
+
+    fun resume() {
+        if (!isRecording) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                mediaRecorder?.resume()
+            } catch (e: Exception) {
+                Log.e("AudioRecorder", "Error resuming audio recorder", e)
+            }
+        }
+    }
+
     fun stop(): File? {
         if (!isRecording) return currentOutputFile
         val file = currentOutputFile

@@ -78,6 +78,7 @@ data class UserSettings(
     val audioSampleRate: Int = 44100,
     val activeAudioPreset: RecordingPresetId = RecordingPresetId.GENERAL_AUDIO,
     val activeVideoPreset: RecordingPresetId = RecordingPresetId.DISCREET_VIDEO,
+    val hapticFeedbackEnabled: Boolean = true,
     val onboardingCompleted: Boolean = true,
     val firstRecordingExplanationShown: Boolean = false
 ) {
@@ -207,6 +208,7 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
             audioSampleRate = audioSampleRate,
             activeAudioPreset = activeAudioPreset,
             activeVideoPreset = activeVideoPreset,
+            hapticFeedbackEnabled = prefs.getBoolean("haptic_feedback_enabled", true),
             onboardingCompleted = onboardingCompleted,
             firstRecordingExplanationShown = firstRecordingExplanationShown
         )
@@ -558,6 +560,11 @@ customExportFolderName = null
     fun updateAudioSampleRate(sampleRate: Int) {
         prefs.edit().putInt("audio_sample_rate", sampleRate).apply()
         _settings.value = _settings.value.copy(audioSampleRate = sampleRate)
+    }
+
+    fun updateHapticFeedbackEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("haptic_feedback_enabled", enabled).apply()
+        _settings.value = _settings.value.copy(hapticFeedbackEnabled = enabled)
     }
 
     fun updateExitAfterRecordingEnabled(enabled: Boolean) {

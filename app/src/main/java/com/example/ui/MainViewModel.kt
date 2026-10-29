@@ -141,6 +141,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         context.startService(intent)
     }
 
+    fun pauseRecording(context: Context) {
+        val intent = Intent(context, RecordingService::class.java).apply {
+            action = RecordingService.ACTION_PAUSE
+        }
+        context.startService(intent)
+    }
+
+    fun resumeRecording(context: Context) {
+        val intent = Intent(context, RecordingService::class.java).apply {
+            action = RecordingService.ACTION_RESUME
+        }
+        context.startService(intent)
+    }
+
     fun saveCompletedVideo(context: Context, file: File, durationSeconds: Long) {
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_VIDEO_SAVED
@@ -223,6 +237,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateAutoStopSeconds(seconds: Int) = settingsPrefs.updateAutoStopSeconds(seconds)
     fun updateAutoStopMinutes(minutes: Int) = settingsPrefs.updateAutoStopMinutes(minutes)
     fun updateStopBehavior(behavior: StopBehavior) = settingsPrefs.updateStopBehavior(behavior)
+    fun updateHapticFeedbackEnabled(enabled: Boolean) = settingsPrefs.updateHapticFeedbackEnabled(enabled)
     fun updateExitAfterRecordingEnabled(enabled: Boolean) = settingsPrefs.updateExitAfterRecordingEnabled(enabled)
     fun updateBackgroundRecordingEnabled(enabled: Boolean) = settingsPrefs.updateBackgroundRecordingEnabled(enabled)
     fun updateExitMethod(method: ExitMethod) = settingsPrefs.updateExitMethod(method)

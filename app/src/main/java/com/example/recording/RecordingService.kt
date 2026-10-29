@@ -50,6 +50,8 @@ class RecordingService : LifecycleService() {
         const val ACTION_START_VIDEO = "com.example.recording.ACTION_START_VIDEO"
         const val ACTION_START_AUDIO = "com.example.recording.ACTION_START_AUDIO"
         const val ACTION_STOP = "com.example.recording.ACTION_STOP"
+        const val ACTION_PAUSE = "com.example.recording.ACTION_PAUSE"
+        const val ACTION_RESUME = "com.example.recording.ACTION_RESUME"
         const val ACTION_VIDEO_SAVED = "com.example.recording.ACTION_VIDEO_SAVED"
 
         const val EXTRA_FILE_PATH = "extra_file_path"
@@ -82,6 +84,7 @@ class RecordingService : LifecycleService() {
     private var videoManager: VideoRecordingManager? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var recordingStartTime = 0L
+    private var pausedDurationOffsetSeconds = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -103,6 +106,12 @@ class RecordingService : LifecycleService() {
             }
             ACTION_STOP -> {
                 stopActiveRecording()
+            }
+            ACTION_PAUSE -> {
+                pauseActiveRecording()
+            }
+            ACTION_RESUME -> {
+                resumeActiveRecording()
             }
             ACTION_VIDEO_SAVED -> {
                 val path = intent.getStringExtra(EXTRA_FILE_PATH)
@@ -165,6 +174,10 @@ class RecordingService : LifecycleService() {
                 type = RecordingType.AUDIO,
                 durationSeconds = 0L
             )
+            val settings = SettingsPreferences(applicationContext).settings.value
+            if (settings.hapticFeedbackEnabled) {
+                BlindOperationHaptics.vibrateStarted(applicationContext)
+            }
             startTimer()
             startAmplitudeMonitoring()
         } else {
@@ -266,6 +279,10 @@ class RecordingService : LifecycleService() {
                         type = RecordingType.VIDEO,
                         durationSeconds = 0L
                     )
+                    val settings = SettingsPreferences(applicationContext).settings.value
+                    if (settings.hapticFeedbackEnabled) {
+                        BlindOperationHaptics.vibrateStarted(applicationContext)
+                    }
                     startTimer()
                 } else {
                     _recordingStatus.value = RecordingStatus(
@@ -287,13 +304,14 @@ class RecordingService : LifecycleService() {
         )
     }
 
-    private fun startTimer() {
+    private fun startTimer(initialOffsetSeconds: Long = 0L) {
         timerJob?.cancel()
+        pausedDurationOffsetSeconds = initialOffsetSeconds
         recordingStartTime = System.currentTimeMillis()
         timerJob = serviceScope.launch {
-            while (isActive && _recordingStatus.value.isRecording) {
+            while (isActive && _recordingStatus.value.isRecording && _recordingStatus.value.stage == RecordingStage.RECORDING) {
                 delay(1000)
-                val duration = (System.currentTimeMillis() - recordingStartTime) / 1000
+                val duration = pausedDurationOffsetSeconds + (System.currentTimeMillis() - recordingStartTime) / 1000
                 _recordingStatus.value = _recordingStatus.value.copy(durationSeconds = duration)
 
                 val prefs = SettingsPreferences(applicationContext).settings.value
@@ -304,6 +322,52 @@ class RecordingService : LifecycleService() {
                 }
             }
         }
+    }
+
+    private fun pauseActiveRecording() {
+        if (_recordingStatus.value.stage != RecordingStage.RECORDING) return
+        val currentDuration = _recordingStatus.value.durationSeconds
+        pausedDurationOffsetSeconds = currentDuration
+        timerJob?.cancel()
+        amplitudeJob?.cancel()
+
+        val type = _recordingStatus.value.type
+        if (type == RecordingType.VIDEO) {
+            videoManager?.pauseRecording()
+        } else if (type == RecordingType.AUDIO) {
+            audioRecorder?.pause()
+        }
+
+        _recordingStatus.value = _recordingStatus.value.copy(
+            stage = RecordingStage.PAUSED
+        )
+
+        val settings = SettingsPreferences(applicationContext).settings.value
+        if (settings.hapticFeedbackEnabled) {
+            BlindOperationHaptics.vibratePaused(applicationContext)
+        }
+    }
+
+    private fun resumeActiveRecording() {
+        if (_recordingStatus.value.stage != RecordingStage.PAUSED) return
+        val type = _recordingStatus.value.type
+        if (type == RecordingType.VIDEO) {
+            videoManager?.resumeRecording()
+        } else if (type == RecordingType.AUDIO) {
+            audioRecorder?.resume()
+            startAmplitudeMonitoring()
+        }
+
+        _recordingStatus.value = _recordingStatus.value.copy(
+            stage = RecordingStage.RECORDING
+        )
+
+        val settings = SettingsPreferences(applicationContext).settings.value
+        if (settings.hapticFeedbackEnabled) {
+            BlindOperationHaptics.vibrateStarted(applicationContext)
+        }
+
+        startTimer(pausedDurationOffsetSeconds)
     }
 
     private fun stopActiveRecording() {
@@ -344,6 +408,10 @@ class RecordingService : LifecycleService() {
                     }
 
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        val settings = SettingsPreferences(applicationContext).settings.value
+                        if (settings.hapticFeedbackEnabled) {
+                            BlindOperationHaptics.vibrateSaved(applicationContext)
+                        }
                         _recordingStatus.value = RecordingStatus(
                             stage = RecordingStage.IDLE,
                             isRecording = false,
@@ -407,6 +475,10 @@ class RecordingService : LifecycleService() {
                 }
 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    val settings = SettingsPreferences(applicationContext).settings.value
+                    if (settings.hapticFeedbackEnabled) {
+                        BlindOperationHaptics.vibrateSaved(applicationContext)
+                    }
                     _recordingStatus.value = RecordingStatus(
                         stage = RecordingStage.IDLE,
                         isRecording = false,
@@ -455,6 +527,10 @@ class RecordingService : LifecycleService() {
                 }
 
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    val settings = SettingsPreferences(applicationContext).settings.value
+                    if (settings.hapticFeedbackEnabled) {
+                        BlindOperationHaptics.vibrateSaved(applicationContext)
+                    }
                     _recordingStatus.value = RecordingStatus(
                         stage = RecordingStage.IDLE,
                         isRecording = false,

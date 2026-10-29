@@ -152,6 +152,22 @@ class VideoRecordingManager(
         }
     }
 
+    fun pauseRecording() {
+        try {
+            activeRecording?.pause()
+        } catch (e: Exception) {
+            Log.e("VideoRecordingManager", "Error pausing video recording", e)
+        }
+    }
+
+    fun resumeRecording() {
+        try {
+            activeRecording?.resume()
+        } catch (e: Exception) {
+            Log.e("VideoRecordingManager", "Error resuming video recording", e)
+        }
+    }
+
     fun stopRecording() {
         try {
             routingSession?.release()

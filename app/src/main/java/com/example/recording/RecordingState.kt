@@ -4,6 +4,7 @@ enum class RecordingStage {
     IDLE,
     STARTING,
     RECORDING,
+    PAUSED,
     FINALIZING,
     ERROR
 }

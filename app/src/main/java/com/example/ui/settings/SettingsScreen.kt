@@ -87,6 +87,7 @@ import com.example.ads.RewardedAdManager
 import com.example.config.AppLinks
 import com.example.covers.ControlGesture
 import com.example.presets.RecordingPresetId
+import com.example.recording.BlindOperationHaptics
 import com.example.storage.EntitlementManager
 import com.example.storage.ExitGesture
 import com.example.storage.ExitMethod
@@ -251,6 +252,18 @@ fun SettingsScreen(
                         },
                         subtitle = "Continue recording when you leave the app",
                         testTag = "settings_background_recording_switch"
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = "Discreet Haptic Feedback",
+                        checked = settings.hapticFeedbackEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateHapticFeedbackEnabled(enabled)
+                        },
+                        subtitle = "Vibrate on start (1 crisp), pause (2 short), and safe save (1 long) for blind operation",
+                        testTag = "settings_haptic_feedback_switch"
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -1873,6 +1886,88 @@ private fun DeveloperQaDialog(
                                 fontWeight = FontWeight.SemiBold
                             ),
                             color = AccentRed
+                        )
+                    }
+                }
+
+                // Section 4: DISCREET HAPTICS (BLIND OPERATION)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "DISCREET HAPTIC FEEDBACK (BLIND OPERATION)",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = AccentRed
+                    )
+
+                    Button(
+                        onClick = {
+                            BlindOperationHaptics.vibrateStarted(context)
+                            Toast.makeText(context, "1 crisp vibration: Recording Started", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_haptic_started_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Test: 1 Crisp Vibration (Started)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            BlindOperationHaptics.vibratePaused(context)
+                            Toast.makeText(context, "2 short vibrations: Recording Paused", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_haptic_paused_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Test: 2 Short Vibrations (Paused)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            BlindOperationHaptics.vibrateSaved(context)
+                            Toast.makeText(context, "1 long smooth vibration: Safely Saved", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_haptic_saved_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Test: 1 Long Vibration (Safely Saved)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
                         )
                     }
                 }
