@@ -12,4 +12,6 @@
     <string name="action_share">Share</string>
     <string name="action_rename">Rename</string>
     <string name="action_delete">Delete</string>
+    <string name="widget_quick_record_name">Quick Record</string>
+    <string name="widget_quick_record_description">1-Tap discreet recording shortcut with blind operation haptics.</string>
 </resources>

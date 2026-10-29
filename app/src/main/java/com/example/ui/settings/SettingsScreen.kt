@@ -98,6 +98,7 @@ import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.growth.InAppReviewManager
+import com.example.widget.QuickRecordWidgetProvider
 import com.example.ui.onboarding.OnboardingScreen
 import com.example.ui.theme.*
 
@@ -317,6 +318,22 @@ fun SettingsScreen(
                         checked = settings.activeCover.showRecordingTimer,
                         onCheckedChange = { enabled ->
                             viewModel.setActiveCover(settings.activeCover.copy(showRecordingTimer = enabled))
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "1-Tap Home Screen Widget",
+                        value = "Add",
+                        onClick = {
+                            val appWidgetManager = context.getSystemService(android.appwidget.AppWidgetManager::class.java)
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true) {
+                                val provider = android.content.ComponentName(context, QuickRecordWidgetProvider::class.java)
+                                appWidgetManager.requestPinAppWidget(provider, null, null)
+                            } else {
+                                Toast.makeText(context, "Touch and hold your home screen, tap Widgets, and add Quick Record.", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
                 }

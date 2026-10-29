@@ -23,6 +23,7 @@ import com.example.storage.EntitlementManager
 import com.example.storage.PrivateAppStorageProvider
 import com.example.storage.RecordingRepository
 import com.example.storage.SettingsPreferences
+import com.example.widget.QuickRecordWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,6 +34,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
@@ -92,6 +95,15 @@ class RecordingService : LifecycleService() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
         wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BlackScreenRecorder::RecordingLock")?.apply {
             setReferenceCounted(false)
+        }
+
+        serviceScope.launch {
+            recordingStatus
+                .map { it.isRecording }
+                .distinctUntilChanged()
+                .collect {
+                    QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
+                }
         }
     }
 
@@ -680,6 +692,8 @@ class RecordingService : LifecycleService() {
                 wakeLock?.release()
             }
         } catch (_: Exception) {}
+
+        QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
     }
 
     override fun onBind(intent: Intent): IBinder? {
