@@ -26,6 +26,7 @@ import com.example.storage.PrivateAppStorageProvider
 import com.example.storage.RecordingRepository
 import com.example.storage.SettingsPreferences
 import com.example.widget.QuickRecordWidgetProvider
+import com.example.quicksettings.QuickSettingsTileHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -119,10 +120,11 @@ class RecordingService : LifecycleService() {
 
         serviceScope.launch {
             recordingStatus
-                .map { it.isRecording }
+                .map { it.isRecording to it.type }
                 .distinctUntilChanged()
                 .collect {
                     QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
+                    QuickSettingsTileHelper.updateAllTiles(applicationContext)
                 }
         }
     }
@@ -791,6 +793,7 @@ class RecordingService : LifecycleService() {
         } catch (_: Exception) {}
 
         QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
+        QuickSettingsTileHelper.updateAllTiles(applicationContext)
     }
 
     private fun registerBatteryReceiver() {

@@ -117,21 +117,11 @@ abstract class BaseRecordWidgetProvider(
                     return
                 }
 
-                val startIntent = Intent(context, RecordingService::class.java).apply {
+                val trampolineIntent = Intent(context, com.example.quicksettings.QuickTrampolineActivity::class.java).apply {
                     action = if (isVideo) RecordingService.ACTION_START_VIDEO else RecordingService.ACTION_START_AUDIO
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(startIntent)
-                } else {
-                    context.startService(startIntent)
-                }
-
-                val settings = SettingsPreferences(context).settings.value
-                if (settings.hapticFeedbackEnabled) {
-                    BlindOperationHaptics.vibrateStarted(context)
-                }
-                val modeName = if (isVideo) "Video" else "Audio"
-                Toast.makeText(context, "$modeName recording started (screen dark)", Toast.LENGTH_SHORT).show()
+                context.startActivity(trampolineIntent)
             }
 
             // Immediately update all widgets across all types and sizes

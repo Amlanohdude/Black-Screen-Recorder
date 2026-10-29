@@ -39,6 +39,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".quicksettings.QuickTrampolineActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity="" />
+
         <service
             android:name=".recording.RecordingService"
             android:exported="false"
@@ -108,6 +116,28 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_dashboard_widget_info" />
         </receiver>
+
+        <service
+            android:name=".quicksettings.QuickRecordTileService"
+            android:icon="@drawable/ic_qs_record"
+            android:label="@string/tile_quick_record_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".quicksettings.QuickAudioTileService"
+            android:icon="@drawable/ic_qs_mic"
+            android:label="@string/tile_quick_audio_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

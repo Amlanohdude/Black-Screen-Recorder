@@ -22,4 +22,10 @@
     <string name="widget_quick_bar_description">Wide 1-tap recording action bar with live status badge.</string>
     <string name="widget_quick_dashboard_name">Recording Dashboard (2×2)</string>
     <string name="widget_quick_dashboard_description">Expanded recording control card with prominent trigger and session status.</string>
+    <string name="tile_quick_record_label">Quick Record</string>
+    <string name="tile_quick_audio_label">Quick Audio</string>
+    <string name="tile_subtitle_tap_to_record">Tap to record</string>
+    <string name="tile_subtitle_recording">Recording</string>
+    <string name="tile_subtitle_audio_recording">Audio REC</string>
+    <string name="tile_subtitle_tap_to_stop">Tap to stop</string>
 </resources>
