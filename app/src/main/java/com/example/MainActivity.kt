@@ -148,6 +148,7 @@ BillingManager.init(applicationContext)
 ConsentManager.gatherConsent(this) { canRequestAds ->
 if (canRequestAds) {
 NativeAdManager.initialize(applicationContext)
+NativeAdManager.preloadInitialAds(applicationContext)
 RewardedAdManager.loadAd(applicationContext)
 }
 }

@@ -95,7 +95,8 @@ object NativeAdManager {
     fun loadAdForScreen(
         context: Context,
         screen: AdScreen,
-        preferVideo: Boolean = (screen == AdScreen.COVERS || screen == AdScreen.RECORDINGS || screen == AdScreen.PLAYBACK)
+        preferVideo: Boolean = (screen == AdScreen.COVERS || screen == AdScreen.RECORDINGS || screen == AdScreen.PLAYBACK),
+        isFallback: Boolean = false
     ) {
         if (!AdsConfig.isAdsEnabled()) return
         if (isRecordingActive) return
@@ -116,11 +117,20 @@ object NativeAdManager {
             AdScreen.SETTINGS -> _settingsAd.value
             AdScreen.PLAYBACK -> _playbackAd.value
         }
-        if (currentAd != null) return
+        if (currentAd != null && !isFallback) return
+
+        val isLoading = when (screen) {
+            AdScreen.COVERS -> _coversAdLoading.value
+            AdScreen.RECORDINGS -> _recordingsAdLoading.value
+            AdScreen.RECORDINGS_AUDIO -> _recordingsAudioAdLoading.value
+            AdScreen.SETTINGS -> _settingsAdLoading.value
+            AdScreen.PLAYBACK -> _playbackAdLoading.value
+        }
+        if (isLoading && !isFallback) return
 
         initialize(context)
         setLoading(screen, true)
-        Log.d(TAG, "Loading native ad for $screen (preferVideo=$preferVideo)")
+        Log.d(TAG, "Loading native ad for $screen (preferVideo=$preferVideo, isFallback=$isFallback)")
 
         val adUnitId = AdsConfig.getNativeAdUnitId(preferVideo)
         val videoOptions = VideoOptions.Builder()
@@ -142,11 +152,17 @@ object NativeAdManager {
                         AdScreen.PLAYBACK -> _playbackAd.value = nativeAd
                     }
                     setLoading(screen, false)
+                    Log.d(TAG, "Successfully loaded native ad for $screen (preferVideo=$preferVideo)")
                 }
                 .withAdListener(object : AdListener() {
                     override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                        Log.w(TAG, "Failed to load native ad for $screen: [${loadAdError.code}] ${loadAdError.message}")
-                        setLoading(screen, false)
+                        Log.w(TAG, "Failed to load native ad for $screen (preferVideo=$preferVideo, isFallback=$isFallback): [${loadAdError.code}] ${loadAdError.message}")
+                        if (preferVideo && !isFallback) {
+                            Log.i(TAG, "Video inventory unavailable for $screen (code: ${loadAdError.code}). Triggering fallback to static native ad unit...")
+                            loadAdForScreen(context, screen, preferVideo = false, isFallback = true)
+                        } else {
+                            setLoading(screen, false)
+                        }
                     }
                 })
                 .withNativeAdOptions(nativeAdOptions)
@@ -156,6 +172,17 @@ object NativeAdManager {
         } catch (e: Exception) {
             Log.w(TAG, "Error initiating ad load for $screen: ${e.message}")
             setLoading(screen, false)
+        }
+    }
+
+    fun preloadInitialAds(context: Context) {
+        if (!AdsConfig.isAdsEnabled() || isRecordingActive) return
+        initialize(context)
+        if (AdsConfig.showInCovers && _coversAd.value == null) {
+            loadAdForScreen(context, AdScreen.COVERS, preferVideo = true)
+        }
+        if (AdsConfig.showInRecordings && _recordingsAd.value == null) {
+            loadAdForScreen(context, AdScreen.RECORDINGS, preferVideo = true)
         }
     }
 
