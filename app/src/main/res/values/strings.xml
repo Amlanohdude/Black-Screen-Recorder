@@ -18,4 +18,8 @@
     <string name="widget_quick_audio_description">1-Tap discreet audio recording shortcut with blind operation haptics.</string>
     <string name="widget_quick_video_name">Quick Video</string>
     <string name="widget_quick_video_description">1-Tap discreet video recording shortcut with blind operation haptics.</string>
+    <string name="widget_quick_bar_name">Quick Bar (2×1)</string>
+    <string name="widget_quick_bar_description">Wide 1-tap recording action bar with live status badge.</string>
+    <string name="widget_quick_dashboard_name">Recording Dashboard (2×2)</string>
+    <string name="widget_quick_dashboard_description">Expanded recording control card with prominent trigger and session status.</string>
 </resources>

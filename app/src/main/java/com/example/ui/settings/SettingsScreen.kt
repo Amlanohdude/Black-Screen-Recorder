@@ -38,11 +38,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -102,6 +104,8 @@ import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.growth.InAppReviewManager
 import com.example.widget.QuickAudioWidgetProvider
+import com.example.widget.QuickBarWidgetProvider
+import com.example.widget.QuickDashboardWidgetProvider
 import com.example.widget.QuickRecordWidgetProvider
 import com.example.widget.QuickVideoWidgetProvider
 import com.example.ui.onboarding.OnboardingScreen
@@ -651,9 +655,9 @@ fun SettingsScreen(
         val canPin = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true
 
         fun pinWidget(providerClass: Class<*>, widgetName: String) {
-            if (canPin && appWidgetManager != null) {
+            if (canPin) {
                 val provider = android.content.ComponentName(context, providerClass)
-                appWidgetManager.requestPinAppWidget(provider, null, null)
+                appWidgetManager?.requestPinAppWidget(provider, null, null)
             } else {
                 Toast.makeText(context, "Touch and hold home screen, tap Widgets, and add $widgetName.", Toast.LENGTH_LONG).show()
             }
@@ -807,6 +811,100 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    // 2x1 Horizontal Bar Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(QuickBarWidgetProvider::class.java, "Quick Bar (2×1)") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(AccentRed.copy(alpha = 0.14f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Widgets,
+                                    contentDescription = "Quick Bar",
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Quick Bar (2×1 Wide)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Horizontal action bar with live status badge",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    // 2x2 Dashboard Option
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(QuickDashboardWidgetProvider::class.java, "Dashboard (2×2)") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(AccentRed.copy(alpha = 0.14f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Layers,
+                                    contentDescription = "Dashboard",
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Control Dashboard (2×2)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Expanded card with session monitor & trigger",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "Tip: You can also resize any widget on your home screen by long-pressing it and dragging the edge handles.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = TextSecondary.copy(alpha = 0.8f)
+                    )
                 }
             },
             confirmButton = {},

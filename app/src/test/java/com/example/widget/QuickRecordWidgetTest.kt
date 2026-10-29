@@ -26,6 +26,8 @@ class QuickRecordWidgetTest {
     private lateinit var universalProvider: QuickRecordWidgetProvider
     private lateinit var audioProvider: QuickAudioWidgetProvider
     private lateinit var videoProvider: QuickVideoWidgetProvider
+    private lateinit var barProvider: QuickBarWidgetProvider
+    private lateinit var dashboardProvider: QuickDashboardWidgetProvider
 
     @Before
     fun setUp() {
@@ -33,6 +35,8 @@ class QuickRecordWidgetTest {
         universalProvider = QuickRecordWidgetProvider()
         audioProvider = QuickAudioWidgetProvider()
         videoProvider = QuickVideoWidgetProvider()
+        barProvider = QuickBarWidgetProvider()
+        dashboardProvider = QuickDashboardWidgetProvider()
         // Reset recording status to IDLE
         RecordingService.updateStatus(
             RecordingStatus(
@@ -73,8 +77,11 @@ class QuickRecordWidgetTest {
         val videoId = shadow.createWidget(QuickVideoWidgetProvider::class.java, R.layout.widget_quick_record)
         BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, videoId, WidgetRecordMode.VIDEO, QuickVideoWidgetProvider::class.java)
 
-        val universalId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
-        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, universalId, WidgetRecordMode.DEFAULT, QuickRecordWidgetProvider::class.java)
+        val barId = shadow.createWidget(QuickBarWidgetProvider::class.java, R.layout.widget_horizontal_2x1)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, barId, WidgetRecordMode.DEFAULT, QuickBarWidgetProvider::class.java)
+
+        val dashId = shadow.createWidget(QuickDashboardWidgetProvider::class.java, R.layout.widget_dashboard_2x2)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, dashId, WidgetRecordMode.DEFAULT, QuickDashboardWidgetProvider::class.java)
     }
 
     @Test
@@ -96,8 +103,11 @@ class QuickRecordWidgetTest {
         val videoId = shadow.createWidget(QuickVideoWidgetProvider::class.java, R.layout.widget_quick_record)
         BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, videoId, WidgetRecordMode.VIDEO, QuickVideoWidgetProvider::class.java)
 
-        val universalId = shadow.createWidget(QuickRecordWidgetProvider::class.java, R.layout.widget_quick_record)
-        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, universalId, WidgetRecordMode.DEFAULT, QuickRecordWidgetProvider::class.java)
+        val barId = shadow.createWidget(QuickBarWidgetProvider::class.java, R.layout.widget_horizontal_2x1)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, barId, WidgetRecordMode.DEFAULT, QuickBarWidgetProvider::class.java)
+
+        val dashId = shadow.createWidget(QuickDashboardWidgetProvider::class.java, R.layout.widget_dashboard_2x2)
+        BaseRecordWidgetProvider.updateWidget(context, appWidgetManager, dashId, WidgetRecordMode.DEFAULT, QuickDashboardWidgetProvider::class.java)
     }
 
     @Test
@@ -110,6 +120,12 @@ class QuickRecordWidgetTest {
 
         val universalIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
         universalProvider.onReceive(context, universalIntent)
+
+        val barIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        barProvider.onReceive(context, barIntent)
+
+        val dashIntent = Intent(BaseRecordWidgetProvider.ACTION_TOGGLE_RECORD)
+        dashboardProvider.onReceive(context, dashIntent)
     }
 
     @Test

@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import android.widget.RemoteViews
 import android.widget.Toast
@@ -33,11 +34,11 @@ enum class WidgetRecordMode {
 /**
  * Base Provider for 1-Tap Home Screen Recording Widgets
  *
- * Provides tactile, 1-tap toggling directly from the home screen:
+ * Supports dynamic responsive sizing (1×1 compact, 2×1 horizontal bar, 2×2 dashboard):
  * - Tap to Start: Immediately begins background recording with 1 crisp vibration.
  * - Tap to Stop: Safely finalizes and saves the file with 1 long smooth vibration.
  * - Live State Synchronization: Automatically reflects active recording state
- *   across all instances and modes.
+ *   across all instances, sizes, and modes.
  */
 abstract class BaseRecordWidgetProvider(
     private val mode: WidgetRecordMode
@@ -47,6 +48,16 @@ abstract class BaseRecordWidgetProvider(
         for (appWidgetId in appWidgetIds) {
             updateWidget(context, appWidgetManager, appWidgetId, mode, this::class.java)
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle?
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId, mode, this::class.java)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -123,7 +134,7 @@ abstract class BaseRecordWidgetProvider(
                 Toast.makeText(context, "$modeName recording started (screen dark)", Toast.LENGTH_SHORT).show()
             }
 
-            // Immediately update all widgets across all types
+            // Immediately update all widgets across all types and sizes
             updateAllWidgets(context)
         }
 
@@ -134,7 +145,20 @@ abstract class BaseRecordWidgetProvider(
             mode: WidgetRecordMode,
             providerClass: Class<*>
         ) {
-            val views = RemoteViews(context.packageName, R.layout.widget_quick_record)
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 70
+            val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 70
+
+            // Responsive layout selection based on widget dimensions or explicit provider class
+            val layoutRes = when {
+                providerClass == QuickDashboardWidgetProvider::class.java -> R.layout.widget_dashboard_2x2
+                providerClass == QuickBarWidgetProvider::class.java -> R.layout.widget_horizontal_2x1
+                minWidth >= 150 && minHeight >= 120 -> R.layout.widget_dashboard_2x2
+                minWidth >= 130 -> R.layout.widget_horizontal_2x1
+                else -> R.layout.widget_quick_record // 1x1 Compact
+            }
+
+            val views = RemoteViews(context.packageName, layoutRes)
             val currentStatus = RecordingService.recordingStatus.value
             val isRecording = currentStatus.isRecording
 
@@ -150,6 +174,12 @@ abstract class BaseRecordWidgetProvider(
                 views.setTextColor(R.id.widget_title, Color.parseColor("#FF453A"))
                 views.setTextViewText(R.id.widget_subtitle, "Tap to Stop")
                 views.setTextColor(R.id.widget_subtitle, Color.parseColor("#FF9F9B"))
+
+                try {
+                    views.setTextViewText(R.id.widget_badge, "LIVE REC")
+                    views.setTextColor(R.id.widget_badge, Color.parseColor("#FF453A"))
+                    views.setTextViewText(R.id.widget_footer, "Recording active · Screen kept dark")
+                } catch (_: Exception) {}
             } else {
                 views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_background_idle)
                 val (iconRes, titleText) = when (mode) {
@@ -162,6 +192,17 @@ abstract class BaseRecordWidgetProvider(
                 views.setTextColor(R.id.widget_title, Color.parseColor("#F5F5F7"))
                 views.setTextViewText(R.id.widget_subtitle, "Tap to Start")
                 views.setTextColor(R.id.widget_subtitle, Color.parseColor("#8E8E93"))
+
+                try {
+                    val badgeText = when (mode) {
+                        WidgetRecordMode.AUDIO -> "AUDIO"
+                        WidgetRecordMode.VIDEO -> "VIDEO"
+                        WidgetRecordMode.DEFAULT -> "READY"
+                    }
+                    views.setTextViewText(R.id.widget_badge, badgeText)
+                    views.setTextColor(R.id.widget_badge, Color.parseColor("#8E8E93"))
+                    views.setTextViewText(R.id.widget_footer, "Discreet · Screen Kept Dark")
+                } catch (_: Exception) {}
             }
 
             // Click pending intent targets the specific provider class
@@ -203,22 +244,24 @@ abstract class BaseRecordWidgetProvider(
             updateWidgetsForProvider(context, QuickAudioWidgetProvider::class.java, WidgetRecordMode.AUDIO)
             updateWidgetsForProvider(context, QuickVideoWidgetProvider::class.java, WidgetRecordMode.VIDEO)
             updateWidgetsForProvider(context, QuickRecordWidgetProvider::class.java, WidgetRecordMode.DEFAULT)
+            updateWidgetsForProvider(context, QuickBarWidgetProvider::class.java, WidgetRecordMode.DEFAULT)
+            updateWidgetsForProvider(context, QuickDashboardWidgetProvider::class.java, WidgetRecordMode.DEFAULT)
         }
     }
 }
 
 /**
- * Dedicated 1-Tap Audio Recording Widget
+ * Dedicated 1-Tap Audio Recording Widget (1×1, resizable to 2×1, 2×2)
  */
 class QuickAudioWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.AUDIO)
 
 /**
- * Dedicated 1-Tap Video Recording Widget
+ * Dedicated 1-Tap Video Recording Widget (1×1, resizable to 2×1, 2×2)
  */
 class QuickVideoWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.VIDEO)
 
 /**
- * Universal 1-Tap Quick Recording Widget (uses default settings)
+ * Universal 1-Tap Quick Recording Widget (1×1, resizable to 2×1, 2×2)
  */
 class QuickRecordWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.DEFAULT) {
     companion object {
@@ -227,3 +270,13 @@ class QuickRecordWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.DEFA
         }
     }
 }
+
+/**
+ * Wide Quick Bar Recording Widget (2×1, resizable)
+ */
+class QuickBarWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.DEFAULT)
+
+/**
+ * Expanded Recording Dashboard Widget (2×2, resizable)
+ */
+class QuickDashboardWidgetProvider : BaseRecordWidgetProvider(WidgetRecordMode.DEFAULT)
