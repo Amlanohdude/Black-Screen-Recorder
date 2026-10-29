@@ -289,9 +289,6 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                         isActive = isCurrentActive,
                         onClick = {
                             viewModel.setActiveCover(preset)
-                        },
-                        onCustomize = {
-                            viewModel.openCoverDesigner(preset)
                         }
                     )
                 }
@@ -402,8 +399,7 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
 private fun CoverCard(
     cover: CoverConfig,
     isActive: Boolean,
-    onClick: () -> Unit,
-    onCustomize: () -> Unit
+    onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -454,57 +450,19 @@ private fun CoverCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
+            Text(
+                text = cover.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 13.sp
+                ),
+                color = if (isActive) Color.White else TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = cover.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 13.sp
-                    ),
-                    color = if (isActive) Color.White else TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                )
-
-                Surface(
-                    onClick = onCustomize,
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (isActive) AccentRed.copy(alpha = 0.15f) else SurfaceSecondary,
-                    border = androidx.compose.foundation.BorderStroke(
-                        0.5.dp,
-                        if (isActive) AccentRed.copy(alpha = 0.4f) else BorderSubtle
-                    ),
-                    modifier = Modifier.testTag("customize_cover_${cover.presetId.name.lowercase()}")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = if (isActive) AccentRed else TextSecondary,
-                            modifier = Modifier.size(11.dp)
-                        )
-                        Text(
-                            text = "Edit",
-                            fontSize = 11.sp,
-                            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isActive) AccentRed else TextSecondary
-                        )
-                    }
-                }
-            }
+                    .padding(vertical = 4.dp)
+            )
         }
     }
 }
@@ -569,7 +527,7 @@ private fun CustomCoverCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp),
+                    .padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -589,36 +547,20 @@ private fun CustomCoverCard(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Surface(
+                    IconButton(
                         onClick = onEdit,
-                        shape = RoundedCornerShape(6.dp),
-                        color = if (isActive) AccentRed.copy(alpha = 0.15f) else SurfaceSecondary,
-                        border = androidx.compose.foundation.BorderStroke(
-                            0.5.dp,
-                            if (isActive) AccentRed.copy(alpha = 0.4f) else BorderSubtle
-                        ),
-                        modifier = Modifier.testTag("edit_custom_cover_${cover.id}")
+                        modifier = Modifier
+                            .size(24.dp)
+                            .testTag("edit_custom_cover_${cover.id}")
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = if (isActive) AccentRed else TextSecondary,
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Text(
-                                text = "Edit",
-                                fontSize = 11.sp,
-                                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isActive) AccentRed else TextSecondary
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(13.dp)
+                        )
                     }
 
                     IconButton(
@@ -631,7 +573,7 @@ private fun CustomCoverCard(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Delete",
                             tint = TextMuted,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(13.dp)
                         )
                     }
                 }
@@ -695,23 +637,18 @@ private fun NewCoverActionCard(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
+            Text(
+                text = "+ Design New",
+                color = AccentRed,
+                maxLines = 1,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "+ Design New",
-                    color = AccentRed,
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            }
+                    .padding(vertical = 4.dp)
+            )
         }
     }
 }
