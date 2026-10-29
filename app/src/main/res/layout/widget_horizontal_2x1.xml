@@ -6,17 +6,17 @@
     android:background="@drawable/widget_background_idle"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="14dp"
-    android:paddingEnd="14dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
     android:clickable="true"
     android:focusable="true">
 
     <ImageView
         android:id="@+id/widget_icon"
-        android:layout_width="34dp"
-        android:layout_height="34dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         android:src="@drawable/ic_widget_rec_idle"
         android:contentDescription="@string/widget_quick_record_name" />
 
@@ -24,8 +24,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="6dp"
         android:orientation="vertical">
 
         <TextView
@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
             android:text="@string/widget_quick_record_name"
             android:textColor="#F5F5F7"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:singleLine="true"
             android:ellipsize="end" />
@@ -43,8 +43,8 @@
             android:id="@+id/widget_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Tap to Start Recording"
+            android:layout_marginTop="1dp"
+            android:text="Tap to Start"
             android:textColor="#8E8E93"
             android:textSize="10sp"
             android:singleLine="true"
@@ -55,10 +55,10 @@
         android:id="@+id/widget_badge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
         android:background="#222228"
         android:text="READY"
         android:textColor="#8E8E93"
