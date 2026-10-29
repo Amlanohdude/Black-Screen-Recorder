@@ -1792,6 +1792,90 @@ private fun DeveloperQaDialog(
                         )
                     }
                 }
+
+                // Section 3: GOOGLE PLAY IN-APP UPDATE QA
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "GOOGLE PLAY IN-APP UPDATE QA",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = AccentRed
+                    )
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            InAppUpdateManager.showUpdatePrompt(true)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_preview_update_prompt_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Preview Update Prompt Popup",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            InAppUpdateManager.simulateUpdateDownloaded(true)
+                            Toast.makeText(context, "Update Downloaded Banner activated", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_simulate_update_downloaded_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Simulate Update Downloaded Banner",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            InAppUpdateManager.simulateUpdateDownloaded(false)
+                            InAppUpdateManager.showUpdatePrompt(false)
+                            Toast.makeText(context, "Update simulation reset", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_reset_update_sim_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.15f)),
+                        border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "Reset Update Simulation State",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = AccentRed
+                        )
+                    }
+                }
             }
         },
         shape = RoundedCornerShape(14.dp),

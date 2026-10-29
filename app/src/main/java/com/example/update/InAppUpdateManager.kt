@@ -36,9 +36,13 @@ object InAppUpdateManager {
 
     private var appUpdateManager: AppUpdateManager? = null
     private var isListenerRegistered = false
+    private var cachedAppUpdateInfo: com.google.android.play.core.appupdate.AppUpdateInfo? = null
 
     private val _isUpdateDownloaded = MutableStateFlow(false)
     val isUpdateDownloaded: StateFlow<Boolean> = _isUpdateDownloaded.asStateFlow()
+
+    private val _isUpdatePromptVisible = MutableStateFlow(false)
+    val isUpdatePromptVisible: StateFlow<Boolean> = _isUpdatePromptVisible.asStateFlow()
 
     private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
         if (state.installStatus() == InstallStatus.DOWNLOADED) {
@@ -92,19 +96,9 @@ object InAppUpdateManager {
         try {
             val manager = getAppUpdateManager(activity)
             manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                    && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-                ) {
-                    try {
-                        manager.startUpdateFlowForResult(
-                            appUpdateInfo,
-                            activity,
-                            AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
-                            REQUEST_CODE_FLEXIBLE_UPDATE
-                        )
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Flexible update flow could not be started", e)
-                    }
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                    cachedAppUpdateInfo = appUpdateInfo
+                    _isUpdatePromptVisible.value = true
                 } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
                     _isUpdateDownloaded.value = true
                 }
@@ -134,16 +128,8 @@ object InAppUpdateManager {
             manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
                 when {
                     appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE -> {
-                        if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
-                            manager.startUpdateFlowForResult(
-                                appUpdateInfo,
-                                activity,
-                                AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
-                                REQUEST_CODE_FLEXIBLE_UPDATE
-                            )
-                        } else {
-                            openPlayStore(activity)
-                        }
+                        cachedAppUpdateInfo = appUpdateInfo
+                        _isUpdatePromptVisible.value = true
                     }
                     appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED -> {
                         _isUpdateDownloaded.value = true
@@ -210,6 +196,45 @@ object InAppUpdateManager {
      */
     fun dismissDownloadedBanner() {
         _isUpdateDownloaded.value = false
+    }
+
+    /**
+     * Shows or dismisses the Update Available prompt dialog.
+     */
+    fun showUpdatePrompt(show: Boolean) {
+        _isUpdatePromptVisible.value = show
+    }
+
+    /**
+     * Triggers the update flow from the dialog.
+     * Uses Play In-App flexible flow if update info is available; otherwise opens the Play Store listing.
+     */
+    fun triggerUpdateFlow(activity: Activity) {
+        _isUpdatePromptVisible.value = false
+        val info = cachedAppUpdateInfo
+        if (info != null && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+            try {
+                val manager = getAppUpdateManager(activity)
+                manager.startUpdateFlowForResult(
+                    info,
+                    activity,
+                    AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
+                    REQUEST_CODE_FLEXIBLE_UPDATE
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Flexible update flow could not be started", e)
+                openPlayStore(activity)
+            }
+        } else {
+            openPlayStore(activity)
+        }
+    }
+
+    /**
+     * For QA Developer testing: simulate the update downloaded banner.
+     */
+    fun simulateUpdateDownloaded(downloaded: Boolean = true) {
+        _isUpdateDownloaded.value = downloaded
     }
 
     /**

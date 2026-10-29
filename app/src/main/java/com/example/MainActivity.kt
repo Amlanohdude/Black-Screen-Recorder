@@ -45,6 +45,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import com.example.update.InAppUpdateManager
+import com.example.update.UpdatePromptDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FileDownload
@@ -239,6 +240,7 @@ var completedSummary by remember { mutableStateOf<RecordingSummaryInfo?>(null) }
 var isProScreenVisible by remember { mutableStateOf(false) }
 val recordingStatus by viewModel.recordingStatus.collectAsStateWithLifecycle()
 val isUpdateDownloaded by InAppUpdateManager.isUpdateDownloaded.collectAsStateWithLifecycle()
+val isUpdatePromptVisible by InAppUpdateManager.isUpdatePromptVisible.collectAsStateWithLifecycle()
 val coverToCustomize by viewModel.coverToCustomize.collectAsStateWithLifecycle()
 var showExitConfirmDialog by remember { mutableStateOf(false) }
 var showActivateCoverDialog by remember { mutableStateOf(false) }
@@ -549,6 +551,18 @@ onNavigateToPro = { isProScreenVisible = true }
                         color = TextSecondary
                     )
                 }
+            }
+        )
+    }
+
+    if (isUpdatePromptVisible) {
+        UpdatePromptDialog(
+            versionName = "1.0.2",
+            onUpdateClick = {
+                (context as? Activity)?.let { InAppUpdateManager.triggerUpdateFlow(it) }
+            },
+            onDismiss = {
+                InAppUpdateManager.showUpdatePrompt(false)
             }
         )
     }
