@@ -514,22 +514,6 @@ fun SettingsScreen(
                 // Section 5: ABOUT & SUPPORT
                 SettingsGroup(title = "ABOUT & SUPPORT") {
                     SettingsClickableRow(
-                        title = "Rate on Google Play",
-                        value = "Rate 5 ★",
-                        onClick = { InAppReviewManager.openPlayStorePage(context) }
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsClickableRow(
-                        title = "Share App",
-                        value = "Share",
-                        onClick = { InAppReviewManager.shareApp(context) }
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsClickableRow(
                         title = "Feedback & Bug Report",
                         value = "Open",
                         onClick = {
