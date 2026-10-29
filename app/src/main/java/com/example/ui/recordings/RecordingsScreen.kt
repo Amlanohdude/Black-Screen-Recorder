@@ -82,8 +82,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -127,6 +129,7 @@ onNavigateToRecord: (() -> Unit)? = null,
 modifier: Modifier = Modifier
 ) {
 val context = LocalContext.current
+val haptic = LocalHapticFeedback.current
 val recordings by viewModel.recordings.collectAsStateWithLifecycle()
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 val isUnlocked by viewModel.isRecordingsUnlocked.collectAsStateWithLifecycle()
@@ -603,6 +606,41 @@ style = MaterialTheme.typography.bodySmall,
 color = TextSecondary,
 textAlign = TextAlign.Center
 )
+Spacer(modifier = Modifier.height(20.dp))
+if (onNavigateToRecord != null) {
+    Button(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onNavigateToRecord()
+        },
+        shape = RoundedCornerShape(10.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AccentRed,
+            contentColor = Color.White
+        ),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.testTag("empty_state_record_button")
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(Color.White, CircleShape)
+            )
+            Text(
+                text = "Start Your First Recording",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                ),
+                color = Color.White
+            )
+        }
+    }
+}
 }
 }
 } else {
