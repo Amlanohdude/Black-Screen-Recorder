@@ -100,6 +100,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.covers.CoverCustomizeDialog
+import com.example.growth.InAppReviewManager
 import com.example.recording.RecordingType
 import com.example.ui.MainViewModel
 import com.example.ui.covers.CoversTabScreen
@@ -298,8 +299,9 @@ onDone = {
 completedSummary = null
 },
 onNavigateToRecordings = {
-completedSummary = null
-selectedTab = MainTab.RECORDINGS
+    InAppReviewManager.onRecordingSavedSuccessfully(context as? Activity)
+    completedSummary = null
+    selectedTab = MainTab.RECORDINGS
 }
 )
 } else if (coverToCustomize != null) {

@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ads.RewardedAdManager
+import com.example.growth.InAppReviewManager
 import com.example.recording.RecordingType
 import com.example.storage.EntitlementManager
 import com.example.storage.ExportErrorType
@@ -105,6 +106,7 @@ fun RecordingSummaryScreen(
     var showExportAdDialog by remember { mutableStateOf(false) }
 
     BackHandler {
+        InAppReviewManager.onRecordingSavedSuccessfully(context as? Activity)
         onDone()
     }
 
@@ -345,7 +347,10 @@ fun RecordingSummaryScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onDone,
+                onClick = {
+                    InAppReviewManager.onRecordingSavedSuccessfully(context as? Activity)
+                    onDone()
+                },
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
                 modifier = Modifier.fillMaxWidth().height(48.dp).testTag("summary_done_button")

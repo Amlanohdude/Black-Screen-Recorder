@@ -97,6 +97,7 @@ import com.example.storage.StopBehavior
 import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
+import com.example.growth.InAppReviewManager
 import com.example.ui.onboarding.OnboardingScreen
 import com.example.ui.theme.*
 
@@ -505,31 +506,25 @@ fun SettingsScreen(
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
 
+                // High-Converting Organic Rate & Share Card
+                RateAndShareCard(
+                    modifier = Modifier.padding(vertical = 2.dp)
+                )
+
                 // Section 5: ABOUT & SUPPORT
                 SettingsGroup(title = "ABOUT & SUPPORT") {
                     SettingsClickableRow(
+                        title = "Rate on Google Play",
+                        value = "Rate 5 ★",
+                        onClick = { InAppReviewManager.openPlayStorePage(context) }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
                         title = "Share App",
                         value = "Share",
-                        onClick = {
-                            try {
-                                val activity = (context as? Activity)
-                                val shareBuilder = ShareCompat.IntentBuilder(activity ?: context)
-                                    .setType("text/plain")
-                                    .setText(AppLinks.SHARE_APP_TEXT)
-                                    .setSubject("Black Screen Recorder for Android")
-                                    .setChooserTitle("Share Black Screen Recorder")
-                                shareBuilder.intent.putExtra(Intent.EXTRA_TITLE, "Black Screen Recorder")
-                                val chooserIntent = shareBuilder.createChooserIntent().apply {
-                                    putExtra(Intent.EXTRA_TITLE, "Black Screen Recorder")
-                                    if (activity == null) {
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                }
-                                context.startActivity(chooserIntent)
-                            } catch (_: Exception) {
-                                Toast.makeText(context, "Could not open share sheet.", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        onClick = { InAppReviewManager.shareApp(context) }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -1953,6 +1948,79 @@ private fun DeveloperQaDialog(
                     ) {
                         Text(
                             text = "Reset Update Simulation State",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = AccentRed
+                        )
+                    }
+                }
+
+                // Section: ORGANIC GROWTH & IN-APP REVIEW
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "GROWTH & IN-APP REVIEW FUNNEL",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = AccentRed
+                    )
+
+                    val reviewCount = InAppReviewManager.getRecordingSuccessCount(context)
+                    val reviewPrompted = InAppReviewManager.hasPromptedReview(context)
+
+                    Text(
+                        text = "Sessions: $reviewCount / ${InAppReviewManager.MILESTONE_TARGET_RECORDINGS} | Prompted: $reviewPrompted",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = TextSecondary
+                    )
+
+                    Button(
+                        onClick = {
+                            val activity = context as? Activity
+                            if (activity != null) {
+                                InAppReviewManager.launchInAppReview(activity) {
+                                    Toast.makeText(context, "In-App Review flow finished", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_launch_in_app_review_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle)
+                    ) {
+                        Text(
+                            text = "Test Google In-App Review Flow",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            InAppReviewManager.resetReviewMilestone(context)
+                            Toast.makeText(context, "Review milestone reset (Count: 0)", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dev_qa_reset_review_milestone_button"),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.15f)),
+                        border = BorderStroke(1.dp, AccentRed.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "Reset Review Milestone",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
