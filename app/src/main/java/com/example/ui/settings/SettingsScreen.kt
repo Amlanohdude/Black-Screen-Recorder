@@ -152,6 +152,8 @@ fun SettingsScreen(
     var showDevQaDialog by remember { mutableStateOf(false) }
     var showOnboardingPreview by remember { mutableStateOf(false) }
     var showWidgetDialog by remember { mutableStateOf(false) }
+    var showAdvancedDefaultsDialog by remember { mutableStateOf(false) }
+    var showQuickSettingsDialog by remember { mutableStateOf(false) }
 
     val openFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -200,32 +202,25 @@ fun SettingsScreen(
                 // Dedicated PRO Entry Card at the very top of Settings
                 ProSettingsCard(onNavigateToPro = onNavigateToPro)
 
-                // Section 1: RECORDING & CONTROLS
-                SettingsGroup(title = "RECORDING & CONTROLS") {
+                // Section 1: SHORTCUTS & STEALTH ACCESS
+                SettingsGroup(title = "SHORTCUTS & STEALTH ACCESS") {
                     SettingsClickableRow(
-                        title = "Active preset",
-                        value = settings.activePreset.title,
-                        onClick = { showPresetDialog = true }
+                        title = "1-Tap Home Screen Widgets",
+                        value = "Choose",
+                        onClick = { showWidgetDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Camera",
-                        value = if (settings.useFrontCamera) "Front" else "Back",
-                        onClick = { showCameraDialog = true }
+                        title = "Quick Settings Pull-Down Tile",
+                        value = "Setup",
+                        onClick = { showQuickSettingsDialog = true }
                     )
+                }
 
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsClickableRow(
-                        title = "Video quality",
-                        value = settings.videoQuality,
-                        onClick = { showQualityDialog = true }
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
+                // Section 2: RECORDING & AUDIO
+                SettingsGroup(title = "RECORDING & AUDIO") {
                     SettingsClickableRow(
                         title = "Audio format",
                         value = if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
@@ -249,65 +244,32 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    SettingsClickableRow(
-                        title = "Stop behavior",
-                        value = settings.stopBehavior.displayName,
-                        onClick = { showStopBehaviorDialog = true }
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsSwitchRow(
-                        title = "Background recording",
-                        checked = settings.backgroundRecordingEnabled,
-                        onCheckedChange = { enabled ->
-                            viewModel.updateBackgroundRecordingEnabled(enabled)
-                        },
-                        subtitle = "Continue recording when you leave the app",
-                        testTag = "settings_background_recording_switch"
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
                     SettingsSwitchRow(
                         title = "Discreet Haptic Feedback",
                         checked = settings.hapticFeedbackEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.updateHapticFeedbackEnabled(enabled)
                         },
-                        subtitle = "Vibrate on start (1 crisp), pause (2 short), and safe save (1 long) for blind operation",
+                        subtitle = "Vibrate on start, pause, and safe save for blind operation",
                         testTag = "settings_haptic_feedback_switch"
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    SettingsSwitchRow(
-                        title = "Exit App After Recording",
-                        checked = settings.exitAfterRecordingEnabled,
-                        onCheckedChange = { enabled ->
-                            viewModel.updateExitAfterRecordingEnabled(enabled)
-                        }
+                    SettingsClickableRow(
+                        title = "Advanced & Hardware Defaults",
+                        value = "Configure",
+                        onClick = { showAdvancedDefaultsDialog = true }
                     )
+                }
 
-                    if (settings.exitAfterRecordingEnabled) {
-                        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                        SettingsClickableRow(
-                            title = "Exit Method",
-                            value = settings.exitMethod.title,
-                            onClick = { showExitMethodDialog = true }
-                        )
-
-                        if (settings.exitMethod == ExitMethod.GESTURE) {
-                            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                            SettingsClickableRow(
-                                title = "Exit Gesture",
-                                value = settings.exitGesture.shortSubtitle,
-                                onClick = { showExitGestureDialog = true }
-                            )
-                        }
-                    }
+                // Section 3: STEALTH & GESTURES
+                SettingsGroup(title = "STEALTH & GESTURES") {
+                    SettingsClickableRow(
+                        title = "Stop behavior",
+                        value = settings.stopBehavior.displayName,
+                        onClick = { showStopBehaviorDialog = true }
+                    )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
@@ -330,73 +292,10 @@ fun SettingsScreen(
                             viewModel.setActiveCover(settings.activeCover.copy(showRecordingTimer = enabled))
                         }
                     )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsClickableRow(
-                        title = "1-Tap Home Screen Widget",
-                        value = "Choose",
-                        onClick = { showWidgetDialog = true }
-                    )
                 }
 
-                // Section 2: COVER DISPLAY
-                SettingsGroup(title = "COVER DISPLAY") {
-                    SettingsClickableRow(
-                        title = "Default cover",
-                        value = settings.activeCover.name,
-                        onClick = onNavigateToCovers
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    // Recording brightness row with inline Slider
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Recording brightness",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp
-                                ),
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = if (settings.activeCover.brightnessPercent <= 1) "Minimum" else "${settings.activeCover.brightnessPercent}%",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = 13.sp,
-                                    color = TextSecondary
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Slider(
-                            value = settings.activeCover.brightnessPercent.toFloat(),
-                            onValueChange = { percent ->
-                                viewModel.setActiveCover(settings.activeCover.copy(brightnessPercent = percent.toInt()))
-                            },
-                            valueRange = 1f..100f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = AccentRed,
-                                activeTrackColor = AccentRed,
-                                inactiveTrackColor = SurfaceSecondary
-                            )
-                        )
-                    }
-                }
-
-                // Section 3: STORAGE & DATA
-                SettingsGroup(title = "STORAGE & DATA") {
+                // Section 4: STORAGE & AUTO-CLEANUP
+                SettingsGroup(title = "STORAGE & AUTO-CLEANUP") {
                     SettingsClickableRow(
                         title = "Storage location",
                         value = "App Sandbox (Private)",
@@ -422,32 +321,11 @@ fun SettingsScreen(
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    SettingsInfoRow(
-                        title = "Storage used",
-                        value = MainViewModel.formatFileSize(storageStats.usedBytes)
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsInfoRow(
-                        title = "Available",
-                        value = MainViewModel.formatFileSize(storageStats.availableBytes)
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
-                    SettingsInfoRow(
-                        title = "Estimated recording time",
-                        value = StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds),
-                        valueColor = AccentRed
-                    )
-
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
-
                     SettingsSwitchRow(
-                        title = "Auto delete",
+                        title = "Auto delete old files",
                         checked = settings.autoDeleteEnabled,
                         onCheckedChange = { viewModel.updateAutoDeleteEnabled(it) },
+                        subtitle = "Purge old recordings after retention period",
                         testTag = "auto_delete_switch"
                     )
 
@@ -462,7 +340,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // Section 4: PRIVACY & SECURITY
+                // Section 5: PRIVACY & SECURITY
                 SettingsGroup(title = "PRIVACY & SECURITY") {
                     SettingsSwitchRow(
                         title = "Recording Library Lock",
@@ -485,6 +363,7 @@ fun SettingsScreen(
                                 viewModel.updateLockEnabled(false)
                             }
                         },
+                        subtitle = "Require PIN to access recordings library",
                         testTag = "lock_recordings_switch"
                     )
 
@@ -530,7 +409,7 @@ fun SettingsScreen(
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
 
-                // Section 5: ABOUT & SUPPORT
+                // Section 6: ABOUT & SUPPORT
                 SettingsGroup(title = "ABOUT & SUPPORT") {
                     SettingsClickableRow(
                         title = "Feedback & Bug Report",
@@ -650,6 +529,291 @@ fun SettingsScreen(
     }
 
     // Dialogs
+    if (showQuickSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showQuickSettingsDialog = false },
+            title = {
+                Text(
+                    text = "Quick Settings Recording Tiles",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Access 1-tap recording directly from your Android pull-down notification shade, from the lock screen or any app.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "How to add to your notification shade:",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "1. Swipe down twice from the top of your screen to fully expand Quick Settings.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = "2. Tap the pencil (Edit) icon at the top right.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = "3. Under Available buttons, tap or drag 'Quick Record' or 'Quick Audio' into your active panel.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        Button(
+                            onClick = {
+                                try {
+                                    val sbm = context.getSystemService(android.app.StatusBarManager::class.java)
+                                    val executor = java.util.concurrent.Executors.newSingleThreadExecutor()
+                                    sbm?.requestAddTileService(
+                                        android.content.ComponentName(context, com.example.quicksettings.QuickRecordTileService::class.java),
+                                        "Quick Record",
+                                        android.graphics.drawable.Icon.createWithResource(context, com.example.R.drawable.ic_qs_record),
+                                        executor
+                                    ) { _ -> }
+                                    Toast.makeText(context, "Tile addition prompt requested.", Toast.LENGTH_SHORT).show()
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, "Please add the tile via your Quick Settings edit panel.", Toast.LENGTH_LONG).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Prompt System to Add Tile",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQuickSettingsDialog = false }) {
+                    Text(text = "Done", color = AccentRed)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showAdvancedDefaultsDialog) {
+        AlertDialog(
+            onDismissRequest = { showAdvancedDefaultsDialog = false },
+            title = {
+                Column {
+                    Text(
+                        text = "Advanced & Hardware Defaults",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Fallback defaults for quick recording sessions",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SettingsClickableRow(
+                        title = "Default preset",
+                        value = settings.activePreset.title,
+                        onClick = { showPresetDialog = true }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Default camera",
+                        value = if (settings.useFrontCamera) "Front" else "Back",
+                        onClick = { showCameraDialog = true }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Default video quality",
+                        value = settings.videoQuality,
+                        onClick = { showQualityDialog = true }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = "Background recording",
+                        checked = settings.backgroundRecordingEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateBackgroundRecordingEnabled(enabled)
+                        },
+                        subtitle = "Continue recording when leaving app"
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = "Exit app on stop",
+                        checked = settings.exitAfterRecordingEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateExitAfterRecordingEnabled(enabled)
+                        },
+                        subtitle = "Close app automatically when recording is stopped"
+                    )
+
+                    if (settings.exitAfterRecordingEnabled) {
+                        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                        SettingsClickableRow(
+                            title = "Exit method",
+                            value = settings.exitMethod.title,
+                            onClick = { showExitMethodDialog = true }
+                        )
+
+                        if (settings.exitMethod == ExitMethod.GESTURE) {
+                            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                            SettingsClickableRow(
+                                title = "Exit gesture",
+                                value = settings.exitGesture.shortSubtitle,
+                                onClick = { showExitGestureDialog = true }
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Default cover",
+                        value = settings.activeCover.name,
+                        onClick = {
+                            showAdvancedDefaultsDialog = false
+                            onNavigateToCovers()
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    // Recording brightness
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Base recording brightness",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp
+                                ),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = if (settings.activeCover.brightnessPercent <= 1) "Minimum" else "${settings.activeCover.brightnessPercent}%",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.sp,
+                                    color = TextSecondary
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Slider(
+                            value = settings.activeCover.brightnessPercent.toFloat(),
+                            onValueChange = { percent ->
+                                viewModel.setActiveCover(settings.activeCover.copy(brightnessPercent = percent.toInt()))
+                            },
+                            valueRange = 1f..100f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = AccentRed,
+                                activeTrackColor = AccentRed,
+                                inactiveTrackColor = SurfaceSecondary
+                            )
+                        )
+                    }
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    // Storage diagnostics card
+                    Card(
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "Storage Diagnostics",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "App Storage Used: ${MainViewModel.formatFileSize(storageStats.usedBytes)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = "Device Storage Free: ${MainViewModel.formatFileSize(storageStats.availableBytes)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = "Est. Recording Time: ${StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AccentRed
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAdvancedDefaultsDialog = false }) {
+                    Text(text = "Done", color = AccentRed)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     if (showWidgetDialog) {
         val appWidgetManager = context.getSystemService(android.appwidget.AppWidgetManager::class.java)
         val canPin = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true
