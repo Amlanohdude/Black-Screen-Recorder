@@ -93,6 +93,7 @@ import com.example.config.AppLinks
 import com.example.covers.ControlGesture
 import com.example.presets.RecordingPresetId
 import com.example.recording.BlindOperationHaptics
+import com.example.recording.CameraHardwareHelper
 import com.example.storage.EntitlementManager
 import com.example.storage.ExitGesture
 import com.example.storage.ExitMethod
@@ -120,6 +121,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val settings by viewModel.userSettings.collectAsStateWithLifecycle()
+    val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
 
     var showCameraDialog by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
@@ -145,6 +147,23 @@ fun SettingsScreen(
     var showStorageLocationDialog by remember { mutableStateOf(false) }
     var showCustomFolderOptionsDialog by remember { mutableStateOf(false) }
     var showAutoStopLockedDialog by remember { mutableStateOf(false) }
+    var show4kLockedDialog by remember { mutableStateOf(false) }
+
+    val is4KSupported = remember(settings.useFrontCamera) {
+        CameraHardwareHelper.is4KSupported(context, settings.useFrontCamera)
+    }
+
+    LaunchedEffect(is4KSupported) {
+        if (!is4KSupported && settings.videoQuality == "4K") {
+            viewModel.updateVideoQuality("1080p")
+        }
+    }
+
+    LaunchedEffect(entitlements.isPro, entitlements.video4kCredits) {
+        if (!EntitlementManager.canUse4KVideo() && settings.videoQuality == "4K") {
+            viewModel.updateVideoQuality("1080p")
+        }
+    }
     var showExitMethodDialog by remember { mutableStateOf(false) }
     var showExitGestureDialog by remember { mutableStateOf(false) }
     var devTapCount by remember { mutableIntStateOf(0) }
@@ -1096,15 +1115,25 @@ fun SettingsScreen(
     }
 
     if (showQualityDialog) {
+        val options = mutableListOf<Pair<String, String>>()
+        if (is4KSupported) {
+            options.add("4K" to "4K (UHD - Ultra HD PRO)")
+        }
+        options.add("1080p" to "1080p (FHD - High quality)")
+        options.add("720p" to "720p (HD - Standard)")
+        options.add("480p" to "480p (SD - Smaller file)")
+
         SelectionDialog(
             title = "Video quality",
-            options = listOf(
-                "1080p" to "1080p (FHD - High quality)",
-                "720p" to "720p (HD - Standard)",
-                "480p" to "480p (SD - Smaller file)"
-            ),
+            options = options,
             selected = settings.videoQuality,
-            onSelect = { viewModel.updateVideoQuality(it) },
+            onSelect = { selectedQuality ->
+                if (selectedQuality == "4K" && !EntitlementManager.canUse4KVideo()) {
+                    show4kLockedDialog = true
+                } else {
+                    viewModel.updateVideoQuality(selectedQuality)
+                }
+            },
             onDismiss = { showQualityDialog = false }
         )
     }
@@ -1359,6 +1388,66 @@ fun SettingsScreen(
                     }
                 ) {
                     Text("Watch Ad (1 Use)", color = TextSecondary)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(14.dp)
+        )
+    }
+
+    if (show4kLockedDialog) {
+        val activity = context as? Activity
+        AlertDialog(
+            onDismissRequest = { show4kLockedDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = AccentRed, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "4K Ultra HD is PRO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Capture video in pristine 4K UHD resolution supported by your camera hardware.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = "1080p Full HD is always free and unlimited. Upgrade to PRO for permanent 4K access, or watch a short sponsored ad for 1 session.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        show4kLockedDialog = false
+                        onNavigateToPro()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        show4kLockedDialog = false
+                        if (activity != null) {
+                            RewardedAdManager.showAd(
+                                activity = activity,
+                                onUserEarnedReward = {
+                                    EntitlementManager.add4kCredit()
+                                    viewModel.updateVideoQuality("4K")
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Watch Ad (1 Session)", color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -2211,6 +2300,7 @@ private fun DeveloperQaDialog(
                         EntitlementManager.addCustomCoverCredit(3)
                         EntitlementManager.addCustomFolderExportCredit(3)
                         EntitlementManager.addAutoStopCredit(3)
+                        EntitlementManager.add4kCredit(3)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2227,6 +2317,54 @@ private fun DeveloperQaDialog(
                         ),
                         color = TextPrimary
                     )
+                }
+
+                // 4K Hardware simulation toggle
+                var is4kSimulated by remember { mutableStateOf(CameraHardwareHelper.force4kSupportForTesting == true) }
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                    border = BorderStroke(1.dp, BorderSubtle)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Simulate 4K Hardware Sensor",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Forces 4K UHD support on non-4K test devices",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = TextSecondary
+                            )
+                        }
+
+                        Switch(
+                            checked = is4kSimulated,
+                            onCheckedChange = { checked ->
+                                is4kSimulated = checked
+                                CameraHardwareHelper.force4kSupportForTesting = if (checked) true else null
+                            },
+                            modifier = Modifier.testTag("dev_qa_simulate_4k_switch"),
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AccentRed,
+                                uncheckedThumbColor = TextMuted,
+                                uncheckedTrackColor = SurfacePrimary
+                            )
+                        )
+                    }
                 }
 
                 // Reset Entitlements button

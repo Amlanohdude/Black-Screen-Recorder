@@ -14,6 +14,9 @@ data class StorageStats(
 
 object StorageCapacityEstimator {
     // Realistic bitrates for CameraX / MediaRecorder on Android
+    // 4K (UHD): ~35 Mbps -> 4,375,000 bytes/sec (~15.75 GB/hour)
+    const val BYTES_PER_SEC_4K = 4_375_000L
+
     // 1080p (FHD): ~15 Mbps -> 1,875,000 bytes/sec (~6.75 GB/hour)
     const val BYTES_PER_SEC_1080P = 1_875_000L
 
@@ -102,6 +105,7 @@ object StorageCapacityEstimator {
             }
         } else {
             when (videoQuality) {
+                "4K" -> BYTES_PER_SEC_4K
                 "720p" -> BYTES_PER_SEC_720P
                 "480p" -> BYTES_PER_SEC_480P
                 else -> BYTES_PER_SEC_1080P

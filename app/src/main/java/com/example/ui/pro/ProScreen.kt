@@ -123,6 +123,12 @@ enum class UnlockableFeature(
         description = "Automatically stop after set duration",
         icon = Icons.Default.Timer,
         unlockSuccessMsg = "1 Auto Stop free use added."
+    ),
+    VIDEO_4K(
+        title = "4K ULTRA HD RECORDING",
+        description = "Maximum resolution for supported cameras",
+        icon = Icons.Default.Videocam,
+        unlockSuccessMsg = "1 session of 4K Ultra HD added."
     )
 }
 
@@ -699,6 +705,17 @@ fun ProScreen(
                     },
                     onUseClick = onNavigateToSettings
                 )
+
+                ProFeatureCard(
+                    feature = UnlockableFeature.VIDEO_4K,
+                    isPro = isPro,
+                    credits = entitlements.video4kCredits,
+                    isAdLoading = isAdLoading,
+                    onWatchAdClick = {
+                        pendingFeatureToUnlock = UnlockableFeature.VIDEO_4K
+                    },
+                    onUseClick = onNavigateToSettings
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -737,6 +754,7 @@ fun ProScreen(
                                         UnlockableFeature.CUSTOM_COVERS -> EntitlementManager.addCustomCoverCredit()
                                         UnlockableFeature.CUSTOM_FOLDER -> EntitlementManager.addCustomFolderExportCredit()
                                         UnlockableFeature.AUTO_STOP -> EntitlementManager.addAutoStopCredit()
+                                        UnlockableFeature.VIDEO_4K -> EntitlementManager.add4kCredit()
                                     }
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar(featureToUnlock.unlockSuccessMsg)
@@ -855,11 +873,19 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
             )
 
             ComparisonRow(
+                icon = Icons.Default.Videocam,
+                title = "Video Quality",
+                freeContent = { TextBadge("Up to 1080p FHD") },
+                proContent = { TextBadge("4K UHD (Supported)", isGold = true) },
+                isAltRow = true
+            )
+
+            ComparisonRow(
                 icon = Icons.Default.Palette,
                 title = "Custom Covers",
                 freeContent = { TextBadge("1 use / credit") },
                 proContent = { UnlimitedBadge() },
-                isAltRow = true
+                isAltRow = false
             )
 
             ComparisonRow(
@@ -867,7 +893,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = "Custom Folder Export",
                 freeContent = { TextBadge("1 use / credit") },
                 proContent = { UnlimitedBadge() },
-                isAltRow = false
+                isAltRow = true
             )
 
             ComparisonRow(
@@ -875,7 +901,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = "Auto Stop Timer",
                 freeContent = { TextBadge("1 use / credit") },
                 proContent = { UnlimitedBadge() },
-                isAltRow = true
+                isAltRow = false
             )
         }
     }

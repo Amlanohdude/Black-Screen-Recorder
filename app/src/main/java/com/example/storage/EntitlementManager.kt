@@ -14,7 +14,8 @@ data class Entitlements(
 val isPro: Boolean = false,
 val customCoverCredits: Int = 0,
 val customFolderExportCredits: Int = 0,
-val autoStopCredits: Int = 0
+val autoStopCredits: Int = 0,
+val video4kCredits: Int = 0
 )
 
 /**
@@ -33,6 +34,7 @@ private const val KEY_PRO = "entitlement_pro"
 private const val KEY_CUSTOM_COVERS_CREDITS = "custom_cover_credits"
 private const val KEY_CUSTOM_FOLDER_CREDITS = "custom_folder_export_credits"
 private const val KEY_AUTO_STOP_CREDITS = "auto_stop_credits"
+private const val KEY_4K_CREDITS = "video_4k_credits"
 
 private var prefs: SharedPreferences? = null
 
@@ -54,7 +56,8 @@ _entitlements.value = Entitlements(
 isPro = p.getBoolean(KEY_PRO, false),
 customCoverCredits = p.getInt(KEY_CUSTOM_COVERS_CREDITS, 0),
 customFolderExportCredits = p.getInt(KEY_CUSTOM_FOLDER_CREDITS, 0),
-autoStopCredits = p.getInt(KEY_AUTO_STOP_CREDITS, 0)
+autoStopCredits = p.getInt(KEY_AUTO_STOP_CREDITS, 0),
+video4kCredits = p.getInt(KEY_4K_CREDITS, 0)
 )
 }
 }
@@ -70,6 +73,7 @@ fun isPro(): Boolean = _entitlements.value.isPro
 fun getCustomCoverCredits(): Int = _entitlements.value.customCoverCredits
 fun getCustomFolderExportCredits(): Int = _entitlements.value.customFolderExportCredits
 fun getAutoStopCredits(): Int = _entitlements.value.autoStopCredits
+fun get4kCredits(): Int = _entitlements.value.video4kCredits
 
 /**
 * Check if a feature is permitted to run (either PRO or credits available).
@@ -77,6 +81,7 @@ fun getAutoStopCredits(): Int = _entitlements.value.autoStopCredits
 fun canUseCustomCovers(): Boolean = isPro() || _entitlements.value.customCoverCredits > 0
 fun canUseCustomFolderExport(): Boolean = isPro() || _entitlements.value.customFolderExportCredits > 0
 fun canUseAutoStop(): Boolean = isPro() || _entitlements.value.autoStopCredits > 0
+fun canUse4KVideo(): Boolean = isPro() || _entitlements.value.video4kCredits > 0
 
 // ==========================================
 // CUSTOM COVERS CREDIT MANAGEMENT
@@ -148,6 +153,31 @@ if (current > 0) {
 val updated = current - 1
 prefs?.edit()?.putInt(KEY_AUTO_STOP_CREDITS, updated)?.apply()
 _entitlements.value = _entitlements.value.copy(autoStopCredits = updated)
+return true
+}
+return false
+}
+
+// ==========================================
+// 4K ULTRA HD CREDIT MANAGEMENT
+// ==========================================
+
+@Synchronized
+fun add4kCredit(amount: Int = 1) {
+if (amount <= 0) return
+val newCredits = _entitlements.value.video4kCredits + amount
+prefs?.edit()?.putInt(KEY_4K_CREDITS, newCredits)?.apply()
+_entitlements.value = _entitlements.value.copy(video4kCredits = newCredits)
+}
+
+@Synchronized
+fun consume4kCredit(): Boolean {
+if (isPro()) return true
+val current = _entitlements.value.video4kCredits
+if (current > 0) {
+val updated = current - 1
+prefs?.edit()?.putInt(KEY_4K_CREDITS, updated)?.apply()
+_entitlements.value = _entitlements.value.copy(video4kCredits = updated)
 return true
 }
 return false

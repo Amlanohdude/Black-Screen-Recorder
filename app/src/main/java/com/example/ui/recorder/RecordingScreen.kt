@@ -113,6 +113,7 @@ fun RecordingScreen(
     val settings by viewModel.userSettings.collectAsStateWithLifecycle()
     val rawCover = settings.activeCover
     var hasConsumedAutoStopCredit by rememberSaveable { mutableStateOf(false) }
+    var hasConsumed4kCredit by rememberSaveable { mutableStateOf(false) }
 
     // Stop protection state
     var showStopConfirmDialog by remember { mutableStateOf(false) }
@@ -186,6 +187,10 @@ fun RecordingScreen(
         if (settings.autoStopSeconds > 0 && !hasConsumedAutoStopCredit && !EntitlementManager.isPro()) {
             EntitlementManager.consumeAutoStopCredit()
             hasConsumedAutoStopCredit = true
+        }
+        if (settings.videoQuality == "4K" && !hasConsumed4kCredit && !EntitlementManager.isPro()) {
+            EntitlementManager.consume4kCredit()
+            hasConsumed4kCredit = true
         }
     }
 

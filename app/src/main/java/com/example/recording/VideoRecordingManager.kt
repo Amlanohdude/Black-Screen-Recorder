@@ -53,6 +53,7 @@ class VideoRecordingManager(
                 }
 
                 val quality = when (qualityStr) {
+                    "4K" -> Quality.UHD
                     "720p" -> Quality.HD
                     "480p" -> Quality.SD
                     else -> Quality.FHD

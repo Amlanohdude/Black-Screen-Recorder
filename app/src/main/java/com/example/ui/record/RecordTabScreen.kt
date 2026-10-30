@@ -71,6 +71,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -139,6 +140,23 @@ fun RecordTabScreen(
     var showCriticalStorageDialog by remember { mutableStateOf(false) }
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
+    var show4kLockedDialog by remember { mutableStateOf(false) }
+
+    val is4KSupported = remember(settings.useFrontCamera) {
+        com.example.recording.CameraHardwareHelper.is4KSupported(context, settings.useFrontCamera)
+    }
+
+    LaunchedEffect(is4KSupported) {
+        if (!is4KSupported && settings.videoQuality == "4K") {
+            viewModel.updateVideoQuality("1080p")
+        }
+    }
+
+    LaunchedEffect(entitlements.isPro, entitlements.video4kCredits) {
+        if (!EntitlementManager.canUse4KVideo() && settings.videoQuality == "4K") {
+            viewModel.updateVideoQuality("1080p")
+        }
+    }
 
     val isStorageCritical = remember(storageStats.availableBytes) {
         StorageCapacityEstimator.isStorageCriticallyLow(storageStats.availableBytes)
@@ -488,9 +506,56 @@ fun RecordTabScreen(
                                     expanded = showQualityDropdown,
                                     onDismissRequest = { showQualityDropdown = false }
                                 ) {
+                                    if (is4KSupported) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "4K UHD",
+                                                        fontWeight = if (settings.videoQuality == "4K") FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (settings.videoQuality == "4K") AccentRed else TextPrimary
+                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        color = Color(0xFFFFD54F).copy(alpha = 0.15f),
+                                                        border = BorderStroke(0.5.dp, Color(0xFFFFD54F))
+                                                    ) {
+                                                        Text(
+                                                            text = "PRO",
+                                                            fontSize = 9.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFFFFD54F),
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                            onClick = {
+                                                showQualityDropdown = false
+                                                if (EntitlementManager.canUse4KVideo()) {
+                                                    viewModel.updateVideoQuality("4K")
+                                                } else {
+                                                    show4kLockedDialog = true
+                                                }
+                                            }
+                                        )
+                                    }
                                     listOf("1080p", "720p", "480p").forEach { quality ->
                                         DropdownMenuItem(
-                                            text = { Text(quality) },
+                                            text = {
+                                                Text(
+                                                    text = when (quality) {
+                                                        "1080p" -> "1080p (Full HD)"
+                                                        "720p" -> "720p (HD)"
+                                                        else -> "480p (SD)"
+                                                    },
+                                                    fontWeight = if (settings.videoQuality == quality) FontWeight.Bold else FontWeight.Normal,
+                                                    color = if (settings.videoQuality == quality) AccentRed else TextPrimary
+                                                )
+                                            },
                                             onClick = {
                                                 viewModel.updateVideoQuality(quality)
                                                 showQualityDropdown = false
@@ -1160,6 +1225,78 @@ fun RecordTabScreen(
             onChannelsChanged = { ch -> viewModel.updateAudioChannels(ch) },
             onBitrateChanged = { br -> viewModel.updateAudioBitrate(br) },
             onSampleRateChanged = { sr -> viewModel.updateAudioSampleRate(sr) }
+        )
+    }
+
+    // 4K UHD Locked Dialog
+    if (show4kLockedDialog) {
+        val activity = context as? Activity
+        AlertDialog(
+            onDismissRequest = { show4kLockedDialog = false },
+            title = {
+                Text(
+                    text = "4K Ultra HD Recording",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Capture video in pristine 4K UHD (2160p) resolution supported by your camera hardware.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = "1080p Full HD is always free and unhindered. Upgrade to PRO for permanent unlimited 4K, or watch a short sponsored video for 1 session.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        show4kLockedDialog = false
+                        onNavigateToPro()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        show4kLockedDialog = false
+                        if (activity != null) {
+                            RewardedAdManager.showAd(
+                                activity = activity,
+                                onUserEarnedReward = {
+                                    EntitlementManager.add4kCredit()
+                                    viewModel.updateVideoQuality("4K")
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("4K Ultra HD unlocked for 1 session.")
+                                    }
+                                },
+                                onFailedToShow = { errorMsg ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(errorMsg)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Watch Ad (1 Session)", color = TextSecondary)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }
