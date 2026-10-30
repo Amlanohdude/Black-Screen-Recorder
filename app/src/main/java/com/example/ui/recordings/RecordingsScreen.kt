@@ -102,6 +102,7 @@ import com.example.storage.ExportProgress
 import com.example.storage.ExportResult
 import com.example.storage.RecordingEntity
 import com.example.storage.RecordingExportManager
+import com.example.localization.LocalAppStrings
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.ui.theme.AccentRed
@@ -135,6 +136,7 @@ val haptic = LocalHapticFeedback.current
 val recordings by viewModel.recordings.collectAsStateWithLifecycle()
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 val isUnlocked by viewModel.isRecordingsUnlocked.collectAsStateWithLifecycle()
+val strings = LocalAppStrings.current
 var showSetupLock by remember { mutableStateOf(false) }
 
 if ((settings.lockEnabled && !isUnlocked) || showSetupLock) {
@@ -510,7 +512,7 @@ executeSingleExport(recording, folderUri, folderName)
                 HorizontalDivider(color = BorderSubtle, thickness = 0.5.dp)
             } else {
                 TabTopHeader(
-title = "RECORDINGS",
+title = strings.recordingsTitle,
 navigationIcon = if (onNavigateBack != null) {
 {
 IconButton(

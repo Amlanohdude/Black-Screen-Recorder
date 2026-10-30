@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Black Screen Recorder</string>
+    <string name="error_mic_unavailable">Микрофон недоступен</string>
+    <string name="error_camera_unavailable">Камера недоступна</string>
+    <string name="permission_camera_mic">Для записи видео требуется доступ к камере и микрофону.</string>
+    <string name="permission_mic">Для записи аудио требуется доступ к микрофону.</string>
+    <string name="privacy_policy_body">Black Screen Recorder — локальная утилита для записи с темным экраном в целях экономии батареи и конфиденциальности. Не содержит шпионских программ, удаленной слежки или облачных загрузок. Записи сохраняются исключительно на этом устройстве.</string>
+    <string name="rename_title">Переименовать запись</string>
+    <string name="delete_confirmation">Удалить эту запись?</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_share">Поделиться</string>
+    <string name="action_rename">Переименовать</string>
+    <string name="action_delete">Удалить</string>
+    <string name="widget_quick_record_name">Быстрая запись</string>
+    <string name="widget_quick_record_description">Ярлык быстрой скрытой записи с тактильным откликом.</string>
+    <string name="widget_quick_audio_name">Быстрое аудио</string>
+    <string name="widget_quick_audio_description">Ярлык быстрой записи звука с тактильным откликом.</string>
+    <string name="widget_quick_video_name">Быстрое видео</string>
+    <string name="widget_quick_video_description">Ярлык быстрой записи видео с тактильным откликом.</string>
+    <string name="widget_quick_bar_name">Панель записи (2×1)</string>
+    <string name="widget_quick_bar_description">Панель управления записью с индикатором статуса.</string>
+    <string name="widget_quick_dashboard_name">Дашборд записи (2×2)</string>
+    <string name="widget_quick_dashboard_description">Расширенная панель управления со статусом сессии.</string>
+    <string name="tile_quick_record_label">Быстрая запись</string>
+    <string name="tile_quick_audio_label">Быстрое аудио</string>
+    <string name="tile_subtitle_tap_to_record">Нажмите для записи</string>
+    <string name="tile_subtitle_recording">Идет запись</string>
+    <string name="tile_subtitle_audio_recording">Запись аудио</string>
+    <string name="tile_subtitle_tap_to_stop">Нажмите для остановки</string>
+</resources>

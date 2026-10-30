@@ -240,6 +240,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateAutoStopSeconds(seconds: Int) = settingsPrefs.updateAutoStopSeconds(seconds)
     fun updateAutoStopMinutes(minutes: Int) = settingsPrefs.updateAutoStopMinutes(minutes)
+    fun updateLanguageCode(code: String) = settingsPrefs.updateLanguageCode(code)
     fun updateStopBehavior(behavior: StopBehavior) = settingsPrefs.updateStopBehavior(behavior)
     fun updateHapticFeedbackEnabled(enabled: Boolean) = settingsPrefs.updateHapticFeedbackEnabled(enabled)
     fun updateExitAfterRecordingEnabled(enabled: Boolean) = settingsPrefs.updateExitAfterRecordingEnabled(enabled)

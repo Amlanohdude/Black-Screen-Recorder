@@ -83,7 +83,8 @@ data class UserSettings(
     val lowBatteryStopThresholdPct: Int = 3,
     val lowStorageStopThresholdMb: Int = 200,
     val onboardingCompleted: Boolean = false,
-    val firstRecordingExplanationShown: Boolean = true
+    val firstRecordingExplanationShown: Boolean = true,
+    val languageCode: String = "system"
 ) {
     val quickStopAndExitEnabled: Boolean get() = exitAfterRecordingEnabled
     val autoStopMinutes: Int get() = autoStopSeconds / 60
@@ -216,7 +217,8 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
             lowBatteryStopThresholdPct = prefs.getInt("low_battery_stop_threshold_pct", 3),
             lowStorageStopThresholdMb = prefs.getInt("low_storage_stop_threshold_mb", 200),
             onboardingCompleted = onboardingCompleted,
-            firstRecordingExplanationShown = firstRecordingExplanationShown
+            firstRecordingExplanationShown = firstRecordingExplanationShown,
+            languageCode = prefs.getString("language_code", "system") ?: "system"
         )
     }
 
@@ -395,6 +397,11 @@ updateActiveCover(CoverConfig.PURE_BLACK_PRESET)
 }
 }
 
+
+fun updateLanguageCode(code: String) {
+    prefs.edit().putString("language_code", code).apply()
+    _settings.value = _settings.value.copy(languageCode = code)
+}
 
 fun updateAutoDeleteEnabled(enabled: Boolean) {
 prefs.edit().putBoolean("auto_delete_enabled", enabled).apply()

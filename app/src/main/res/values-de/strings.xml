@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Black Screen Recorder</string>
+    <string name="error_mic_unavailable">Mikrofon nicht verfügbar</string>
+    <string name="error_camera_unavailable">Kamera nicht verfügbar</string>
+    <string name="permission_camera_mic">Kamera- und Mikrofonzugriff sind für die Videoaufnahme erforderlich.</string>
+    <string name="permission_mic">Mikrofonzugriff ist für die Audioaufnahme erforderlich.</string>
+    <string name="privacy_policy_body">Black Screen Recorder ist ein lokales Tool für gezielte Aufnahmen bei dunklem Bildschirm, um Akku zu sparen und Ablenkungen zu minimieren. Es enthält keine Spyware, keine Fernüberwachung und keine Cloud-Uploads. Aufnahmen werden nur lokal auf diesem Gerät gespeichert.</string>
+    <string name="rename_title">Aufnahme umbenennen</string>
+    <string name="delete_confirmation">Diese Aufnahme löschen?</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_share">Teilen</string>
+    <string name="action_rename">Umbenennen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="widget_quick_record_name">Schnellaufnahme</string>
+    <string name="widget_quick_record_description">Diskrete 1-Tipp-Aufnahme mit haptischem Feedback.</string>
+    <string name="widget_quick_audio_name">Schnellaudio</string>
+    <string name="widget_quick_audio_description">Diskrete 1-Tipp-Audioaufnahme mit haptischem Feedback.</string>
+    <string name="widget_quick_video_name">Schnellvideo</string>
+    <string name="widget_quick_video_description">Diskrete 1-Tipp-Videoaufnahme mit haptischem Feedback.</string>
+    <string name="widget_quick_bar_name">Schnellleiste (2×1)</string>
+    <string name="widget_quick_bar_description">Breite Aktionsleiste mit Live-Statusanzeige.</string>
+    <string name="widget_quick_dashboard_name">Aufnahme-Dashboard (2×2)</string>
+    <string name="widget_quick_dashboard_description">Erweiterte Steuerungskarte mit Auslöser und Statusanzeige.</string>
+    <string name="tile_quick_record_label">Schnellaufnahme</string>
+    <string name="tile_quick_audio_label">Schnellaudio</string>
+    <string name="tile_subtitle_tap_to_record">Tippen zum Aufnehmen</string>
+    <string name="tile_subtitle_recording">Aufnahme läuft</string>
+    <string name="tile_subtitle_audio_recording">Audioaufnahme</string>
+    <string name="tile_subtitle_tap_to_stop">Tippen zum Stoppen</string>
+</resources>

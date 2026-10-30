@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
 import com.example.ads.RewardedAdManager
 import com.example.covers.CoverConfig
+import com.example.localization.LocalAppStrings
 import com.example.recording.BatteryOptimizationHelper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -132,6 +133,7 @@ fun RecordTabScreen(
     val storageStats by viewModel.storageStats.collectAsStateWithLifecycle()
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
     val isPro = entitlements.isPro
+    val strings = LocalAppStrings.current
 
     val activeCover = settings.activeCover
     val selectedMode = settings.defaultRecordingType // "VIDEO" or "AUDIO"
@@ -268,7 +270,7 @@ fun RecordTabScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             TabTopHeader(
-                title = "BLACK SCREEN RECORDER",
+                title = strings.appName.uppercase(),
                 titleModifier = Modifier.testTag("app_title_text"),
                 actions = {
                     val goldColor = Color(0xFFFFD54F)
@@ -335,7 +337,7 @@ fun RecordTabScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Preset",
+                            text = strings.preset,
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             color = TextSecondary
                         )
@@ -396,7 +398,7 @@ fun RecordTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "VIDEO",
+                                text = strings.video,
                                 fontWeight = if (isVideo) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 14.sp,
                                 color = if (isVideo) Color.White else TextSecondary
@@ -433,7 +435,7 @@ fun RecordTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "AUDIO",
+                                text = strings.audio,
                                 fontWeight = if (isAudio) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 14.sp,
                                 color = if (isAudio) Color.White else TextSecondary
@@ -837,7 +839,7 @@ fun RecordTabScreen(
                                     modifier = Modifier.size(17.dp)
                                 )
                                 Text(
-                                    text = "Background Rec",
+                                    text = strings.backgroundRec,
                                     fontSize = 12.sp,
                                     fontWeight = if (bgEnabled) FontWeight.Bold else FontWeight.Medium,
                                     color = if (bgEnabled) Color.White else TextSecondary,
@@ -902,7 +904,7 @@ fun RecordTabScreen(
                                     modifier = Modifier.size(17.dp)
                                 )
                                 Text(
-                                    text = "Exit on Stop",
+                                    text = strings.exitOnStop,
                                     fontSize = 12.sp,
                                     fontWeight = if (exitEnabled) FontWeight.Bold else FontWeight.Medium,
                                     color = if (exitEnabled) Color.White else TextSecondary,
@@ -983,7 +985,7 @@ fun RecordTabScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "START RECORDING",
+                            text = strings.startRecording,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1041,7 +1043,7 @@ fun RecordTabScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = "COVER",
+                                        text = strings.cover,
                                         color = TextSecondary,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 11.sp,
@@ -1075,7 +1077,7 @@ fun RecordTabScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Change Cover",
+                                    text = strings.changeCover,
                                     color = TextPrimary,
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontSize = 12.sp,
@@ -1322,7 +1324,7 @@ fun RecordTabScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Protect Long Recordings",
+                        text = strings.protectLongRecordings,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -1334,7 +1336,7 @@ fun RecordTabScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Background recording is active. To prevent Android Doze mode and power savers from stopping recordings after 15 to 30 minutes, set battery usage to Unrestricted.",
+                        text = strings.batteryGuardDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -1373,14 +1375,14 @@ fun RecordTabScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Set Unrestricted", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(strings.setUnrestricted, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showBatteryOptimizationDialog = false }
                 ) {
-                    Text("Maybe Later", color = TextSecondary)
+                    Text(strings.maybeLater, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,

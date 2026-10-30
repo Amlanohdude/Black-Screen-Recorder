@@ -3,6 +3,7 @@ package com.example.ui.covers
 import com.example.ui.theme.*
 import com.example.ads.AdScreen
 import com.example.ads.NativeAdCard
+import com.example.localization.LocalAppStrings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -95,6 +96,7 @@ val savedCustomCovers by viewModel.savedCustomCovers.collectAsStateWithLifecycle
 val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
 val isPro = entitlements.isPro
 val activeCover = settings.activeCover
+val strings = LocalAppStrings.current
 
 var coverToDelete by remember { mutableStateOf<CoverConfig?>(null) }
 var showCustomCoversLockedDialog by remember { mutableStateOf(false) }
@@ -256,7 +258,7 @@ modifier = modifier
 .fillMaxSize()
 .background(BgDark)
 ) {
-TabTopHeader(title = "RECORDING COVERS")
+TabTopHeader(title = strings.coversTitle)
 
 LazyVerticalGrid(
 columns = GridCells.Fixed(2),

@@ -22,6 +22,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.localization.AppLanguageManager
+import com.example.localization.LocalAppStrings
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -161,6 +164,15 @@ MyApplicationTheme {
 var showSplash by remember { mutableStateOf(true) }
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 
+LaunchedEffect(settings.languageCode) {
+    AppLanguageManager.applyLocale(this@MainActivity, settings.languageCode)
+}
+
+val currentStrings = remember(settings.languageCode) {
+    AppLanguageManager.getStrings(settings.languageCode)
+}
+
+CompositionLocalProvider(LocalAppStrings provides currentStrings) {
 val screenTarget = when {
 showSplash -> "SPLASH"
 !settings.onboardingCompleted -> "ONBOARDING"
@@ -190,6 +202,7 @@ viewModel.completeOnboarding()
 }
 else -> {
 MainAppContent(viewModel = viewModel)
+}
 }
 }
 }
@@ -647,6 +660,14 @@ private fun CustomBottomNavItem(
         label = "nav_dot_scale_${tab.name}"
     )
 
+    val strings = LocalAppStrings.current
+    val tabTitle = when (tab) {
+        MainTab.RECORD -> strings.tabRecord
+        MainTab.COVERS -> strings.tabCovers
+        MainTab.RECORDINGS -> strings.tabRecordings
+        MainTab.SETTINGS -> strings.tabSettings
+    }
+
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -661,7 +682,7 @@ private fun CustomBottomNavItem(
     ) {
         Icon(
             imageVector = tab.icon,
-            contentDescription = tab.title,
+            contentDescription = tabTitle,
             tint = iconColor,
             modifier = Modifier
                 .size(24.dp)
@@ -673,7 +694,7 @@ private fun CustomBottomNavItem(
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = tab.title,
+            text = tabTitle,
             color = labelColor,
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal

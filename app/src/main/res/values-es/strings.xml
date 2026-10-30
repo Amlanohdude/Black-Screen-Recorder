@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Grabadora de Pantalla Negra</string>
+    <string name="error_mic_unavailable">Micrófono no disponible</string>
+    <string name="error_camera_unavailable">Cámara no disponible</string>
+    <string name="permission_camera_mic">Se requiere acceso a la cámara y al micrófono para grabar vídeo.</string>
+    <string name="permission_mic">Se requiere acceso al micrófono para grabar audio.</string>
+    <string name="privacy_policy_body">Black Screen Recorder es una utilidad local para grabaciones intencionales manteniendo la pantalla oscura para ahorrar batería y reducir distracciones. No contiene software espía, monitoreo remoto ni subidas a la nube. Las grabaciones se guardan únicamente en este dispositivo.</string>
+    <string name="rename_title">Renombrar grabación</string>
+    <string name="delete_confirmation">¿Eliminar esta grabación?</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_share">Compartir</string>
+    <string name="action_rename">Renombrar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="widget_quick_record_name">Grabación Rápida</string>
+    <string name="widget_quick_record_description">Acceso directo a grabación discreta con respuesta háptica táctil.</string>
+    <string name="widget_quick_audio_name">Audio Rápido</string>
+    <string name="widget_quick_audio_description">Acceso directo a grabación de audio discreta con respuesta háptica táctil.</string>
+    <string name="widget_quick_video_name">Vídeo Rápido</string>
+    <string name="widget_quick_video_description">Acceso directo a grabación de vídeo discreta con respuesta háptica táctil.</string>
+    <string name="widget_quick_bar_name">Barra Rápida (2×1)</string>
+    <string name="widget_quick_bar_description">Barra de acción de grabación con indicador de estado en vivo.</string>
+    <string name="widget_quick_dashboard_name">Panel de Grabación (2×2)</string>
+    <string name="widget_quick_dashboard_description">Tarjeta de control de grabación con botón destacado y estado de sesión.</string>
+    <string name="tile_quick_record_label">Grabación Rápida</string>
+    <string name="tile_quick_audio_label">Audio Rápido</string>
+    <string name="tile_subtitle_tap_to_record">Toca para grabar</string>
+    <string name="tile_subtitle_recording">Grabando</string>
+    <string name="tile_subtitle_audio_recording">Grabando audio</string>
+    <string name="tile_subtitle_tap_to_stop">Toca para detener</string>
+</resources>

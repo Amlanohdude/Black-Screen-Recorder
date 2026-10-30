@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">黒画面レコーダー</string>
+    <string name="error_mic_unavailable">マイクが利用できません</string>
+    <string name="error_camera_unavailable">カメラが利用できません</string>
+    <string name="permission_camera_mic">動画を録画するにはカメラとマイクへのアクセス権限が必要です。</string>
+    <string name="permission_mic">音声を録音するにはマイクへのアクセス権限が必要です。</string>
+    <string name="privacy_policy_body">Black Screen Recorderは画面を消灯した状態で録画・録音を行い、電池の節約と周囲への配慮を両立する安全なローカルアプリです。スパイウェア、遠隔監視、クラウド送信などの機能は一切含まれず、録画データはお使いの端末内のみに安全に保存されます。</string>
+    <string name="rename_title">ファイル名の変更</string>
+    <string name="delete_confirmation">この録画を削除しますか？</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_save">保存</string>
+    <string name="action_share">共有</string>
+    <string name="action_rename">名前を変更</string>
+    <string name="action_delete">削除</string>
+    <string name="widget_quick_record_name">クイック録画</string>
+    <string name="widget_quick_record_description">振動フィードバック対応の1タップ録画ショートカット。</string>
+    <string name="widget_quick_audio_name">クイック録音</string>
+    <string name="widget_quick_audio_description">振動フィードバック対応の1タップ録音ショートカット。</string>
+    <string name="widget_quick_video_name">クイック動画</string>
+    <string name="widget_quick_video_description">振動フィードバック対応の1タップ動画ショートカット。</string>
+    <string name="widget_quick_bar_name">クイックバー (2×1)</string>
+    <string name="widget_quick_bar_description">リアルタイム状態表示付きの操作バー。</string>
+    <string name="widget_quick_dashboard_name">ダッシュボード (2×2)</string>
+    <string name="widget_quick_dashboard_description">状態表示と大型トリガー付きの拡張カード。</string>
+    <string name="tile_quick_record_label">クイック録画</string>
+    <string name="tile_quick_audio_label">クイック録音</string>
+    <string name="tile_subtitle_tap_to_record">タップして開始</string>
+    <string name="tile_subtitle_recording">録画中</string>
+    <string name="tile_subtitle_audio_recording">録音中</string>
+    <string name="tile_subtitle_tap_to_stop">タップして停止</string>
+</resources>

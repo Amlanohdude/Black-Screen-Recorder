@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Gravador de Tela Preta</string>
+    <string name="error_mic_unavailable">Microfone indisponível</string>
+    <string name="error_camera_unavailable">Câmera indisponível</string>
+    <string name="permission_camera_mic">O acesso à câmera e ao microfone é necessário para gravar vídeo.</string>
+    <string name="permission_mic">O acesso ao microfone é necessário para gravar áudio.</string>
+    <string name="privacy_policy_body">O Black Screen Recorder é um utilitário local para gravações com tela apagada, economizando bateria e reduzindo distrações. Não contém spyware, monitoramento remoto ou uploads na nuvem. As gravações são salvas apenas neste dispositivo.</string>
+    <string name="rename_title">Renomear gravação</string>
+    <string name="delete_confirmation">Excluir esta gravação?</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_share">Compartilhar</string>
+    <string name="action_rename">Renomear</string>
+    <string name="action_delete">Excluir</string>
+    <string name="widget_quick_record_name">Gravação Rápida</string>
+    <string name="widget_quick_record_description">Atalho de gravação discreta com resposta tátil.</string>
+    <string name="widget_quick_audio_name">Áudio Rápido</string>
+    <string name="widget_quick_audio_description">Atalho de gravação de áudio discreta com resposta tátil.</string>
+    <string name="widget_quick_video_name">Vídeo Rápido</string>
+    <string name="widget_quick_video_description">Atalho de gravação de vídeo discreta com resposta tátil.</string>
+    <string name="widget_quick_bar_name">Barra Rápida (2×1)</string>
+    <string name="widget_quick_bar_description">Barra de ação para gravação rápida com status ao vivo.</string>
+    <string name="widget_quick_dashboard_name">Painel de Gravação (2×2)</string>
+    <string name="widget_quick_dashboard_description">Painel de controle com botão de início e status da gravação.</string>
+    <string name="tile_quick_record_label">Gravação Rápida</string>
+    <string name="tile_quick_audio_label">Áudio Rápido</string>
+    <string name="tile_subtitle_tap_to_record">Toque para gravar</string>
+    <string name="tile_subtitle_recording">Gravando</string>
+    <string name="tile_subtitle_audio_recording">Gravando áudio</string>
+    <string name="tile_subtitle_tap_to_stop">Toque para parar</string>
+</resources>

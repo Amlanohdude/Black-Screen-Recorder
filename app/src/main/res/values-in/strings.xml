@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Perekam Layar Hitam</string>
+    <string name="error_mic_unavailable">Mikrofon tidak tersedia</string>
+    <string name="error_camera_unavailable">Kamera tidak tersedia</string>
+    <string name="permission_camera_mic">Akses kamera dan mikrofon diperlukan untuk merekam video.</string>
+    <string name="permission_mic">Akses mikrofon diperlukan untuk merekam audio.</string>
+    <string name="privacy_policy_body">Black Screen Recorder adalah alat lokal untuk merekam dengan layar gelap guna menghemat baterai dan mengurangi gangguan. Tidak mengandung spyware, pemantauan jarak jauh, atau unggahan cloud. Semua rekaman hanya tersimpan di perangkat ini.</string>
+    <string name="rename_title">Ubah nama rekaman</string>
+    <string name="delete_confirmation">Hapus rekaman ini?</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_save">Simpan</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_rename">Ubah Nama</string>
+    <string name="action_delete">Hapus</string>
+    <string name="widget_quick_record_name">Rekam Cepat</string>
+    <string name="widget_quick_record_description">Pintasan 1-ketukan perekaman senyap dengan getaran responsif.</string>
+    <string name="widget_quick_audio_name">Audio Cepat</string>
+    <string name="widget_quick_audio_description">Pintasan audio 1-ketukan senyap dengan getaran responsif.</string>
+    <string name="widget_quick_video_name">Video Cepat</string>
+    <string name="widget_quick_video_description">Pintasan video 1-ketukan senyap dengan getaran responsif.</string>
+    <string name="widget_quick_bar_name">Bilah Cepat (2×1)</string>
+    <string name="widget_quick_bar_description">Bilah tindakan rekaman lebar dengan lencana status langsung.</string>
+    <string name="widget_quick_dashboard_name">Dasbor Rekaman (2×2)</string>
+    <string name="widget_quick_dashboard_description">Kartu kontrol perekaman diperluas dengan status sesi langsung.</string>
+    <string name="tile_quick_record_label">Rekam Cepat</string>
+    <string name="tile_quick_audio_label">Audio Cepat</string>
+    <string name="tile_subtitle_tap_to_record">Ketuk untuk merekam</string>
+    <string name="tile_subtitle_recording">Sedang Merekam</string>
+    <string name="tile_subtitle_audio_recording">Rekam Audio</string>
+    <string name="tile_subtitle_tap_to_stop">Ketuk untuk berhenti</string>
+</resources>

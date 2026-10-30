@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">ब्लैक स्क्रीन रिकॉर्डर</string>
+    <string name="error_mic_unavailable">माइक्रोफ़ोन उपलब्ध नहीं है</string>
+    <string name="error_camera_unavailable">कैमरा उपलब्ध नहीं है</string>
+    <string name="permission_camera_mic">वीडियो रिकॉर्ड करने के लिए कैमरा और माइक्रोफ़ोन की अनुमति आवश्यक है।</string>
+    <string name="permission_mic">ऑडियो रिकॉर्ड करने के लिए माइक्रोफ़ोन की अनुमति आवश्यक है।</string>
+    <string name="privacy_policy_body">ब्लैक स्क्रीन रिकॉर्डर एक स्थानीय उपयोगिता ऐप है जो बैटरी बचाने और ध्यान भटकाव कम करने के लिए स्क्रीन को बंद रखकर रिकॉर्डिंग की सुविधा देता है। इसमें कोई स्पाईवेयर, रिमोट मॉनिटरिंग या क्लाउड अपलोड नहीं है। रिकॉर्डिंग केवल इस डिवाइस पर सुरक्षित रहती हैं।</string>
+    <string name="rename_title">रिकॉर्डिंग का नाम बदलें</string>
+    <string name="delete_confirmation">क्या यह रिकॉर्डिंग हटाएं?</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="action_save">सहेजें</string>
+    <string name="action_share">साझा करें</string>
+    <string name="action_rename">नाम बदलें</string>
+    <string name="action_delete">हटाएं</string>
+    <string name="widget_quick_record_name">त्वरित रिकॉर्ड</string>
+    <string name="widget_quick_record_description">हैप्टिक फीडबैक के साथ 1-टैप गुप्त रिकॉर्डिंग शॉर्टकट।</string>
+    <string name="widget_quick_audio_name">त्वरित ऑडियो</string>
+    <string name="widget_quick_audio_description">हैप्टिक फीडबैक के साथ 1-टैप गुप्त ऑडियो रिकॉर्डिंग।</string>
+    <string name="widget_quick_video_name">त्वरित वीडियो</string>
+    <string name="widget_quick_video_description">हैप्टिक फीडबैक के साथ 1-टैप गुप्त वीडियो रिकॉर्डिंग।</string>
+    <string name="widget_quick_bar_name">त्वरित बार (2×1)</string>
+    <string name="widget_quick_bar_description">लाइव स्थिति बैज के साथ चौड़ा रिकॉर्डिंग एक्शन बार।</string>
+    <string name="widget_quick_dashboard_name">रिकॉर्डिंग डैशबोर्ड (2×2)</string>
+    <string name="widget_quick_dashboard_description">प्रमुख ट्रिगर और सत्र स्थिति के साथ विस्तारित नियंत्रण कार्ड।</string>
+    <string name="tile_quick_record_label">त्वरित रिकॉर्ड</string>
+    <string name="tile_quick_audio_label">त्वरित ऑडियो</string>
+    <string name="tile_subtitle_tap_to_record">रिकॉर्ड करने के लिए टैप करें</string>
+    <string name="tile_subtitle_recording">रिकॉर्डिंग जारी है</string>
+    <string name="tile_subtitle_audio_recording">ऑडियो रिकॉर्डिंग</string>
+    <string name="tile_subtitle_tap_to_stop">रोकने के लिए टैप करें</string>
+</resources>

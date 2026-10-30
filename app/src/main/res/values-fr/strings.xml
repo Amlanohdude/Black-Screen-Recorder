@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Enregistreur Écran Noir</string>
+    <string name="error_mic_unavailable">Microphone indisponible</string>
+    <string name="error_camera_unavailable">Caméra indisponible</string>
+    <string name="permission_camera_mic">L\'accès à l\'appareil photo et au micro est requis pour enregistrer des vidéos.</string>
+    <string name="permission_mic">L\'accès au microphone est requis pour enregistrer de l\'audio.</string>
+    <string name="privacy_policy_body">Black Screen Recorder est un utilitaire local pour enregistrer avec l\'écran éteint afin d\'économiser la batterie et d\'éviter les distractions. Ne contient aucun logiciel espion, surveillance à distance ou téléversement vers le cloud. Les enregistrements sont stockés uniquement sur cet appareil.</string>
+    <string name="rename_title">Renommer l\'enregistrement</string>
+    <string name="delete_confirmation">Supprimer cet enregistrement ?</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_save">Enregistrer</string>
+    <string name="action_share">Partager</string>
+    <string name="action_rename">Renommer</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="widget_quick_record_name">Enregistrement Rapide</string>
+    <string name="widget_quick_record_description">Raccourci d\'enregistrement discret en un appui avec retour haptique.</string>
+    <string name="widget_quick_audio_name">Audio Rapide</string>
+    <string name="widget_quick_audio_description">Raccourci audio discret en un appui avec retour haptique.</string>
+    <string name="widget_quick_video_name">Vidéo Rapide</string>
+    <string name="widget_quick_video_description">Raccourci vidéo discret en un appui avec retour haptique.</string>
+    <string name="widget_quick_bar_name">Barre Rapide (2×1)</string>
+    <string name="widget_quick_bar_description">Barre d\'action d\'enregistrement avec badge d\'état en direct.</string>
+    <string name="widget_quick_dashboard_name">Tableau de Bord (2×2)</string>
+    <string name="widget_quick_dashboard_description">Carte de contrôle élargie avec déclencheur et statut de session.</string>
+    <string name="tile_quick_record_label">Enregistrement Rapide</string>
+    <string name="tile_quick_audio_label">Audio Rapide</string>
+    <string name="tile_subtitle_tap_to_record">Appuyer pour enregistrer</string>
+    <string name="tile_subtitle_recording">Enregistrement en cours</string>
+    <string name="tile_subtitle_audio_recording">Enreg. Audio</string>
+    <string name="tile_subtitle_tap_to_stop">Appuyer pour arrêter</string>
+</resources>

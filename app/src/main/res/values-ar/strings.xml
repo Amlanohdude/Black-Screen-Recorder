@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">مسجل الشاشة السوداء</string>
+    <string name="error_mic_unavailable">الميكروفون غير متوفر</string>
+    <string name="error_camera_unavailable">الكاميرا غير متوفرة</string>
+    <string name="permission_camera_mic">يلزم الوصول إلى الكاميرا والميكروفون لتسجيل الفيديو.</string>
+    <string name="permission_mic">يلزم الوصول إلى الميكروفون لتسجيل الصوت.</string>
+    <string name="privacy_policy_body">تطبيق Black Screen Recorder هو أداة محلية للتسجيل مع الحفاظ على الشاشة مظلمة لتوفير البطارية وتقليل الانتباه. لا يحتوي التطبيق على برامج تجسس أو مراقبة عن بُعد أو رفع سحابي. يتم حفظ جميع التسجيلات على هذا الجهاز فقط.</string>
+    <string name="rename_title">إعادة تسمية التسجيل</string>
+    <string name="delete_confirmation">هل تريد حذف هذا التسجيل؟</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_save">حفظ</string>
+    <string name="action_share">مشاركة</string>
+    <string name="action_rename">إعادة تسمية</string>
+    <string name="action_delete">حذف</string>
+    <string name="widget_quick_record_name">تسجيل سريع</string>
+    <string name="widget_quick_record_description">اختصار تسجيل سري بنقرة واحدة مع اهتزاز لمسي.</string>
+    <string name="widget_quick_audio_name">صوت سريع</string>
+    <string name="widget_quick_audio_description">اختصار تسجيل صوتي سري بنقرة واحدة مع اهتزاز لمسي.</string>
+    <string name="widget_quick_video_name">فيديو سريع</string>
+    <string name="widget_quick_video_description">اختصار تسجيل فيديو سري بنقرة واحدة مع اهتزاز لمسي.</string>
+    <string name="widget_quick_bar_name">شريط سريع (2×1)</string>
+    <string name="widget_quick_bar_description">شريط إجراءات تسجيل عريض مع شارة حالة حية.</string>
+    <string name="widget_quick_dashboard_name">لوحة تحكم التسجيل (2×2)</string>
+    <string name="widget_quick_dashboard_description">بطاقة تحكم موسعة مع زر تشغيل وحالة الجلسة.</string>
+    <string name="tile_quick_record_label">تسجيل سريع</string>
+    <string name="tile_quick_audio_label">صوت سريع</string>
+    <string name="tile_subtitle_tap_to_record">انقر للتسجيل</string>
+    <string name="tile_subtitle_recording">جارٍ التسجيل</string>
+    <string name="tile_subtitle_audio_recording">تسجيل صوت</string>
+    <string name="tile_subtitle_tap_to_stop">انقر للإيقاف</string>
+</resources>

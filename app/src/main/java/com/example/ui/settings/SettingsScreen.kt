@@ -17,6 +17,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import com.example.localization.AppLanguage
+import com.example.localization.AppLanguageManager
+import com.example.localization.LocalAppStrings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -173,6 +176,8 @@ fun SettingsScreen(
     }
 
     var showBatteryOptimizationDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    val strings = LocalAppStrings.current
     var isBatteryOptimizationIgnored by remember {
         mutableStateOf(BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context))
     }
@@ -234,7 +239,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            TabTopHeader(title = "SETTINGS")
+            TabTopHeader(title = strings.settingsTitle)
 
             Column(
                 modifier = Modifier
@@ -247,26 +252,26 @@ fun SettingsScreen(
                 ProSettingsCard(onNavigateToPro = onNavigateToPro)
 
                 // Section 1: SHORTCUTS & STEALTH ACCESS
-                SettingsGroup(title = "SHORTCUTS & STEALTH ACCESS") {
+                SettingsGroup(title = strings.secShortcuts) {
                     SettingsClickableRow(
-                        title = "1-Tap Home Screen Widgets",
-                        value = "Choose",
+                        title = strings.widgets,
+                        value = strings.choose,
                         onClick = { showWidgetDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Quick Settings Pull-Down Tile",
-                        value = "Setup",
+                        title = strings.quickSettingsTile,
+                        value = strings.setup,
                         onClick = { showQuickSettingsDialog = true }
                     )
                 }
 
                 // Section 2: RECORDING & AUDIO
-                SettingsGroup(title = "RECORDING & AUDIO") {
+                SettingsGroup(title = strings.secRecordingAudio) {
                     SettingsClickableRow(
-                        title = "Audio format",
+                        title = strings.audioFormat,
                         value = if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
                         onClick = { showAudioDialog = true }
                     )
@@ -275,7 +280,7 @@ fun SettingsScreen(
 
                     val autoStopText = SettingsPreferences.formatAutoStopDuration(settings.autoStopSeconds)
                     SettingsClickableRow(
-                        title = "Auto stop",
+                        title = strings.autoStop,
                         value = autoStopText,
                         onClick = {
                             if (!EntitlementManager.canUseAutoStop()) {
@@ -289,41 +294,36 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsSwitchRow(
-                        title = "Discreet Haptic Feedback",
+                        title = strings.hapticFeedback,
                         checked = settings.hapticFeedbackEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.updateHapticFeedbackEnabled(enabled)
                         },
-                        subtitle = "Vibrate on start, pause, and safe save for blind operation",
                         testTag = "settings_haptic_feedback_switch"
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Background Battery Guard",
-                        value = if (isBatteryOptimizationIgnored) "Unrestricted" else "Optimized",
+                        title = strings.batteryGuard,
+                        value = if (isBatteryOptimizationIgnored) strings.unrestricted else strings.optimized,
                         valueColor = if (isBatteryOptimizationIgnored) Color(0xFF4CAF50) else Color(0xFFFFB300),
-                        subtitle = if (isBatteryOptimizationIgnored)
-                            "Protected from background task termination"
-                        else
-                            "Recommended for multi-hour recordings",
                         onClick = { showBatteryOptimizationDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Advanced & Hardware Defaults",
-                        value = "Configure",
+                        title = strings.advancedDefaults,
+                        value = strings.configure,
                         onClick = { showAdvancedDefaultsDialog = true }
                     )
                 }
 
                 // Section 3: STEALTH & GESTURES
-                SettingsGroup(title = "STEALTH & GESTURES") {
+                SettingsGroup(title = strings.secStealthGestures) {
                     SettingsClickableRow(
-                        title = "Stop behavior",
+                        title = strings.stopBehavior,
                         value = settings.stopBehavior.displayName,
                         onClick = { showStopBehaviorDialog = true }
                     )
@@ -331,7 +331,7 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Reveal controls",
+                        title = strings.revealControls,
                         value = when (settings.activeCover.controlGesture) {
                             ControlGesture.SINGLE_TAP -> "Single Tap"
                             ControlGesture.DOUBLE_TAP -> "Double Tap"
@@ -343,7 +343,7 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsSwitchRow(
-                        title = "Show recording timer",
+                        title = strings.showRecordingTimer,
                         checked = settings.activeCover.showRecordingTimer,
                         onCheckedChange = { enabled ->
                             viewModel.setActiveCover(settings.activeCover.copy(showRecordingTimer = enabled))
@@ -352,9 +352,9 @@ fun SettingsScreen(
                 }
 
                 // Section 4: STORAGE & AUTO-CLEANUP
-                SettingsGroup(title = "STORAGE & AUTO-CLEANUP") {
+                SettingsGroup(title = strings.secStorage) {
                     SettingsClickableRow(
-                        title = "Storage location",
+                        title = strings.storageLocation,
                         value = "App Sandbox (Private)",
                         onClick = { showStorageLocationDialog = true }
                     )
@@ -365,7 +365,7 @@ fun SettingsScreen(
                     val customFolderName = settings.customExportFolderName
                     val folderDisplay = if (!hasCustomFolder) "Not configured" else customFolderName ?: "Configured"
                     SettingsClickableRow(
-                        title = "Export to Custom Folder",
+                        title = strings.exportCustomFolder,
                         value = folderDisplay,
                         onClick = {
                             if (hasCustomFolder) {
@@ -379,10 +379,9 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsSwitchRow(
-                        title = "Auto delete old files",
+                        title = strings.autoDelete,
                         checked = settings.autoDeleteEnabled,
                         onCheckedChange = { viewModel.updateAutoDeleteEnabled(it) },
-                        subtitle = "Purge old recordings after retention period",
                         testTag = "auto_delete_switch"
                     )
 
@@ -390,17 +389,17 @@ fun SettingsScreen(
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsClickableRow(
-                            title = "Retention period",
-                            value = "${settings.autoDeleteDays} days",
+                            title = strings.retentionPeriod,
+                            value = "${settings.autoDeleteDays} ${strings.days}",
                             onClick = { showAutoDeleteDaysDialog = true }
                         )
                     }
                 }
 
                 // Section 5: PRIVACY & SECURITY
-                SettingsGroup(title = "PRIVACY & SECURITY") {
+                SettingsGroup(title = strings.secPrivacy) {
                     SettingsSwitchRow(
-                        title = "Recording Library Lock",
+                        title = strings.libraryLock,
                         checked = settings.lockEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled) {
@@ -420,7 +419,6 @@ fun SettingsScreen(
                                 viewModel.updateLockEnabled(false)
                             }
                         },
-                        subtitle = "Require PIN to access recordings library",
                         testTag = "lock_recordings_switch"
                     )
 
@@ -428,7 +426,7 @@ fun SettingsScreen(
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsClickableRow(
-                            title = "Change PIN",
+                            title = strings.changePin,
                             value = "••••",
                             onClick = {
                                 isChangingExistingPin = true
@@ -444,7 +442,7 @@ fun SettingsScreen(
                         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                         SettingsSwitchRow(
-                            title = "Fingerprint / Biometrics",
+                            title = strings.biometrics,
                             checked = settings.biometricEnabled,
                             onCheckedChange = { enabled ->
                                 viewModel.updateBiometricEnabled(enabled)
@@ -452,6 +450,23 @@ fun SettingsScreen(
                             testTag = "biometric_switch"
                         )
                     }
+                }
+
+                // Section 6: LANGUAGE & REGION
+                SettingsGroup(title = strings.secGeneral) {
+                    val currentLang = remember(settings.languageCode) {
+                        AppLanguage.fromCode(settings.languageCode)
+                    }
+                    val displayValue = if (currentLang == AppLanguage.SYSTEM) {
+                        strings.systemDefault
+                    } else {
+                        "${currentLang.nativeName} (${currentLang.displayName})"
+                    }
+                    SettingsClickableRow(
+                        title = strings.language,
+                        value = displayValue,
+                        onClick = { showLanguageDialog = true }
+                    )
                 }
 
                 // Native Ad (Lower Settings, before ABOUT & SUPPORT section)
@@ -466,11 +481,11 @@ fun SettingsScreen(
                     modifier = Modifier.padding(vertical = 2.dp)
                 )
 
-                // Section 6: ABOUT & SUPPORT
-                SettingsGroup(title = "ABOUT & SUPPORT") {
+                // Section 7: ABOUT & SUPPORT
+                SettingsGroup(title = strings.secAbout) {
                     SettingsClickableRow(
-                        title = "Feedback & Bug Report",
-                        value = "Open",
+                        title = strings.feedbackBugReport,
+                        value = strings.open,
                         onClick = {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.getBugReportUrl())).apply {
@@ -486,8 +501,8 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Request a Feature",
-                        value = "Open",
+                        title = strings.requestFeature,
+                        value = strings.open,
                         onClick = {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.getFeatureRequestUrl())).apply {
@@ -503,8 +518,8 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Privacy policy",
-                        value = "View",
+                        title = strings.privacyPolicy,
+                        value = strings.view,
                         onClick = {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PRIVACY_POLICY_URL)).apply {
@@ -520,8 +535,8 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Terms & conditions",
-                        value = "View",
+                        title = strings.termsConditions,
+                        value = strings.view,
                         onClick = {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.TERMS_AND_CONDITIONS_URL)).apply {
@@ -537,8 +552,8 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     SettingsClickableRow(
-                        title = "Check for updates",
-                        value = "Check",
+                        title = strings.checkForUpdates,
+                        value = strings.check,
                         onClick = {
                             val activity = context as? Activity
                             if (activity != null) {
@@ -735,8 +750,7 @@ fun SettingsScreen(
                         checked = settings.backgroundRecordingEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.updateBackgroundRecordingEnabled(enabled)
-                        },
-                        subtitle = "Continue recording when leaving app"
+                        }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -746,8 +760,7 @@ fun SettingsScreen(
                         checked = settings.exitAfterRecordingEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.updateExitAfterRecordingEnabled(enabled)
-                        },
-                        subtitle = "Close app automatically when recording is stopped"
+                        }
                     )
 
                     if (settings.exitAfterRecordingEnabled) {
@@ -1591,6 +1604,33 @@ fun SettingsScreen(
             },
             containerColor = SurfacePrimary,
             shape = RoundedCornerShape(14.dp)
+        )
+    }
+
+    if (showLanguageDialog) {
+        val options = listOf(
+            AppLanguage.SYSTEM.code to strings.systemDefault,
+            AppLanguage.ENGLISH.code to "${AppLanguage.ENGLISH.nativeName} (${AppLanguage.ENGLISH.displayName})",
+            AppLanguage.SPANISH.code to "${AppLanguage.SPANISH.nativeName} (${AppLanguage.SPANISH.displayName})",
+            AppLanguage.PORTUGUESE.code to "${AppLanguage.PORTUGUESE.nativeName} (${AppLanguage.PORTUGUESE.displayName})",
+            AppLanguage.GERMAN.code to "${AppLanguage.GERMAN.nativeName} (${AppLanguage.GERMAN.displayName})",
+            AppLanguage.FRENCH.code to "${AppLanguage.FRENCH.nativeName} (${AppLanguage.FRENCH.displayName})",
+            AppLanguage.HINDI.code to "${AppLanguage.HINDI.nativeName} (${AppLanguage.HINDI.displayName})",
+            AppLanguage.INDONESIAN.code to "${AppLanguage.INDONESIAN.nativeName} (${AppLanguage.INDONESIAN.displayName})",
+            AppLanguage.JAPANESE.code to "${AppLanguage.JAPANESE.nativeName} (${AppLanguage.JAPANESE.displayName})",
+            AppLanguage.RUSSIAN.code to "${AppLanguage.RUSSIAN.nativeName} (${AppLanguage.RUSSIAN.displayName})",
+            AppLanguage.ARABIC.code to "${AppLanguage.ARABIC.nativeName} (${AppLanguage.ARABIC.displayName})"
+        )
+        SelectionDialog(
+            title = strings.language,
+            options = options,
+            selected = settings.languageCode,
+            onSelect = { selectedCode ->
+                viewModel.updateLanguageCode(selectedCode)
+                AppLanguageManager.applyLocale(context, selectedCode)
+                showLanguageDialog = false
+            },
+            onDismiss = { showLanguageDialog = false }
         )
     }
 
