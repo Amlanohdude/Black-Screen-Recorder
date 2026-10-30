@@ -84,6 +84,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ads.RewardedAdManager
 import com.example.billing.BillingManager
 import com.example.billing.BillingUiState
+import com.example.localization.LocalAppStrings
+import com.example.localization.AppStrings
 import com.example.storage.EntitlementManager
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BgDark
@@ -132,6 +134,28 @@ enum class UnlockableFeature(
     )
 }
 
+fun AppStrings.getFeatureTitle(feature: UnlockableFeature): String = when (feature) {
+    UnlockableFeature.CUSTOM_COVERS -> featureCustomCoversTitle
+    UnlockableFeature.CUSTOM_FOLDER -> featureCustomFolderTitle
+    UnlockableFeature.AUTO_STOP -> featureAutoStopTitle
+    UnlockableFeature.VIDEO_4K -> featureVideo4kTitle
+}
+
+fun AppStrings.getFeatureDesc(feature: UnlockableFeature): String = when (feature) {
+    UnlockableFeature.CUSTOM_COVERS -> featureCustomCoversDesc
+    UnlockableFeature.CUSTOM_FOLDER -> featureCustomFolderDesc
+    UnlockableFeature.AUTO_STOP -> featureAutoStopDesc
+    UnlockableFeature.VIDEO_4K -> featureVideo4kDesc
+}
+
+fun AppStrings.getFeatureSuccessMsg(feature: UnlockableFeature): String = when (feature) {
+    UnlockableFeature.CUSTOM_COVERS -> featureCustomCoversSuccess
+    UnlockableFeature.CUSTOM_FOLDER -> featureCustomFolderSuccess
+    UnlockableFeature.AUTO_STOP -> featureAutoStopSuccess
+    UnlockableFeature.VIDEO_4K -> featureVideo4kSuccess
+}
+
+
 @Composable
 fun ProScreen(
     onBack: () -> Unit,
@@ -142,6 +166,7 @@ fun ProScreen(
 ) {
     BackHandler(onBack = onBack)
 
+    val strings = LocalAppStrings.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -216,13 +241,13 @@ fun ProScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = strings.cancel,
                         tint = TextPrimary
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "UPGRADE TO PRO",
+                    text = strings.proUpgradeTitle,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp
@@ -267,7 +292,7 @@ fun ProScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isPro) "PRO LIFETIME ACTIVE" else "LIFETIME UPGRADE",
+                                text = if (isPro) strings.proLifetimeActive else strings.proLifetimeUpgrade,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.8.sp,
@@ -308,7 +333,7 @@ fun ProScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "BLACK SCREEN RECORDER PRO",
+                        text = strings.proHeroTitle,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -320,7 +345,7 @@ fun ProScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Unlock the full recorder.",
+                        text = strings.proHeroSubtitle,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Normal
@@ -341,10 +366,10 @@ fun ProScreen(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
-                                "Ad-Free",
-                                "Unlimited Custom Covers",
-                                "Unlimited Custom Folder Export",
-                                "Unlimited Auto Stop"
+                                strings.proFeatureAdFree,
+                                strings.proFeatureCovers,
+                                strings.proFeatureFolder,
+                                strings.proFeatureAutoStop
                             ).forEach { item ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -393,7 +418,7 @@ fun ProScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = "PRO ACTIVE",
+                                        text = strings.proActive,
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
@@ -402,7 +427,7 @@ fun ProScreen(
                                         color = GoldAccent
                                     )
                                     Text(
-                                        text = "Lifetime access",
+                                        text = strings.proLifetimeAccess,
                                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                         color = TextSecondary
                                     )
@@ -429,14 +454,14 @@ fun ProScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Purchase pending",
+                                        text = strings.proPurchasePending,
                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                         color = TextPrimary
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Your purchase will activate after payment is completed.",
+                                    text = strings.proPurchasePendingDesc,
                                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                     color = TextSecondary
                                 )
@@ -538,7 +563,7 @@ fun ProScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "UNLOCK PRO · $activePrice",
+                                        text = strings.proUnlockProCta.format(activePrice),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontSize = 14.5.sp,
                                             fontWeight = FontWeight.Bold,
@@ -552,7 +577,7 @@ fun ProScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "Lifetime access · One-time purchase",
+                                text = strings.proLifetimeOneTime,
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                 color = TextMuted,
                                 textAlign = TextAlign.Center
@@ -576,7 +601,7 @@ fun ProScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Connecting to store...",
+                                        text = strings.proConnecting,
                                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                         color = TextSecondary
                                     )
@@ -599,7 +624,7 @@ fun ProScreen(
                                     }
                                 ) {
                                     Text(
-                                        text = "Retry",
+                                        text = strings.proRetry,
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold
@@ -632,13 +657,13 @@ fun ProScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Restoring Purchases...",
+                                text = strings.proRestoringPurchases,
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
                                 color = TextSecondary
                             )
                         } else {
                             Text(
-                                text = "Restore Purchases",
+                                text = strings.proRestorePurchases,
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 12.5.sp,
                                     fontWeight = FontWeight.Medium
@@ -657,7 +682,7 @@ fun ProScreen(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column {
                     Text(
-                        text = "FREE USES",
+                        text = strings.proFreeUsesTitle,
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -667,7 +692,7 @@ fun ProScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Need an extra premium use? Watch a short ad.",
+                        text = strings.proFreeUsesSubtitle,
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                         color = TextSecondary
                     )
@@ -724,18 +749,19 @@ fun ProScreen(
 
     // Rewarded Ad Dialog
     pendingFeatureToUnlock?.let { feature ->
+        val featureTitle = strings.getFeatureTitle(feature)
         AlertDialog(
             onDismissRequest = { pendingFeatureToUnlock = null },
             title = {
                 Text(
-                    text = "Get 1 Free Use of ${feature.title}?",
+                    text = strings.proAdDialogTitle.format(featureTitle),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
             },
             text = {
                 Text(
-                    text = "Watch a short sponsored video to get 1 free use of ${feature.title}.",
+                    text = strings.proAdDialogDesc.format(featureTitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -757,7 +783,7 @@ fun ProScreen(
                                         UnlockableFeature.VIDEO_4K -> EntitlementManager.add4kCredit()
                                     }
                                     coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(featureToUnlock.unlockSuccessMsg)
+                                        snackbarHostState.showSnackbar(strings.getFeatureSuccessMsg(featureToUnlock))
                                     }
                                 },
                                 onFailedToShow = { errorMsg ->
@@ -773,7 +799,7 @@ fun ProScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                 ) {
                     Text(
-                        text = "Watch Ad",
+                        text = strings.proAdDialogConfirm,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -782,7 +808,7 @@ fun ProScreen(
             dismissButton = {
                 TextButton(onClick = { pendingFeatureToUnlock = null }) {
                     Text(
-                        text = "Cancel",
+                        text = strings.cancel,
                         color = TextSecondary
                     )
                 }
@@ -795,6 +821,7 @@ fun ProScreen(
 
 @Composable
 private fun PlanComparisonCard(modifier: Modifier = Modifier) {
+    val strings = LocalAppStrings.current
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -809,7 +836,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "FREE VS PRO",
+                    text = strings.proFreeVsPro,
                     modifier = Modifier.weight(1.3f),
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontSize = 13.5.sp,
@@ -819,7 +846,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                     color = TextPrimary
                 )
                 Text(
-                    text = "FREE",
+                    text = strings.proFree,
                     modifier = Modifier.weight(1.0f),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 11.sp,
@@ -830,7 +857,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                     color = TextSecondary
                 )
                 Text(
-                    text = "PRO",
+                    text = strings.pro,
                     modifier = Modifier.weight(1.0f),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 11.sp,
@@ -850,57 +877,57 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
 
             ComparisonRow(
                 icon = Icons.Default.Videocam,
-                title = "Audio / Video",
-                freeContent = { IncludedBadge(false) },
-                proContent = { IncludedBadge(true) },
+                title = strings.proComparisonAudioVideo,
+                freeContent = { IncludedBadge(false, strings.proBadgeIncluded) },
+                proContent = { IncludedBadge(true, strings.proBadgeIncluded) },
                 isAltRow = false
             )
 
             ComparisonRow(
                 icon = Icons.Default.Shield,
-                title = "Basic Features",
-                freeContent = { IncludedBadge(false) },
-                proContent = { IncludedBadge(true) },
+                title = strings.proComparisonBasicFeatures,
+                freeContent = { IncludedBadge(false, strings.proBadgeIncluded) },
+                proContent = { IncludedBadge(true, strings.proBadgeIncluded) },
                 isAltRow = true
             )
 
             ComparisonRow(
                 icon = Icons.Default.Block,
-                title = "Ads",
-                freeContent = { TextBadge("Native Ads", isMuted = true) },
-                proContent = { TextBadge("None", isGold = true) },
+                title = strings.proComparisonAds,
+                freeContent = { TextBadge(strings.proBadgeNativeAds, isMuted = true) },
+                proContent = { TextBadge(strings.proBadgeNone, isGold = true) },
                 isAltRow = false
             )
 
             ComparisonRow(
                 icon = Icons.Default.Videocam,
-                title = "Video Quality",
-                freeContent = { TextBadge("Up to 1080p FHD") },
-                proContent = { TextBadge("4K UHD (Supported)", isGold = true) },
+                title = strings.proComparisonVideoQuality,
+                freeContent = { TextBadge(strings.proBadge1080p) },
+                proContent = { TextBadge(strings.proBadge4k, isGold = true) },
                 isAltRow = true
             )
 
             ComparisonRow(
                 icon = Icons.Default.Palette,
-                title = "Custom Covers",
-                freeContent = { TextBadge("1 use / credit") },
-                proContent = { UnlimitedBadge() },
+                title = strings.proComparisonCustomCovers,
+                freeContent = { TextBadge(strings.proBadge1Use) },
+                proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
                 isAltRow = false
             )
 
             ComparisonRow(
                 icon = Icons.Default.Folder,
-                title = "Custom Folder Export",
-                freeContent = { TextBadge("1 use / credit") },
-                proContent = { UnlimitedBadge() },
+                title = strings.proComparisonCustomFolder,
+                freeContent = { TextBadge(strings.proBadge1Use) },
+                proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
                 isAltRow = true
             )
 
             ComparisonRow(
                 icon = Icons.Default.Timer,
-                title = "Auto Stop Timer",
-                freeContent = { TextBadge("1 use / credit") },
-                proContent = { UnlimitedBadge() },
+                title = strings.proComparisonAutoStop,
+                freeContent = { TextBadge(strings.proBadge1Use) },
+                proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
                 isAltRow = false
             )
         }
@@ -974,7 +1001,7 @@ fun ComparisonRow(
 }
 
 @Composable
-fun IncludedBadge(isPro: Boolean) {
+fun IncludedBadge(isPro: Boolean, label: String = "Included") {
     val tintColor = if (isPro) GoldAccent else TextSecondary
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -982,13 +1009,13 @@ fun IncludedBadge(isPro: Boolean) {
     ) {
         Icon(
             imageVector = Icons.Default.Check,
-            contentDescription = "Included",
+            contentDescription = label,
             modifier = Modifier.size(13.dp),
             tint = tintColor
         )
         Spacer(modifier = Modifier.width(3.dp))
         Text(
-            text = "Included",
+            text = label,
             style = MaterialTheme.typography.bodySmall.copy(
                 fontSize = 10.5.sp,
                 fontWeight = if (isPro) FontWeight.SemiBold else FontWeight.Medium
@@ -999,7 +1026,7 @@ fun IncludedBadge(isPro: Boolean) {
 }
 
 @Composable
-fun UnlimitedBadge() {
+fun UnlimitedBadge(label: String = "Unlimited") {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
@@ -1016,7 +1043,7 @@ fun UnlimitedBadge() {
         )
         Spacer(modifier = Modifier.width(3.dp))
         Text(
-            text = "Unlimited",
+            text = label,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
@@ -1058,6 +1085,7 @@ private fun ProFeatureCard(
     onUseClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     val lowerCase = feature.name.lowercase(Locale.ROOT)
     Card(
         modifier = modifier
@@ -1116,7 +1144,7 @@ private fun ProFeatureCard(
 
                     Column {
                         Text(
-                            text = feature.title,
+                            text = strings.getFeatureTitle(feature),
                             style = MaterialTheme.typography.titleSmall.copy(
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
@@ -1126,7 +1154,7 @@ private fun ProFeatureCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = feature.description,
+                            text = strings.getFeatureDesc(feature),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                             color = TextSecondary
                         )
@@ -1137,7 +1165,7 @@ private fun ProFeatureCard(
 
                 // Right Status Badge
                 if (isPro) {
-                    UnlimitedBadge()
+                    UnlimitedBadge(strings.proBadgeUnlimited)
                 } else {
                     AnimatedContent(
                         targetState = credits,
@@ -1156,7 +1184,7 @@ private fun ProFeatureCard(
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = if (targetCredits > 0) "$targetCredits USES" else "0 USES",
+                                text = if (targetCredits > 0) strings.proUsesCount.format(targetCredits) else strings.proZeroUses,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
@@ -1191,7 +1219,7 @@ private fun ProFeatureCard(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Included with Lifetime Pro",
+                            text = strings.proIncludedWithLifetime,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
@@ -1209,7 +1237,7 @@ private fun ProFeatureCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Ready to use",
+                            text = strings.proReadyToUse,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Medium
@@ -1234,7 +1262,7 @@ private fun ProFeatureCard(
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = "USE",
+                                    text = strings.proUse,
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
@@ -1271,7 +1299,7 @@ private fun ProFeatureCard(
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
                             Text(
-                                text = "WATCH AD",
+                                text = strings.proWatchAd,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold
@@ -1282,7 +1310,7 @@ private fun ProFeatureCard(
                     }
                 } else {
                     Text(
-                        text = "Watch ad to get 1 free use",
+                        text = strings.proWatchAdToGet1,
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                         color = TextSecondary
                     )
@@ -1315,7 +1343,7 @@ private fun ProFeatureCard(
                             Spacer(modifier = Modifier.width(4.dp))
                         }
                         Text(
-                            text = "WATCH AD",
+                            text = strings.proWatchAd,
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
