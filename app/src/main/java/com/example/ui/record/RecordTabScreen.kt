@@ -139,8 +139,6 @@ fun RecordTabScreen(
     var showCriticalStorageDialog by remember { mutableStateOf(false) }
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
-    var showFirstRecordingSafetyDialog by remember { mutableStateOf(false) }
-    var pendingRecordingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val isStorageCritical = remember(storageStats.availableBytes) {
         StorageCapacityEstimator.isStorageCriticallyLow(storageStats.availableBytes)
@@ -238,12 +236,7 @@ fun RecordTabScreen(
             return
         }
 
-        if (!settings.firstRecordingExplanationShown) {
-            pendingRecordingAction = { executeRecordingAction() }
-            showFirstRecordingSafetyDialog = true
-        } else {
-            executeRecordingAction()
-        }
+        executeRecordingAction()
     }
 
     Box(
@@ -1065,57 +1058,6 @@ fun RecordTabScreen(
             containerColor = SurfacePrimary
         )
     }
-
-    // First Recording Safety Notice Dialog
-    if (showFirstRecordingSafetyDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showFirstRecordingSafetyDialog = false
-                pendingRecordingAction = null
-            },
-            title = {
-                Text(
-                    text = "Responsible Recording Notice",
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            },
-            text = {
-                Text(
-                    text = "Your screen will turn dark while recording starts. You can stop recording anytime using your configured stop controls (hold screen) or through the recording notification in the status bar.\n\nPlease ensure you comply with all applicable local privacy laws and regulations regarding audio and video recording.",
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showFirstRecordingSafetyDialog = false
-                        viewModel.markFirstRecordingExplanationShown()
-                        pendingRecordingAction?.invoke()
-                        pendingRecordingAction = null
-                    },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
-                ) {
-                    Text("Continue", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showFirstRecordingSafetyDialog = false
-                        pendingRecordingAction = null
-                    }
-                ) {
-                    Text("Cancel", color = TextMuted)
-                }
-            },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = SurfacePrimary
-        )
-    }
-
 
     // Preset Selection Dialog
     if (showPresetDialog) {

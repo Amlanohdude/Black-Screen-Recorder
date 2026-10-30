@@ -1,5 +1,7 @@
 package com.example.ui.onboarding
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,10 +34,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.config.AppLinks
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.AccentRedDark
 import com.example.ui.theme.BgDark
@@ -183,6 +194,72 @@ fun OnboardingScreen(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
+                )
+            }
+
+            if (currentPage == pages.lastIndex) {
+                Spacer(modifier = Modifier.height(16.dp))
+                val context = LocalContext.current
+                val annotatedText = remember {
+                    buildAnnotatedString {
+                        append("By continuing, you agree to our ")
+                        pushStringAnnotation(tag = "TERMS", annotation = AppLinks.TERMS_AND_CONDITIONS_URL)
+                        withStyle(
+                            style = SpanStyle(
+                                color = AccentRed,
+                                fontWeight = FontWeight.SemiBold,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        ) {
+                            append("Terms of Service")
+                        }
+                        pop()
+                        append(" & ")
+                        pushStringAnnotation(tag = "PRIVACY", annotation = AppLinks.PRIVACY_POLICY_URL)
+                        withStyle(
+                            style = SpanStyle(
+                                color = AccentRed,
+                                fontWeight = FontWeight.SemiBold,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        ) {
+                            append("Privacy Policy")
+                        }
+                        pop()
+                        append(". Ensure compliance with all applicable local recording laws.")
+                    }
+                }
+
+                @Suppress("DEPRECATION")
+                androidx.compose.foundation.text.ClickableText(
+                    text = annotatedText,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = 11.sp,
+                        color = TextMuted,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 16.sp
+                    ),
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    onClick = { offset ->
+                        annotatedText.getStringAnnotations(tag = "TERMS", start = offset, end = offset)
+                            .firstOrNull()?.let { annotation ->
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item)).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                        annotatedText.getStringAnnotations(tag = "PRIVACY", start = offset, end = offset)
+                            .firstOrNull()?.let { annotation ->
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item)).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            }
+                    }
                 )
             }
         }

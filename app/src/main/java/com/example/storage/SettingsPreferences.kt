@@ -82,8 +82,8 @@ data class UserSettings(
     val safetyGuardrailsEnabled: Boolean = true,
     val lowBatteryStopThresholdPct: Int = 3,
     val lowStorageStopThresholdMb: Int = 200,
-    val onboardingCompleted: Boolean = true,
-    val firstRecordingExplanationShown: Boolean = false
+    val onboardingCompleted: Boolean = false,
+    val firstRecordingExplanationShown: Boolean = true
 ) {
     val quickStopAndExitEnabled: Boolean get() = exitAfterRecordingEnabled
     val autoStopMinutes: Int get() = autoStopSeconds / 60
@@ -168,8 +168,8 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
         } catch (_: Exception) {
             RecordingPresetId.DISCREET_VIDEO
         }
-        val onboardingCompleted = prefs.getBoolean("onboarding_completed", true)
-        val firstRecordingExplanationShown = prefs.getBoolean("first_recording_explanation_shown", false)
+        val onboardingCompleted = prefs.getBoolean("onboarding_completed", false)
+        val firstRecordingExplanationShown = prefs.getBoolean("first_recording_explanation_shown", true)
 
         return UserSettings(
             useFrontCamera = prefs.getBoolean("use_front_camera", false),
