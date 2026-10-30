@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.growth.InAppReviewManager
+import com.example.localization.LocalAppStrings
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BorderSubtle
 import com.example.ui.theme.SurfacePrimary
@@ -46,6 +47,7 @@ fun RateAndShareCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
 
     Card(
         modifier = modifier
@@ -82,14 +84,14 @@ fun RateAndShareCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Love Black Screen Recorder?",
+                        text = strings.rateTitle,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Your 5-star review helps us stay private, battery-friendly, and independent.",
+                        text = strings.rateSubtitle,
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = TextSecondary
@@ -120,7 +122,7 @@ fun RateAndShareCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Rate 5 Stars",
+                        text = strings.rate5Stars,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
@@ -145,7 +147,7 @@ fun RateAndShareCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Share App",
+                        text = strings.shareApp,
                         color = TextPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp

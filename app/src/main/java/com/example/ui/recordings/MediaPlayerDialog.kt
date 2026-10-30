@@ -83,6 +83,7 @@ import com.example.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.io.File
+import com.example.localization.LocalAppStrings
 
 @Composable
 fun RecordingDetailDialog(
@@ -95,6 +96,7 @@ fun RecordingDetailDialog(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
@@ -393,7 +395,7 @@ fun RecordingDetailDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.action_share),
+                            text = strings.share,
                             color = TextSecondary,
                             fontSize = 11.sp,
                             maxLines = 1
@@ -419,7 +421,7 @@ fun RecordingDetailDialog(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Export",
+                                text = strings.exportSelected,
                                 color = TextSecondary,
                                 fontSize = 11.sp,
                                 maxLines = 1
@@ -445,7 +447,7 @@ fun RecordingDetailDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.action_rename),
+                            text = strings.rename,
                             color = TextSecondary,
                             fontSize = 11.sp,
                             maxLines = 1
@@ -470,7 +472,7 @@ fun RecordingDetailDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.action_delete),
+                            text = strings.delete,
                             color = AccentRed,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 11.sp,
@@ -500,7 +502,7 @@ fun RecordingDetailDialog(
             containerColor = SurfaceSecondary,
             title = {
                 Text(
-                    text = stringResource(R.string.rename_title),
+                    text = strings.rename,
                     color = TextPrimary
                 )
             },
@@ -532,7 +534,7 @@ fun RecordingDetailDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     modifier = Modifier.testTag("confirm_rename_button")
                 ) {
-                    Text("Save")
+                    Text(strings.save)
                 }
             },
             dismissButton = {
@@ -540,7 +542,7 @@ fun RecordingDetailDialog(
                     onClick = { showRenameDialog = false }
                 ) {
                     Text(
-                        text = "Cancel",
+                        text = strings.cancel,
                         color = TextSecondary
                     )
                 }
@@ -555,13 +557,13 @@ fun RecordingDetailDialog(
             containerColor = SurfaceSecondary,
             title = {
                 Text(
-                    text = "Delete Recording",
+                    text = strings.deleteRecordingsPrompt,
                     color = TextPrimary
                 )
             },
             text = {
                 Text(
-                    text = "Are you sure you want to delete this recording? This action cannot be undone.",
+                    text = strings.deleteRecordingsDesc,
                     color = TextPrimary
                 )
             },
@@ -582,7 +584,7 @@ fun RecordingDetailDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     modifier = Modifier.testTag("confirm_delete_button")
                 ) {
-                    Text(stringResource(R.string.action_delete))
+                    Text(strings.delete)
                 }
             },
             dismissButton = {
@@ -590,7 +592,7 @@ fun RecordingDetailDialog(
                     onClick = { showDeleteConfirmDialog = false }
                 ) {
                     Text(
-                        text = "Cancel",
+                        text = strings.cancel,
                         color = TextSecondary
                     )
                 }

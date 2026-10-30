@@ -404,7 +404,7 @@ executeSingleExport(recording, folderUri, folderName)
 
                         Column {
                             Text(
-                                text = "${selectedIds.size} selected",
+                                text = "${selectedIds.size} ${strings.selected}",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
@@ -448,7 +448,7 @@ executeSingleExport(recording, folderUri, folderName)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SelectAll,
-                                contentDescription = if (isAllInViewSelected) "Deselect all" else "Select all",
+                                contentDescription = if (isAllInViewSelected) strings.deselectAll else strings.selectAll,
                                 tint = if (isAllInViewSelected) AccentRed else TextSecondary
                             )
                         }
@@ -470,7 +470,7 @@ executeSingleExport(recording, folderUri, folderName)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = "Share selected",
+                                contentDescription = strings.shareSelected,
                                 tint = if (selectedIds.isNotEmpty()) TextPrimary else TextMuted
                             )
                         }
@@ -487,7 +487,7 @@ executeSingleExport(recording, folderUri, folderName)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FileDownload,
-                                contentDescription = "Export selected",
+                                contentDescription = strings.exportSelected,
                                 tint = if (selectedIds.isNotEmpty()) TextPrimary else TextMuted
                             )
                         }
@@ -503,7 +503,7 @@ executeSingleExport(recording, folderUri, folderName)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete selected",
+                                contentDescription = strings.deleteSelected,
                                 tint = if (selectedIds.isNotEmpty()) AccentRed else TextMuted
                             )
                         }
@@ -533,7 +533,7 @@ Spacer(modifier = Modifier.width(8.dp))
 actions = {
 if (recordings.isNotEmpty()) {
 Text(
-text = "$totalCount total",
+text = "$totalCount ${strings.total}",
 style = MaterialTheme.typography.bodySmall.copy(
 fontWeight = FontWeight.Medium,
 fontSize = 12.sp
@@ -592,7 +592,7 @@ modifier = Modifier.fillMaxWidth(),
 horizontalArrangement = Arrangement.spacedBy(4.dp)
 ) {
 RecordingFilterPill(
-label = "All",
+label = strings.filterAll,
 count = totalCount,
 isSelected = selectedFilter == RecordingFilterType.ALL,
 onClick = { selectedFilter = RecordingFilterType.ALL },
@@ -600,7 +600,7 @@ modifier = Modifier.weight(1f).testTag("filter_all")
 )
 
 RecordingFilterPill(
-label = "Video",
+label = strings.video,
 count = videoCount,
 isSelected = selectedFilter == RecordingFilterType.VIDEO,
 onClick = { selectedFilter = RecordingFilterType.VIDEO },
@@ -608,7 +608,7 @@ modifier = Modifier.weight(1f).testTag("filter_video")
 )
 
 RecordingFilterPill(
-label = "Audio",
+label = strings.audio,
 count = audioCount,
 isSelected = selectedFilter == RecordingFilterType.AUDIO,
 onClick = { selectedFilter = RecordingFilterType.AUDIO },
@@ -649,9 +649,9 @@ modifier = Modifier.size(36.dp)
 Spacer(modifier = Modifier.height(16.dp))
 Text(
 text = when (selectedFilter) {
-RecordingFilterType.ALL -> "No recordings yet"
-RecordingFilterType.VIDEO -> "No video recordings"
-RecordingFilterType.AUDIO -> "No audio recordings"
+RecordingFilterType.ALL -> strings.noRecordingsYet
+RecordingFilterType.VIDEO -> strings.noVideoRecordings
+RecordingFilterType.AUDIO -> strings.noAudioRecordings
 },
 style = MaterialTheme.typography.titleMedium.copy(
 fontWeight = FontWeight.Bold,
@@ -661,7 +661,7 @@ color = TextPrimary
 )
 Spacer(modifier = Modifier.height(6.dp))
 Text(
-text = "Captured sessions will be stored here privately.",
+text = strings.noRecordingsDescription,
 style = MaterialTheme.typography.bodySmall,
 color = TextSecondary,
 textAlign = TextAlign.Center
@@ -691,7 +691,7 @@ if (onNavigateToRecord != null) {
                     .background(Color.White, CircleShape)
             )
             Text(
-                text = "Start Your First Recording",
+                text = strings.startFirstRecording,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
@@ -801,7 +801,7 @@ if (showDeleteConfirmDialog) {
         onDismissRequest = { showDeleteConfirmDialog = false },
         title = {
             Text(
-                text = "Delete ${itemsToDelete.size} ${if (itemsToDelete.size == 1) "recording" else "recordings"}?",
+                text = strings.deleteRecordingsPrompt,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary
             )
@@ -809,14 +809,9 @@ if (showDeleteConfirmDialog) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "This will permanently remove ${itemsToDelete.size} ${if (itemsToDelete.size == 1) "recording" else "recordings"} ($formattedSize) from your private storage.",
+                    text = strings.deleteRecordingsDesc,
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
-                )
-                Text(
-                    text = "This action cannot be undone.",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = AccentRed
                 )
             }
         },
@@ -834,7 +829,7 @@ if (showDeleteConfirmDialog) {
                 modifier = Modifier.testTag("confirm_delete_multiple_button")
             ) {
                 Text(
-                    text = "Delete",
+                    text = strings.delete,
                     color = AccentRed,
                     fontWeight = FontWeight.Bold
                 )
@@ -842,7 +837,7 @@ if (showDeleteConfirmDialog) {
         },
         dismissButton = {
             TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                Text(text = "Cancel", color = TextSecondary)
+                Text(text = strings.cancel, color = TextSecondary)
             }
         },
         containerColor = SurfacePrimary,
@@ -872,14 +867,14 @@ containerColor = SurfacePrimary,
 shape = RoundedCornerShape(14.dp),
 title = {
 Text(
-text = "Custom Folder Export",
+text = strings.customFolderExport,
 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
 color = TextPrimary
 )
 },
 text = {
 Text(
-text = "Exporting recordings to an external custom folder requires 1 export credit or Pro. Watch an ad to earn 1 export credit.",
+text = strings.customFolderExportDesc,
 style = MaterialTheme.typography.bodyMedium,
 color = TextSecondary
 )
@@ -904,7 +899,7 @@ action?.invoke()
 colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
 shape = RoundedCornerShape(8.dp)
 ) {
-Text(text = "Watch Ad · 1 Use", color = Color.White, fontWeight = FontWeight.Bold)
+Text(text = strings.watchAdEarnCredit, color = Color.White, fontWeight = FontWeight.Bold)
 }
 },
 dismissButton = {
@@ -914,7 +909,7 @@ showExportAdDialog = false
 pendingExportAction = null
 }
 ) {
-Text(text = "Cancel", color = TextSecondary)
+Text(text = strings.cancel, color = TextSecondary)
 }
 }
 )
@@ -1021,6 +1016,7 @@ private fun RecordingListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     val isVideo = recording.type.equals("VIDEO", ignoreCase = true)
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -1123,7 +1119,7 @@ private fun RecordingListItem(
                             .padding(horizontal = 5.dp, vertical = 1.5.dp)
                     ) {
                         Text(
-                            text = if (isVideo) "VIDEO" else "AUDIO",
+                            text = if (isVideo) strings.video.uppercase() else strings.audio.uppercase(),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,

@@ -4,6 +4,7 @@ import com.example.ui.theme.*
 import com.example.ads.AdScreen
 import com.example.ads.NativeAdCard
 import com.example.localization.LocalAppStrings
+import com.example.localization.getCoverName
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -116,7 +117,7 @@ onDismissRequest = { coverToDelete = null },
 containerColor = SurfacePrimary,
 title = {
 Text(
-text = "Delete Custom Cover",
+text = strings.deleteCustomCoverTitle,
 color = TextPrimary,
 fontSize = 18.sp,
 fontWeight = FontWeight.Bold
@@ -124,7 +125,7 @@ fontWeight = FontWeight.Bold
 },
 text = {
 Text(
-text = "Are you sure you want to delete \"${cover.name}\"? This action cannot be undone.",
+text = strings.deleteCustomCoverDesc,
 color = TextSecondary,
 fontSize = 14.sp
 )
@@ -140,12 +141,12 @@ coverToDelete = null
 },
 colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
 ) {
-Text("Delete", color = Color.White)
+Text(strings.delete, color = Color.White)
 }
 },
 dismissButton = {
 TextButton(onClick = { coverToDelete = null }) {
-Text("Cancel", color = TextSecondary)
+Text(strings.cancel, color = TextSecondary)
 }
 }
 )
@@ -171,7 +172,7 @@ modifier = Modifier.size(22.dp)
 )
 Spacer(modifier = Modifier.width(8.dp))
 Text(
-text = "Activate Custom Cover",
+text = strings.activateCustomCoverTitle,
 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
 color = TextPrimary
 )
@@ -180,7 +181,7 @@ color = TextPrimary
 text = {
 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 Text(
-text = "Watch a short ad to activate \"${coverToActivate.name}\", or upgrade to PRO for unlimited custom covers.",
+text = strings.activateCustomCoverDesc,
 style = MaterialTheme.typography.bodyMedium,
 color = TextSecondary
 )
@@ -211,7 +212,7 @@ tint = Color.White,
 modifier = Modifier.size(16.dp)
 )
 Spacer(modifier = Modifier.width(6.dp))
-Text("Watch Ad & Activate", color = Color.White, fontWeight = FontWeight.Bold)
+Text(strings.watchAdActivate, color = Color.White, fontWeight = FontWeight.Bold)
 }
 },
 dismissButton = {
@@ -222,7 +223,7 @@ showCustomCoversLockedDialog = false
 pendingCustomCoverToActivate = null
 }
 ) {
-Text("Cancel", color = TextSecondary)
+Text(strings.cancel, color = TextSecondary)
 }
 Spacer(modifier = Modifier.width(4.dp))
 Button(
@@ -242,7 +243,7 @@ modifier = Modifier.size(15.dp)
 )
 Spacer(modifier = Modifier.width(5.dp))
 Text(
-text = "Go PRO",
+text = strings.goPro,
 color = TextPrimary,
 fontWeight = FontWeight.SemiBold,
 fontSize = 12.sp
@@ -272,7 +273,7 @@ modifier = Modifier
 // Section 1: BUILT-IN PRESETS
 item(span = { GridItemSpan(2) }) {
 Text(
-text = "BUILT-IN PRESETS",
+text = strings.builtInPresets,
 style = MaterialTheme.typography.labelMedium.copy(
 fontWeight = FontWeight.Bold,
 letterSpacing = 1.2.sp,
@@ -314,7 +315,7 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                     ) {
                         Column {
                             Text(
-                                text = "MY CUSTOM COVERS",
+                                text = strings.customCovers,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 1.2.sp,
@@ -324,7 +325,7 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                             )
                             if (savedCustomCovers.isNotEmpty()) {
                                 Text(
-                                    text = "${savedCustomCovers.size} saved",
+                                    text = "${savedCustomCovers.size} ${strings.saved}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = TextMuted,
                                     fontSize = 10.sp
@@ -349,7 +350,7 @@ modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 4.dp)
                                     modifier = Modifier.size(12.dp)
                                 )
                                 Text(
-                                    text = "PRO · Unlimited",
+                                    text = strings.proUnlimited,
                                     color = Color(0xFFFFD54F),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
@@ -452,8 +453,9 @@ private fun CoverCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val strings = LocalAppStrings.current
             Text(
-                text = cover.name,
+                text = strings.getCoverName(cover.presetId, cover.name),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 13.sp
@@ -533,8 +535,9 @@ private fun CustomCoverCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val strings = LocalAppStrings.current
                 Text(
-                    text = cover.name,
+                    text = strings.getCoverName(cover.presetId, cover.name),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                         fontSize = 13.sp
@@ -630,8 +633,9 @@ private fun NewCoverActionCard(
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
+                    val strings = LocalAppStrings.current
                     Text(
-                        text = "New Cover",
+                        text = strings.newCover,
                         color = TextPrimary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -639,8 +643,9 @@ private fun NewCoverActionCard(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
+            val strings = LocalAppStrings.current
             Text(
-                text = "+ Design New",
+                text = strings.designNew,
                 color = AccentRed,
                 maxLines = 1,
                 style = MaterialTheme.typography.bodyMedium.copy(

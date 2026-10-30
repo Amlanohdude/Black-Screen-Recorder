@@ -20,6 +20,11 @@ import androidx.compose.foundation.clickable
 import com.example.localization.AppLanguage
 import com.example.localization.AppLanguageManager
 import com.example.localization.LocalAppStrings
+import com.example.localization.formatAutoStopDuration
+import com.example.localization.getCoverName
+import com.example.localization.getGesture
+import com.example.localization.getPresetTitle
+import com.example.localization.getStopBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -272,13 +277,13 @@ fun SettingsScreen(
                 SettingsGroup(title = strings.secRecordingAudio) {
                     SettingsClickableRow(
                         title = strings.audioFormat,
-                        value = if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
+                        value = if (settings.audioFormat.contains("wav", ignoreCase = true)) strings.wavLossless else strings.m4aAac,
                         onClick = { showAudioDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    val autoStopText = SettingsPreferences.formatAutoStopDuration(settings.autoStopSeconds)
+                    val autoStopText = strings.formatAutoStopDuration(settings.autoStopSeconds)
                     SettingsClickableRow(
                         title = strings.autoStop,
                         value = autoStopText,
@@ -324,7 +329,7 @@ fun SettingsScreen(
                 SettingsGroup(title = strings.secStealthGestures) {
                     SettingsClickableRow(
                         title = strings.stopBehavior,
-                        value = settings.stopBehavior.displayName,
+                        value = strings.getStopBehavior(settings.stopBehavior),
                         onClick = { showStopBehaviorDialog = true }
                     )
 
@@ -332,11 +337,7 @@ fun SettingsScreen(
 
                     SettingsClickableRow(
                         title = strings.revealControls,
-                        value = when (settings.activeCover.controlGesture) {
-                            ControlGesture.SINGLE_TAP -> "Single Tap"
-                            ControlGesture.DOUBLE_TAP -> "Double Tap"
-                            ControlGesture.LONG_PRESS -> "Long Press"
-                        },
+                        value = strings.getGesture(settings.activeCover.controlGesture),
                         onClick = { showGestureDialog = true }
                     )
 
@@ -355,7 +356,7 @@ fun SettingsScreen(
                 SettingsGroup(title = strings.secStorage) {
                     SettingsClickableRow(
                         title = strings.storageLocation,
-                        value = "App Sandbox (Private)",
+                        value = strings.appSandboxPrivate,
                         onClick = { showStorageLocationDialog = true }
                     )
 
@@ -363,7 +364,7 @@ fun SettingsScreen(
 
                     val hasCustomFolder = settings.hasCustomExportFolder
                     val customFolderName = settings.customExportFolderName
-                    val folderDisplay = if (!hasCustomFolder) "Not configured" else customFolderName ?: "Configured"
+                    val folderDisplay = if (!hasCustomFolder) strings.notConfigured else customFolderName ?: strings.configured
                     SettingsClickableRow(
                         title = strings.exportCustomFolder,
                         value = folderDisplay,
@@ -566,7 +567,7 @@ fun SettingsScreen(
 
                     // Version Row
                     SettingsInfoRow(
-                        title = "Version",
+                        title = strings.version,
                         value = BuildConfig.VERSION_NAME,
                         modifier = Modifier
                             .testTag("settings_version_row")
@@ -606,7 +607,7 @@ fun SettingsScreen(
             onDismissRequest = { showQuickSettingsDialog = false },
             title = {
                 Text(
-                    text = "Quick Settings Recording Tiles",
+                    text = strings.dialogQuickSettingsTitle,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -688,7 +689,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showQuickSettingsDialog = false }) {
-                    Text(text = "Done", color = AccentRed)
+                    Text(text = strings.close, color = AccentRed)
                 }
             },
             containerColor = SurfacePrimary,
@@ -702,7 +703,7 @@ fun SettingsScreen(
             title = {
                 Column {
                     Text(
-                        text = "Advanced & Hardware Defaults",
+                        text = strings.dialogHardwareDefaultsTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
@@ -876,7 +877,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAdvancedDefaultsDialog = false }) {
-                    Text(text = "Done", color = AccentRed)
+                    Text(text = strings.close, color = AccentRed)
                 }
             },
             containerColor = SurfacePrimary,
@@ -902,7 +903,7 @@ fun SettingsScreen(
             onDismissRequest = { showWidgetDialog = false },
             title = {
                 Text(
-                    text = "Add 1-Tap Widget",
+                    text = strings.dialogWidgetsTitle,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -1144,7 +1145,7 @@ fun SettingsScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showWidgetDialog = false }) {
-                    Text(text = "Cancel", color = AccentRed)
+                    Text(text = strings.cancel, color = AccentRed)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1154,10 +1155,10 @@ fun SettingsScreen(
 
     if (showCameraDialog) {
         SelectionDialog(
-            title = "Camera",
+            title = strings.cameraOption,
             options = listOf(
-                false to "Back Camera (Default)",
-                true to "Front Camera (Selfie)"
+                false to strings.backCamera,
+                true to strings.frontCamera
             ),
             selected = settings.useFrontCamera,
             onSelect = { viewModel.updateCamera(it) },
@@ -1191,10 +1192,10 @@ fun SettingsScreen(
 
     if (showAudioDialog) {
         SelectionDialog(
-            title = "Audio format",
+            title = strings.dialogAudioFormat,
             options = listOf(
-                "m4a" to "M4A (AAC - Standard)",
-                "wav" to "WAV (Uncompressed)"
+                "m4a" to strings.m4aAac,
+                "wav" to strings.wavLossless
             ),
             selected = settings.audioFormat,
             onSelect = { viewModel.updateAudioFormat(it) },
@@ -1204,19 +1205,19 @@ fun SettingsScreen(
 
     if (showAutoStopDialog) {
         val options = listOf(
-            0 to "Disabled",
-            60 to "1 minute",
-            300 to "5 minutes",
-            600 to "10 minutes",
-            1800 to "30 minutes",
-            3600 to "1 hour",
-            -1 to "Custom duration..."
+            0 to strings.off,
+            60 to "1 ${strings.minutes}",
+            300 to "5 ${strings.minutes}",
+            600 to "10 ${strings.minutes}",
+            1800 to "30 ${strings.minutes}",
+            3600 to "1 ${strings.hour}",
+            -1 to "${strings.customDuration}..."
         )
         AlertDialog(
             onDismissRequest = { showAutoStopDialog = false },
             title = {
                 Text(
-                    text = "Auto stop recording",
+                    text = strings.dialogAutoStop,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -1261,7 +1262,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAutoStopDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(strings.cancel, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1401,12 +1402,12 @@ fun SettingsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = AccentRed, modifier = Modifier.size(22.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Auto Stop is PRO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text(text = strings.dialogAutoStopLockedTitle, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 }
             },
             text = {
                 Text(
-                    text = "Upgrade to PRO for unlimited auto stop timer, or watch a short sponsored ad to unlock 1 use.",
+                    text = strings.dialogAutoStopLockedDesc,
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -1420,7 +1421,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(strings.goPro, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1438,7 +1439,7 @@ fun SettingsScreen(
                         }
                     }
                 ) {
-                    Text("Watch Ad (1 Use)", color = TextSecondary)
+                    Text(strings.watchAdToUnlock, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1454,20 +1455,15 @@ fun SettingsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = AccentRed, modifier = Modifier.size(22.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "4K Ultra HD is PRO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text(text = strings.dialog4kLockedTitle, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Capture video in pristine 4K UHD resolution supported by your camera hardware.",
+                        text = strings.dialog4kLockedDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
-                    )
-                    Text(
-                        text = "1080p Full HD is always free and unlimited. Upgrade to PRO for permanent 4K access, or watch a short sponsored ad for 1 session.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
                     )
                 }
             },
@@ -1480,7 +1476,7 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(strings.goPro, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1498,7 +1494,7 @@ fun SettingsScreen(
                         }
                     }
                 ) {
-                    Text("Watch Ad (1 Session)", color = TextSecondary)
+                    Text(strings.watchAdToUnlock, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1636,8 +1632,8 @@ fun SettingsScreen(
 
     if (showStopBehaviorDialog) {
         SelectionDialog(
-            title = "Stop behavior",
-            options = StopBehavior.values().map { it to it.displayName },
+            title = strings.dialogStopBehavior,
+            options = StopBehavior.values().map { it to strings.getStopBehavior(it) },
             selected = settings.stopBehavior,
             onSelect = { viewModel.updateStopBehavior(it) },
             onDismiss = { showStopBehaviorDialog = false }
@@ -1666,11 +1662,11 @@ fun SettingsScreen(
 
     if (showGestureDialog) {
         SelectionDialog(
-            title = "Reveal controls gesture",
+            title = strings.dialogRevealControls,
             options = listOf(
-                ControlGesture.SINGLE_TAP to "Single Tap",
-                ControlGesture.DOUBLE_TAP to "Double Tap",
-                ControlGesture.LONG_PRESS to "Long Press"
+                ControlGesture.SINGLE_TAP to strings.singleTap,
+                ControlGesture.DOUBLE_TAP to strings.doubleTap,
+                ControlGesture.LONG_PRESS to strings.longPress
             ),
             selected = settings.activeCover.controlGesture,
             onSelect = { gesture ->
@@ -1684,7 +1680,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showStorageLocationDialog = false },
             title = {
-                Text(text = "Storage Location", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text(text = strings.dialogStorageLocation, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
             },
             text = {
                 Column {
@@ -1697,7 +1693,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showStorageLocationDialog = false }) {
-                    Text("OK", color = AccentRed, fontWeight = FontWeight.Bold)
+                    Text(strings.close, color = AccentRed, fontWeight = FontWeight.Bold)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1772,13 +1768,13 @@ fun SettingsScreen(
 
     if (showAutoDeleteDaysDialog) {
         SelectionDialog(
-            title = "Delete recordings older than",
+            title = strings.dialogRetentionPeriod,
             options = listOf(
-                1 to "1 day",
-                3 to "3 days",
-                7 to "7 days",
-                14 to "14 days",
-                30 to "30 days"
+                1 to "1 ${strings.days}",
+                3 to "3 ${strings.days}",
+                7 to "7 ${strings.days}",
+                14 to "14 ${strings.days}",
+                30 to "30 ${strings.days}"
             ),
             selected = settings.autoDeleteDays,
             onSelect = { viewModel.updateAutoDeleteDays(it) },
@@ -1911,7 +1907,7 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showPresetDialog = false },
             title = {
-                Text(text = "Recording Preset", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                Text(text = strings.preset, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1932,7 +1928,7 @@ fun SettingsScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = preset.title,
+                                    text = strings.getPresetTitle(preset),
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                     color = if (isSelected) Color.White else TextPrimary
                                 )
@@ -1951,7 +1947,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showPresetDialog = false }) {
-                    Text("Close", color = TextSecondary)
+                    Text(strings.close, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -2010,6 +2006,7 @@ private fun ProSettingsCard(
     onNavigateToPro: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
     val isPro = entitlements.isPro
 
@@ -2059,7 +2056,7 @@ private fun ProSettingsCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = if (isPro) "PRO ACTIVE" else "PRO",
+                        text = if (isPro) strings.proActive else strings.pro,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
@@ -2072,7 +2069,7 @@ private fun ProSettingsCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = if (isPro) "All features unlocked & ads removed" else "Unlock more control & remove ads",
+                    text = if (isPro) strings.proActiveSubtitle else strings.proSubtitle,
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
                     color = TextSecondary
                 )
@@ -2094,7 +2091,7 @@ private fun ProSettingsCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = if (isPro) "Manage" else "Explore",
+                    text = if (isPro) strings.manage else strings.explore,
                     color = if (isPro) goldColor else AccentRed,
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 12.sp,
@@ -2924,8 +2921,9 @@ private fun <T> SelectionDialog(
             }
         },
         confirmButton = {
+            val strings = LocalAppStrings.current
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
+                Text(strings.cancel, color = TextSecondary)
             }
         },
         containerColor = SurfacePrimary,

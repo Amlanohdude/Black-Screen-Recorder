@@ -24,6 +24,10 @@ import androidx.compose.material.icons.filled.PlayCircle
 import com.example.ads.RewardedAdManager
 import com.example.covers.CoverConfig
 import com.example.localization.LocalAppStrings
+import com.example.localization.getCoverName
+import com.example.localization.getMicLabel
+import com.example.localization.getPresetTitle
+import com.example.localization.getStopBehavior
 import com.example.recording.BatteryOptimizationHelper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -346,7 +350,7 @@ fun RecordTabScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = activePreset.title,
+                                text = strings.getPresetTitle(activePreset),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold
@@ -477,7 +481,7 @@ fun RecordTabScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = if (settings.useFrontCamera) "Front Camera" else "Back Camera",
+                                    text = if (settings.useFrontCamera) strings.frontCamera else strings.backCamera,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = TextPrimary
@@ -595,11 +599,7 @@ fun RecordTabScreen(
                                 AudioMicSource.WIRED_HEADSET -> Icons.Default.Headphones
                                 AudioMicSource.BLUETOOTH_MIC -> Icons.Default.Bluetooth
                             }
-                            val micLabel = when (currentMic) {
-                                AudioMicSource.PHONE_MIC -> "Built-in Mic"
-                                AudioMicSource.WIRED_HEADSET -> "Wired Mic"
-                                AudioMicSource.BLUETOOTH_MIC -> "Bluetooth Mic"
-                            }
+                            val micLabel = strings.getMicLabel(currentMic)
 
                             Row(
                                 modifier = Modifier
@@ -686,7 +686,7 @@ fun RecordTabScreen(
                                             text = {
                                                 Column {
                                                     Text(
-                                                        text = "M4A (AAC)",
+                                                        text = strings.m4aAac,
                                                         fontWeight = FontWeight.Bold,
                                                         color = if (!isWav) AccentRed else TextPrimary
                                                     )
@@ -706,7 +706,7 @@ fun RecordTabScreen(
                                             text = {
                                                 Column {
                                                     Text(
-                                                        text = "WAV Lossless",
+                                                        text = strings.wavLossless,
                                                         fontWeight = FontWeight.Bold,
                                                         color = if (isWav) AccentRed else TextPrimary
                                                     )
@@ -949,9 +949,9 @@ fun RecordTabScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                     }
 
-                    val availableStr = MainViewModel.formatFileSize(storageStats.availableBytes) + " free"
+                    val availableStr = MainViewModel.formatFileSize(storageStats.availableBytes) + " " + strings.free
                     val durationStr = if (isStorageCritical) "0m" else StorageCapacityEstimator.formatEstimatedDuration(estimatedCapacitySeconds)
-                    val modeQualityStr = if (selectedMode == "AUDIO") "audio" else "at ${settings.videoQuality}"
+                    val modeQualityStr = if (selectedMode == "AUDIO") strings.audio.lowercase() else "${strings.at} ${settings.videoQuality}"
 
                     Text(
                         text = "$availableStr · $durationStr $modeQualityStr",
@@ -1053,7 +1053,7 @@ fun RecordTabScreen(
                                     )
                                 }
                                 Text(
-                                    text = activeCover.name,
+                                    text = strings.getCoverName(activeCover.presetId, activeCover.name),
                                     color = Color.White,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontSize = 18.sp,
@@ -1063,7 +1063,7 @@ fun RecordTabScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "${activeCover.brightnessPercent}% Brightness · ${settings.stopBehavior.displayName}",
+                                    text = "${activeCover.brightnessPercent}% ${strings.brightness} · ${strings.getStopBehavior(settings.stopBehavior)}",
                                     color = TextSecondary,
                                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                     maxLines = 1,
@@ -1143,7 +1143,7 @@ fun RecordTabScreen(
             onDismissRequest = { showPresetDialog = false },
             title = {
                 Text(
-                    text = if (isAudio) "Select Audio Preset" else "Select Video Preset",
+                    text = if (isAudio) "${strings.audio} ${strings.preset}" else "${strings.video} ${strings.preset}",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -1181,7 +1181,7 @@ fun RecordTabScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = preset.title,
+                                        text = strings.getPresetTitle(preset),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontSize = 14.sp,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
@@ -1213,7 +1213,7 @@ fun RecordTabScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showPresetDialog = false }) {
-                    Text("Close", color = TextSecondary)
+                    Text(strings.close, color = TextSecondary)
                 }
             },
             shape = RoundedCornerShape(16.dp),
@@ -1244,7 +1244,7 @@ fun RecordTabScreen(
             onDismissRequest = { show4kLockedDialog = false },
             title = {
                 Text(
-                    text = "4K Ultra HD Recording",
+                    text = strings.dialog4kLockedTitle,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -1255,14 +1255,9 @@ fun RecordTabScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Capture video in pristine 4K UHD (2160p) resolution supported by your camera hardware.",
+                        text = strings.dialog4kLockedDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
-                    )
-                    Text(
-                        text = "1080p Full HD is always free and unhindered. Upgrade to PRO for permanent unlimited 4K, or watch a short sponsored video for 1 session.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
                     )
                 }
             },
@@ -1275,7 +1270,7 @@ fun RecordTabScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Go PRO", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(strings.goPro, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1301,7 +1296,7 @@ fun RecordTabScreen(
                         }
                     }
                 ) {
-                    Text("Watch Ad (1 Session)", color = TextSecondary)
+                    Text(strings.watchAdToUnlock, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,

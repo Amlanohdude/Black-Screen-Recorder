@@ -83,6 +83,7 @@ import com.example.ui.theme.SurfaceSecondary
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+import com.example.localization.LocalAppStrings
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.io.File
@@ -96,6 +97,7 @@ fun RecordingSummaryScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
     val coroutineScope = rememberCoroutineScope()
     var showPlayerDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
@@ -372,7 +374,7 @@ fun RecordingSummaryScreen(
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Play", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(strings.play, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 OutlinedButton(
@@ -382,7 +384,7 @@ fun RecordingSummaryScreen(
                 ) {
                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = TextPrimary)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Share", fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Text(strings.share, fontWeight = FontWeight.Bold, color = TextPrimary)
                 }
             }
 
@@ -396,7 +398,7 @@ fun RecordingSummaryScreen(
                 Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp), tint = TextPrimary)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    if (isExported) "Exported ✓" else "Export to Custom Folder",
+                    if (isExported) "Exported ✓" else strings.exportCustomFolder,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
@@ -413,7 +415,7 @@ fun RecordingSummaryScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
                 modifier = Modifier.fillMaxWidth().height(48.dp).testTag("summary_done_button")
             ) {
-                Text("Done", fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text(strings.close, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -429,7 +431,7 @@ fun RecordingSummaryScreen(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Delete Recording", color = AccentRed.copy(alpha = 0.85f), fontSize = 13.sp)
+                Text(strings.delete, color = AccentRed.copy(alpha = 0.85f), fontSize = 13.sp)
             }
         }
 
@@ -489,14 +491,14 @@ fun RecordingSummaryScreen(
                 shape = RoundedCornerShape(14.dp),
                 title = {
                     Text(
-                        text = "Delete Recording",
+                        text = strings.deleteRecordingsPrompt,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
                 },
                 text = {
                     Text(
-                        text = "Are you sure you want to delete this recording? It will be permanently removed.",
+                        text = strings.deleteRecordingsDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -520,12 +522,12 @@ fun RecordingSummaryScreen(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.testTag("confirm_summary_delete_button")
                     ) {
-                        Text("Delete", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(strings.delete, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirmDialog = false }) {
-                        Text("Cancel", color = TextSecondary)
+                        Text(strings.cancel, color = TextSecondary)
                     }
                 }
             )
@@ -538,14 +540,14 @@ fun RecordingSummaryScreen(
                 shape = RoundedCornerShape(14.dp),
                 title = {
                     Text(
-                        text = "Custom Folder Export",
+                        text = strings.customFolderExport,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
                 },
                 text = {
                     Text(
-                        text = "Exporting recordings to an external custom folder requires 1 export credit or Pro. Watch an ad to earn 1 export credit.",
+                        text = strings.customFolderExportDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -568,12 +570,12 @@ fun RecordingSummaryScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(text = "Watch Ad · 1 Use", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(text = strings.watchAdEarnCredit, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showExportAdDialog = false }) {
-                        Text(text = "Cancel", color = TextSecondary)
+                        Text(text = strings.cancel, color = TextSecondary)
                     }
                 }
             )
