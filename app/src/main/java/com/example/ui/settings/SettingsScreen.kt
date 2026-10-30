@@ -36,8 +36,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
@@ -62,6 +64,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -81,6 +84,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ShareCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.update.InAppUpdateManager
@@ -92,6 +98,7 @@ import com.example.ads.RewardedAdManager
 import com.example.config.AppLinks
 import com.example.covers.ControlGesture
 import com.example.presets.RecordingPresetId
+import com.example.recording.BatteryOptimizationHelper
 import com.example.recording.BlindOperationHaptics
 import com.example.recording.CameraHardwareHelper
 import com.example.storage.EntitlementManager
@@ -162,6 +169,24 @@ fun SettingsScreen(
     LaunchedEffect(entitlements.isPro, entitlements.video4kCredits) {
         if (!EntitlementManager.canUse4KVideo() && settings.videoQuality == "4K") {
             viewModel.updateVideoQuality("1080p")
+        }
+    }
+
+    var showBatteryOptimizationDialog by remember { mutableStateOf(false) }
+    var isBatteryOptimizationIgnored by remember {
+        mutableStateOf(BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context))
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isBatteryOptimizationIgnored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
     var showExitMethodDialog by remember { mutableStateOf(false) }
@@ -271,6 +296,19 @@ fun SettingsScreen(
                         },
                         subtitle = "Vibrate on start, pause, and safe save for blind operation",
                         testTag = "settings_haptic_feedback_switch"
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = "Background Battery Guard",
+                        value = if (isBatteryOptimizationIgnored) "Unrestricted" else "Optimized",
+                        valueColor = if (isBatteryOptimizationIgnored) Color(0xFF4CAF50) else Color(0xFFFFB300),
+                        subtitle = if (isBatteryOptimizationIgnored)
+                            "Protected from background task termination"
+                        else
+                            "Recommended for multi-hour recordings",
+                        onClick = { showBatteryOptimizationDialog = true }
                     )
 
                     HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -1448,6 +1486,107 @@ fun SettingsScreen(
                     }
                 ) {
                     Text("Watch Ad (1 Session)", color = TextSecondary)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(14.dp)
+        )
+    }
+
+    if (showBatteryOptimizationDialog) {
+        val oemGuidance = remember { BatteryOptimizationHelper.getOemGuidance() }
+        AlertDialog(
+            onDismissRequest = { showBatteryOptimizationDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.BatteryFull,
+                        contentDescription = null,
+                        tint = if (isBatteryOptimizationIgnored) Color(0xFF4CAF50) else Color(0xFFFFB300),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Background Battery Guard",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = if (isBatteryOptimizationIgnored) {
+                            "Unrestricted battery access is currently active. The Android system and Doze mode will not terminate your recordings in the background."
+                        } else {
+                            "Android Doze mode and manufacturer power daemons can kill long background recordings after 15 to 30 minutes when the screen is locked or idle."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    if (!isBatteryOptimizationIgnored) {
+                        Text(
+                            text = "Setting battery usage to 'Unrestricted' prevents unexpected interruptions during multi-hour background sessions.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextMuted
+                        )
+                    }
+                    if (oemGuidance != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = oemGuidance,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isBatteryOptimizationIgnored) {
+                    Button(
+                        onClick = {
+                            showBatteryOptimizationDialog = false
+                            BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(context)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Set Unrestricted", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            showBatteryOptimizationDialog = false
+                            BatteryOptimizationHelper.openBatteryOptimizationSettings(context)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("App Settings", color = TextPrimary)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showBatteryOptimizationDialog = false }
+                ) {
+                    Text("Close", color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,

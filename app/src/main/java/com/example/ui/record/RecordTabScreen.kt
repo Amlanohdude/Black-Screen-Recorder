@@ -15,12 +15,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
 import com.example.ads.RewardedAdManager
 import com.example.covers.CoverConfig
+import com.example.recording.BatteryOptimizationHelper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -141,6 +144,7 @@ fun RecordTabScreen(
     var showPresetDialog by remember { mutableStateOf(false) }
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
     var show4kLockedDialog by remember { mutableStateOf(false) }
+    var showBatteryOptimizationDialog by remember { mutableStateOf(false) }
 
     val is4KSupported = remember(settings.useFrontCamera) {
         com.example.recording.CameraHardwareHelper.is4KSupported(context, settings.useFrontCamera)
@@ -805,6 +809,9 @@ fun RecordTabScreen(
                                 viewModel.updateBackgroundRecordingEnabled(newState)
                                 if (newState) {
                                     Toast.makeText(context, "Recording will continue when you leave the app", Toast.LENGTH_SHORT).show()
+                                    if (!BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)) {
+                                        showBatteryOptimizationDialog = true
+                                    }
                                 } else {
                                     Toast.makeText(context, "Recording will stop when you leave the app", Toast.LENGTH_SHORT).show()
                                 }
@@ -1293,6 +1300,87 @@ fun RecordTabScreen(
                     }
                 ) {
                     Text("Watch Ad (1 Session)", color = TextSecondary)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Battery Optimization Guardrail Dialog
+    if (showBatteryOptimizationDialog) {
+        val oemGuidance = remember { BatteryOptimizationHelper.getOemGuidance() }
+        AlertDialog(
+            onDismissRequest = { showBatteryOptimizationDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.BatteryFull,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB300),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Protect Long Recordings",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Background recording is active. To prevent Android Doze mode and power savers from stopping recordings after 15 to 30 minutes, set battery usage to Unrestricted.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                    if (oemGuidance != null) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFB300),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = oemGuidance,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showBatteryOptimizationDialog = false
+                        BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(context)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Set Unrestricted", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showBatteryOptimizationDialog = false }
+                ) {
+                    Text("Maybe Later", color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
