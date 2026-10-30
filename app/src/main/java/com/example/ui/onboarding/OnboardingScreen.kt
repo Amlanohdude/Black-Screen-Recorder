@@ -47,6 +47,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.config.AppLinks
+import com.example.localization.LocalAppStrings
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.AccentRedDark
 import com.example.ui.theme.BgDark
@@ -67,21 +68,22 @@ fun OnboardingScreen(
     onFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalAppStrings.current
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Default.Videocam,
-            title = "Record with Screen Off",
-            description = "Capture Full HD video and audio while keeping your phone screen completely black."
+            title = strings.onboarding.title1,
+            description = strings.onboarding.desc1
         ),
         OnboardingPage(
             icon = Icons.Default.DarkMode,
-            title = "OLED Battery Saver",
-            description = "True AMOLED black pixels consume zero power, preventing burn-in and extending battery life."
+            title = strings.onboarding.title2,
+            description = strings.onboarding.desc2
         ),
         OnboardingPage(
             icon = Icons.Default.Shield,
-            title = "Private Security Vault",
-            description = "Secure your recordings behind a biometric fingerprint and PIN-protected storage vault."
+            title = strings.onboarding.title3,
+            description = strings.onboarding.desc3
         )
     )
 
@@ -190,7 +192,7 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = if (currentPage < pages.lastIndex) "Next" else "Get Started",
+                    text = if (currentPage < pages.lastIndex) strings.onboarding.next else strings.onboarding.getStarted,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -200,9 +202,9 @@ fun OnboardingScreen(
             if (currentPage == pages.lastIndex) {
                 Spacer(modifier = Modifier.height(16.dp))
                 val context = LocalContext.current
-                val annotatedText = remember {
+                val annotatedText = remember(strings) {
                     buildAnnotatedString {
-                        append("By continuing, you agree to our ")
+                        append(strings.onboarding.disclaimerPrefix)
                         pushStringAnnotation(tag = "TERMS", annotation = AppLinks.TERMS_AND_CONDITIONS_URL)
                         withStyle(
                             style = SpanStyle(
@@ -211,10 +213,10 @@ fun OnboardingScreen(
                                 textDecoration = TextDecoration.Underline
                             )
                         ) {
-                            append("Terms of Service")
+                            append(strings.onboarding.termsOfService)
                         }
                         pop()
-                        append(" & ")
+                        append(strings.onboarding.andConnector)
                         pushStringAnnotation(tag = "PRIVACY", annotation = AppLinks.PRIVACY_POLICY_URL)
                         withStyle(
                             style = SpanStyle(
@@ -223,10 +225,10 @@ fun OnboardingScreen(
                                 textDecoration = TextDecoration.Underline
                             )
                         ) {
-                            append("Privacy Policy")
+                            append(strings.privacyPolicy)
                         }
                         pop()
-                        append(". Ensure compliance with all applicable local recording laws.")
+                        append(strings.onboarding.disclaimerSuffix)
                     }
                 }
 

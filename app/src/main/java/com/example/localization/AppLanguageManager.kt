@@ -11,16 +11,58 @@ import java.util.Locale
 object AppLanguageManager {
 
     /**
+     * Resolves the device's true hardware/OS system language code (e.g. "es", "pt", "hi", "en").
+     */
+    fun getSystemLanguageCode(): String {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Resources.getSystem().configuration.locales[0]?.language?.lowercase()
+                    ?: Locale.getDefault().language.lowercase()
+            } else {
+                @Suppress("DEPRECATION")
+                Resources.getSystem().configuration.locale?.language?.lowercase()
+                    ?: Locale.getDefault().language.lowercase()
+            }
+        } catch (_: Exception) {
+            "en"
+        }
+    }
+
+    /**
+     * Maps the detected device language to our supported AppLanguage enum.
+     */
+    fun getDetectedLanguage(): AppLanguage {
+        val code = getSystemLanguageCode()
+        return when {
+            code.startsWith("es") -> AppLanguage.SPANISH
+            code.startsWith("pt") -> AppLanguage.PORTUGUESE
+            code.startsWith("de") -> AppLanguage.GERMAN
+            code.startsWith("fr") -> AppLanguage.FRENCH
+            code.startsWith("hi") -> AppLanguage.HINDI
+            code.startsWith("in") || code.startsWith("id") -> AppLanguage.INDONESIAN
+            code.startsWith("ja") -> AppLanguage.JAPANESE
+            code.startsWith("ru") -> AppLanguage.RUSSIAN
+            code.startsWith("ar") -> AppLanguage.ARABIC
+            else -> AppLanguage.ENGLISH
+        }
+    }
+
+    /**
+     * Returns a human-friendly label showing Auto-Detect and the detected language.
+     * e.g., "Auto Detect (Español)"
+     */
+    fun getAutoDetectLabel(strings: AppStrings): String {
+        val detected = getDetectedLanguage()
+        return "${strings.autoDetect} (${detected.nativeName})"
+    }
+
+    /**
      * Retrieves the localized AppStrings object for the specified language code.
      * Falls back to device system locale if "system", or English as default.
      */
     fun getStrings(languageCode: String?): AppStrings {
-        val code = if (languageCode.isNullOrEmpty() || languageCode == "system") {
-            try {
-                Locale.getDefault().language.lowercase()
-            } catch (_: Exception) {
-                "en"
-            }
+        val code = if (languageCode.isNullOrEmpty() || languageCode == "system" || languageCode == "auto") {
+            getSystemLanguageCode()
         } else {
             languageCode.lowercase()
         }
@@ -44,7 +86,7 @@ object AppLanguageManager {
      */
     fun applyLocale(context: Context, languageCode: String?) {
         try {
-            val targetLocale = if (languageCode.isNullOrEmpty() || languageCode == "system") {
+            val targetLocale = if (languageCode.isNullOrEmpty() || languageCode == "system" || languageCode == "auto") {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     Resources.getSystem().configuration.locales[0] ?: Locale.getDefault()
                 } else {
@@ -63,7 +105,7 @@ object AppLanguageManager {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val localeManager = context.getSystemService(LocaleManager::class.java)
                 if (localeManager != null) {
-                    if (languageCode.isNullOrEmpty() || languageCode == "system") {
+                    if (languageCode.isNullOrEmpty() || languageCode == "system" || languageCode == "auto") {
                         localeManager.applicationLocales = LocaleList.getEmptyLocaleList()
                     } else {
                         localeManager.applicationLocales = LocaleList(targetLocale)

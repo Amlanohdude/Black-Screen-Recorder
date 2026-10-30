@@ -5,7 +5,7 @@ enum class AppLanguage(
     val displayName: String,
     val nativeName: String
 ) {
-    SYSTEM("system", "System Default", "Default"),
+    SYSTEM("system", "Auto Detect", "Auto Detect"),
     ENGLISH("en", "English", "English"),
     SPANISH("es", "Spanish", "Español"),
     PORTUGUESE("pt", "Portuguese", "Português"),

@@ -1152,12 +1152,17 @@ fun ExportProgressDialog(
     progress: ExportProgress,
     onCancel: () -> Unit
 ) {
+    val strings = LocalAppStrings.current
     AlertDialog(
         onDismissRequest = {},
         containerColor = SurfacePrimary,
         title = {
             Text(
-                text = if (progress.totalFiles > 1) "Exporting ${progress.currentFileIndex} of ${progress.totalFiles}..." else "Exporting to Custom Folder...",
+                text = if (progress.totalFiles > 1) {
+                    strings.exportingProgress.format(progress.currentFileIndex, progress.totalFiles)
+                } else {
+                    strings.exportingToCustomFolder
+                },
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
@@ -1205,7 +1210,7 @@ fun ExportProgressDialog(
                 onClick = onCancel,
                 modifier = Modifier.testTag("cancel_export_button")
             ) {
-                Text("Cancel", color = TextSecondary)
+                Text(strings.cancel, color = TextSecondary)
             }
         }
     )

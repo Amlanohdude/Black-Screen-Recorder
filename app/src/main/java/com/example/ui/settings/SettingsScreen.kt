@@ -459,7 +459,7 @@ fun SettingsScreen(
                         AppLanguage.fromCode(settings.languageCode)
                     }
                     val displayValue = if (currentLang == AppLanguage.SYSTEM) {
-                        strings.systemDefault
+                        AppLanguageManager.getAutoDetectLabel(strings)
                     } else {
                         "${currentLang.nativeName} (${currentLang.displayName})"
                     }
@@ -1381,12 +1381,12 @@ fun SettingsScreen(
                         }
                     }
                 ) {
-                    Text("Apply", color = AccentRed)
+                    Text(strings.recordingUi.apply, color = AccentRed)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomAutoStopDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(strings.cancel, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1526,20 +1526,13 @@ fun SettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = if (isBatteryOptimizationIgnored) {
-                            "Unrestricted battery access is currently active. The Android system and Doze mode will not terminate your recordings in the background."
+                            strings.batteryGuardDescUnrestricted
                         } else {
-                            "Android Doze mode and manufacturer power daemons can kill long background recordings after 15 to 30 minutes when the screen is locked or idle."
+                            strings.batteryGuardDesc
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
-                    if (!isBatteryOptimizationIgnored) {
-                        Text(
-                            text = "Setting battery usage to 'Unrestricted' prevents unexpected interruptions during multi-hour background sessions.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextMuted
-                        )
-                    }
                     if (oemGuidance != null) {
                         Card(
                             colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
@@ -1576,7 +1569,7 @@ fun SettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Set Unrestricted", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(strings.setUnrestricted, color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Button(
@@ -1587,7 +1580,7 @@ fun SettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = SurfaceSecondary),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("App Settings", color = TextPrimary)
+                        Text(strings.open, color = TextPrimary)
                     }
                 }
             },
@@ -1595,7 +1588,7 @@ fun SettingsScreen(
                 TextButton(
                     onClick = { showBatteryOptimizationDialog = false }
                 ) {
-                    Text("Close", color = TextSecondary)
+                    Text(strings.close, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1605,7 +1598,7 @@ fun SettingsScreen(
 
     if (showLanguageDialog) {
         val options = listOf(
-            AppLanguage.SYSTEM.code to strings.systemDefault,
+            AppLanguage.SYSTEM.code to AppLanguageManager.getAutoDetectLabel(strings),
             AppLanguage.ENGLISH.code to "${AppLanguage.ENGLISH.nativeName} (${AppLanguage.ENGLISH.displayName})",
             AppLanguage.SPANISH.code to "${AppLanguage.SPANISH.nativeName} (${AppLanguage.SPANISH.displayName})",
             AppLanguage.PORTUGUESE.code to "${AppLanguage.PORTUGUESE.nativeName} (${AppLanguage.PORTUGUESE.displayName})",
@@ -1757,7 +1750,7 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = { showCustomFolderOptionsDialog = false }) {
-                        Text("Cancel", color = TextSecondary)
+                        Text(strings.cancel, color = TextSecondary)
                     }
                 }
             },
@@ -1895,7 +1888,7 @@ fun SettingsScreen(
                         pinDialogStep = 1
                     }
                 ) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(strings.cancel, color = TextSecondary)
                 }
             },
             containerColor = SurfacePrimary,
@@ -1977,7 +1970,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showPrivacyDialog = false }) {
-                    Text("Close", color = AccentRed, fontWeight = FontWeight.Bold)
+                    Text(strings.close, color = AccentRed, fontWeight = FontWeight.Bold)
                 }
             },
             containerColor = SurfacePrimary,

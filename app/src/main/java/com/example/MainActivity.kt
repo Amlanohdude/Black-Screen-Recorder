@@ -163,12 +163,13 @@ setContent {
 MyApplicationTheme {
 var showSplash by remember { mutableStateOf(true) }
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
+val configuration = androidx.compose.ui.platform.LocalConfiguration.current
 
-LaunchedEffect(settings.languageCode) {
+LaunchedEffect(settings.languageCode, configuration) {
     AppLanguageManager.applyLocale(this@MainActivity, settings.languageCode)
 }
 
-val currentStrings = remember(settings.languageCode) {
+val currentStrings = remember(settings.languageCode, configuration) {
     AppLanguageManager.getStrings(settings.languageCode)
 }
 

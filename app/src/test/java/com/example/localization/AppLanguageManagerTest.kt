@@ -53,8 +53,32 @@ class AppLanguageManagerTest {
             assertNotNull(strings.hapticFeedback)
             assertNotNull(strings.startRecording)
             assertNotNull(strings.stopRecording)
+            assertNotNull(strings.autoDetect)
+            assertNotNull(strings.onboarding.title1)
+            assertNotNull(strings.recordingUi.holdingToStop)
+            assertNotNull(strings.recordingUi.criticallyLowStorageTitle)
+            assertNotNull(strings.recordingUi.ok)
+            assertNotNull(strings.recordingUi.apply)
+            assertNotNull(strings.audioSheet.title)
             assertFalse(strings.tabRecord.isBlank())
             assertFalse(strings.language.isBlank())
+            assertFalse(strings.autoDetect.isBlank())
+            assertFalse(strings.onboarding.title1.isBlank())
+            assertFalse(strings.recordingUi.holdingToStop.isBlank())
+            assertFalse(strings.recordingUi.criticallyLowStorageTitle.isBlank())
+            assertFalse(strings.recordingUi.ok.isBlank())
+            assertFalse(strings.recordingUi.apply.isBlank())
+            assertFalse(strings.audioSheet.title.isBlank())
         }
+    }
+
+    @Test
+    fun autoDetection_returnsValidLanguageAndLabel() {
+        val detected = AppLanguageManager.getDetectedLanguage()
+        assertNotNull(detected)
+        val strings = AppLanguageManager.getStrings("en")
+        val label = AppLanguageManager.getAutoDetectLabel(strings)
+        assertNotNull(label)
+        org.junit.Assert.assertTrue(label.contains("Auto Detect"))
     }
 }

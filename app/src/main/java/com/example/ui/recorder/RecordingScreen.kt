@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import com.example.localization.LocalAppStrings
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -107,6 +108,7 @@ fun RecordingScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val strings = LocalAppStrings.current
     val haptic = LocalHapticFeedback.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val status by viewModel.recordingStatus.collectAsStateWithLifecycle()
@@ -626,7 +628,7 @@ fun RecordingScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Low Storage (${MainViewModel.formatFileSize(availableStorageBytes)} left)",
+                                text = "${strings.recordingUi.lowStorageWarning} (${MainViewModel.formatFileSize(availableStorageBytes)} left)",
                                 color = Color(0xFFFFD54F),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
@@ -688,7 +690,7 @@ fun RecordingScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (isHoldingToStop) "HOLDING..." else "HOLD TO STOP",
+                                        text = if (isHoldingToStop) strings.recordingUi.holdingToStop else strings.holdToStop.uppercase(),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
@@ -722,7 +724,7 @@ fun RecordingScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "STOP",
+                                        text = strings.recordingUi.stopCaps,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
@@ -742,7 +744,7 @@ fun RecordingScreen(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Saving recording safely...",
+                                text = strings.recordingUi.savingRecordingSafely,
                                 color = TextSecondary,
                                 fontSize = 13.sp
                             )
@@ -758,14 +760,14 @@ fun RecordingScreen(
                 onDismissRequest = { showStopConfirmDialog = false },
                 title = {
                     Text(
-                        text = "Stop Recording?",
+                        text = strings.recordingUi.stopRecordingPrompt,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
                 },
                 text = {
                     Text(
-                        text = "Are you sure you want to stop and save this recording? Duration: ${MainViewModel.formatDuration(status.durationSeconds)}",
+                        text = strings.recordingUi.stopRecordingConfirmDesc.format(MainViewModel.formatDuration(status.durationSeconds)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -777,12 +779,12 @@ fun RecordingScreen(
                             executeStop()
                         }
                     ) {
-                        Text("Stop & Save", color = AccentRed, fontWeight = FontWeight.Bold)
+                        Text(strings.recordingUi.stopAndSave, color = AccentRed, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showStopConfirmDialog = false }) {
-                        Text("Keep Recording", color = TextSecondary)
+                        Text(strings.recordingUi.keepRecording, color = TextSecondary)
                     }
                 },
                 containerColor = SurfacePrimary,
@@ -794,11 +796,11 @@ fun RecordingScreen(
             AlertDialog(
                 onDismissRequest = { showStopAndExitConfirmDialog = false },
                 title = {
-                    Text("Stop and exit?", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                    Text(strings.recordingUi.stopAndExitPrompt, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
                 },
                 text = {
                     Text(
-                        "Are you sure you want to stop recording and exit Black Screen Recorder?",
+                        strings.recordingUi.stopAndExitDesc,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -810,12 +812,12 @@ fun RecordingScreen(
                             executeStop(isQuickExit = true)
                         }
                     ) {
-                        Text("STOP & EXIT", color = AccentRed, fontWeight = FontWeight.Bold)
+                        Text(strings.recordingUi.stopAndExitButton, color = AccentRed, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showStopAndExitConfirmDialog = false }) {
-                        Text("Cancel", color = TextSecondary)
+                        Text(strings.cancel, color = TextSecondary)
                     }
                 },
                 containerColor = SurfacePrimary,
@@ -837,7 +839,7 @@ fun RecordingScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Low Storage Alert",
+                            text = strings.recordingUi.lowStorageAlertTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = TextPrimary
                         )
@@ -856,7 +858,7 @@ fun RecordingScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("OK", fontWeight = FontWeight.Bold)
+                        Text(strings.recordingUi.ok, fontWeight = FontWeight.Bold)
                     }
                 },
                 containerColor = SurfacePrimary,
@@ -871,7 +873,7 @@ fun RecordingScreen(
                     onRecordingFinished(null)
                 },
                 title = {
-                    Text("Recording Error", color = AccentRed, fontWeight = FontWeight.Bold)
+                    Text(strings.recordingUi.recordingErrorTitle, color = AccentRed, fontWeight = FontWeight.Bold)
                 },
                 text = {
                     Text(finalizationErrorMessage ?: "", color = TextSecondary)
@@ -884,7 +886,7 @@ fun RecordingScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                     ) {
-                        Text("OK")
+                        Text(strings.recordingUi.ok)
                     }
                 },
                 containerColor = SurfacePrimary,

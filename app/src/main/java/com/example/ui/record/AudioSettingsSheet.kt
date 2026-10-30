@@ -48,6 +48,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.localization.LocalAppStrings
+import com.example.localization.getMicName
+import com.example.localization.getMicDesc
+import com.example.localization.getAudioQualityTitle
+import com.example.localization.getAudioQualityDesc
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,6 +106,8 @@ fun AudioSettingsSheet(
     val currentMic = AudioMicSource.fromId(settings.preferredMicrophone)
     val currentQuality = AudioQuality.fromId(settings.audioQuality)
 
+    val strings = LocalAppStrings.current
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -141,7 +148,7 @@ fun AudioSettingsSheet(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "AUDIO SETTINGS",
+                        text = strings.audioSheet.title,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.2.sp,
@@ -156,7 +163,7 @@ fun AudioSettingsSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
+                        contentDescription = strings.close,
                         tint = TextSecondary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -167,7 +174,7 @@ fun AudioSettingsSheet(
             // 1. MICROPHONE SOURCE (SHARED AUDIO & VIDEO)
             // ==========================================
             Text(
-                text = "MICROPHONE",
+                text = strings.audioSheet.secMicrophone,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
@@ -221,7 +228,7 @@ fun AudioSettingsSheet(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = mic.displayName,
+                                        text = strings.getMicName(mic),
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                             fontSize = 14.sp
@@ -229,7 +236,7 @@ fun AudioSettingsSheet(
                                         color = if (isSelected) Color.White else TextPrimary
                                     )
                                     Text(
-                                        text = mic.iconDescription,
+                                        text = strings.getMicDesc(mic),
                                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                         color = TextMuted
                                     )
@@ -267,7 +274,7 @@ fun AudioSettingsSheet(
             // 2. RECORDING QUALITY
             // ==========================================
             Text(
-                text = "RECORDING QUALITY",
+                text = strings.audioSheet.secRecordingQuality,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
@@ -296,7 +303,7 @@ fun AudioSettingsSheet(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = quality.title,
+                                    text = strings.getAudioQualityTitle(quality),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 14.sp
@@ -304,7 +311,7 @@ fun AudioSettingsSheet(
                                     color = if (isSelected) Color.White else TextPrimary
                                 )
                                 Text(
-                                    text = quality.description,
+                                    text = strings.getAudioQualityDesc(quality),
                                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                     color = if (isSelected) TextSecondary else TextMuted
                                 )
@@ -341,7 +348,7 @@ fun AudioSettingsSheet(
             // 3. AUDIO ENHANCEMENT
             // ==========================================
             Text(
-                text = "AUDIO ENHANCEMENT",
+                text = strings.audioSheet.secAudioEnhancement,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
@@ -368,7 +375,7 @@ fun AudioSettingsSheet(
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                             Text(
-                                text = "Clear Voice",
+                                text = strings.audioSheet.clearVoiceTitle,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
@@ -376,7 +383,7 @@ fun AudioSettingsSheet(
                                 color = TextPrimary
                             )
                             Text(
-                                text = "Reduce background noise and improve speech clarity",
+                                text = strings.audioSheet.clearVoiceDesc,
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                 color = TextMuted
                             )
@@ -405,7 +412,7 @@ fun AudioSettingsSheet(
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                             Text(
-                                text = "Reduce Echo",
+                                text = strings.audioSheet.reduceEchoTitle,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 14.sp
@@ -413,7 +420,7 @@ fun AudioSettingsSheet(
                                 color = TextPrimary
                             )
                             Text(
-                                text = "Helps reduce echo when recording near speakers",
+                                text = strings.audioSheet.reduceEchoDesc,
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                 color = TextMuted
                             )
@@ -438,7 +445,7 @@ fun AudioSettingsSheet(
             // 4. INPUT VOLUME
             // ==========================================
             Text(
-                text = "INPUT VOLUME",
+                text = strings.audioSheet.secInputVolume,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
@@ -461,15 +468,15 @@ fun AudioSettingsSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Low",
+                            text = strings.audioSheet.volumeLow,
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                             color = TextMuted
                         )
                         Text(
                             text = when {
-                                settings.audioInputVolume < 0.9f -> "Quiet"
-                                settings.audioInputVolume > 1.1f -> "High"
-                                else -> "Normal"
+                                settings.audioInputVolume < 0.9f -> strings.audioSheet.volumeLow
+                                settings.audioInputVolume > 1.1f -> strings.audioSheet.volumeHigh
+                                else -> "1.0x"
                             },
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 12.sp,
@@ -478,7 +485,7 @@ fun AudioSettingsSheet(
                             color = TextPrimary
                         )
                         Text(
-                            text = "High",
+                            text = strings.audioSheet.volumeHigh,
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                             color = TextMuted
                         )
@@ -499,7 +506,7 @@ fun AudioSettingsSheet(
                     )
 
                     Text(
-                        text = "Increase this if recordings sound too quiet.",
+                        text = strings.audioSheet.volumeHint,
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = TextMuted
                     )
@@ -528,7 +535,7 @@ fun AudioSettingsSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "More Audio Settings",
+                        text = strings.audioSheet.moreAudioSettings,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
@@ -567,9 +574,9 @@ fun AudioSettingsSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Format", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text(strings.audioSheet.formatLabel, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             Text(
-                                if (settings.audioFormat.contains("wav", ignoreCase = true)) "WAV Lossless" else "M4A (AAC)",
+                                if (settings.audioFormat.contains("wav", ignoreCase = true)) strings.wavLossless else strings.m4aAac,
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = TextPrimary
                             )
@@ -579,7 +586,7 @@ fun AudioSettingsSheet(
 
                         // Bitrate Selection Chips
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Bitrate", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text(strings.audioSheet.bitrateLabel, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -612,7 +619,7 @@ fun AudioSettingsSheet(
 
                         // Channels Selection Chips
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Channels", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text(strings.audioSheet.channelsLabel, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -645,7 +652,7 @@ fun AudioSettingsSheet(
 
                         // Sample Rate Chips
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Sample Rate", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text(strings.audioSheet.sampleRateLabel, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)

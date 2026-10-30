@@ -1111,21 +1111,21 @@ fun RecordTabScreen(
             onDismissRequest = { showCriticalStorageDialog = false },
             title = {
                 Text(
-                    text = "Critically Low Storage",
+                    text = strings.recordingUi.criticallyLowStorageTitle,
                     color = TextPrimary,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
             text = {
                 Text(
-                    text = "Cannot start recording because available storage is critically low (${MainViewModel.formatFileSize(storageStats.availableBytes)} left). Please delete old recordings or free up space to record safely.",
+                    text = strings.recordingUi.criticallyLowStorageDesc.format(MainViewModel.formatFileSize(storageStats.availableBytes)),
                     color = TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
             confirmButton = {
                 TextButton(onClick = { showCriticalStorageDialog = false }) {
-                    Text("OK", color = AccentRed)
+                    Text(strings.recordingUi.ok, color = AccentRed)
                 }
             },
             shape = RoundedCornerShape(16.dp),
