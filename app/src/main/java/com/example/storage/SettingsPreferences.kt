@@ -46,6 +46,21 @@ enum class ExitGesture(val id: String, val title: String, val description: Strin
     }
 }
 
+enum class VolumeStopTrigger(val id: String, val title: String, val shortTitle: String) {
+    DISABLED("DISABLED", "Disabled", "Disabled"),
+    VOLUME_DOWN_TWICE("VOLUME_DOWN_TWICE", "Double-press Volume Down (Recommended)", "Double Vol Down"),
+    VOLUME_UP_TWICE("VOLUME_UP_TWICE", "Double-press Volume Up", "Double Vol Up"),
+    ANY_VOLUME_TWICE("ANY_VOLUME_TWICE", "Double-press Either Volume Button", "Double Vol"),
+    VOLUME_DOWN_SINGLE("VOLUME_DOWN_SINGLE", "Single-press Volume Down", "Single Vol Down"),
+    ANY_VOLUME_SINGLE("ANY_VOLUME_SINGLE", "Single-press Either Volume Button", "Single Vol");
+
+    companion object {
+        fun fromId(id: String?): VolumeStopTrigger {
+            return entries.firstOrNull { it.id == id || it.name == id } ?: VOLUME_DOWN_TWICE
+        }
+    }
+}
+
 data class UserSettings(
     val useFrontCamera: Boolean = false,
     val videoQuality: String = "1080p", // "1080p", "720p", "480p"
@@ -68,6 +83,10 @@ data class UserSettings(
     val backgroundRecordingEnabled: Boolean = false,
     val exitMethod: ExitMethod = ExitMethod.NORMAL_STOP_CONTROLS,
     val exitGesture: ExitGesture = ExitGesture.TWO_FINGER_DOUBLE_TAP,
+    val volumeStopTrigger: VolumeStopTrigger = VolumeStopTrigger.VOLUME_DOWN_TWICE,
+    val stopOnScreenOff: Boolean = true,
+    val shakeToStopEnabled: Boolean = false,
+    val flipToStopEnabled: Boolean = false,
     val preferredMicrophone: String = "PHONE_MIC",
     val audioQuality: String = "HIGH",
     val audioClearVoice: Boolean = true,
@@ -202,6 +221,10 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
             backgroundRecordingEnabled = backgroundRecordingEnabled,
             exitMethod = exitMethod,
             exitGesture = exitGesture,
+            volumeStopTrigger = VolumeStopTrigger.fromId(prefs.getString("volume_stop_trigger", VolumeStopTrigger.VOLUME_DOWN_TWICE.name)),
+            stopOnScreenOff = prefs.getBoolean("stop_on_screen_off", true),
+            shakeToStopEnabled = prefs.getBoolean("shake_to_stop_enabled", false),
+            flipToStopEnabled = prefs.getBoolean("flip_to_stop_enabled", false),
             preferredMicrophone = preferredMicrophone,
             audioQuality = audioQuality,
             audioClearVoice = audioClearVoice,
@@ -617,6 +640,26 @@ customExportFolderName = null
 
     fun updateQuickStopAndExit(enabled: Boolean) {
         updateExitAfterRecordingEnabled(enabled)
+    }
+
+    fun updateVolumeStopTrigger(trigger: VolumeStopTrigger) {
+        prefs.edit().putString("volume_stop_trigger", trigger.name).apply()
+        _settings.value = _settings.value.copy(volumeStopTrigger = trigger)
+    }
+
+    fun updateStopOnScreenOff(enabled: Boolean) {
+        prefs.edit().putBoolean("stop_on_screen_off", enabled).apply()
+        _settings.value = _settings.value.copy(stopOnScreenOff = enabled)
+    }
+
+    fun updateShakeToStopEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("shake_to_stop_enabled", enabled).apply()
+        _settings.value = _settings.value.copy(shakeToStopEnabled = enabled)
+    }
+
+    fun updateFlipToStopEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("flip_to_stop_enabled", enabled).apply()
+        _settings.value = _settings.value.copy(flipToStopEnabled = enabled)
     }
 
 

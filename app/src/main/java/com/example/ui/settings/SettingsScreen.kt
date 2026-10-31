@@ -17,14 +17,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import com.example.localization.AppLanguage
-import com.example.localization.AppLanguageManager
-import com.example.localization.LocalAppStrings
-import com.example.localization.formatAutoStopDuration
-import com.example.localization.getCoverName
-import com.example.localization.getGesture
-import com.example.localization.getPresetTitle
-import com.example.localization.getStopBehavior
+import com.example.localization.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,6 +109,7 @@ import com.example.storage.RecordingExportManager
 import com.example.storage.SettingsPreferences
 import com.example.storage.StopBehavior
 import com.example.storage.StorageCapacityEstimator
+import com.example.storage.VolumeStopTrigger
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.growth.InAppReviewManager
@@ -147,6 +141,7 @@ fun SettingsScreen(
     var customSecondsInput by remember { mutableStateOf("") }
     var customInputError by remember { mutableStateOf<String?>(null) }
     var showGestureDialog by remember { mutableStateOf(false) }
+    var showVolumeStopDialog by remember { mutableStateOf(false) }
     var showAutoDeleteDaysDialog by remember { mutableStateOf(false) }
     var showStopBehaviorDialog by remember { mutableStateOf(false) }
     var showPresetDialog by remember { mutableStateOf(false) }
@@ -348,6 +343,44 @@ fun SettingsScreen(
                         checked = settings.activeCover.showRecordingTimer,
                         onCheckedChange = { enabled ->
                             viewModel.setActiveCover(settings.activeCover.copy(showRecordingTimer = enabled))
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsClickableRow(
+                        title = strings.volumeButtonStop,
+                        value = settings.volumeStopTrigger.shortTitle,
+                        onClick = { showVolumeStopDialog = true }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = strings.stopOnScreenOff,
+                        checked = settings.stopOnScreenOff,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateStopOnScreenOff(enabled)
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = strings.shakeToStop,
+                        checked = settings.shakeToStopEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateShakeToStopEnabled(enabled)
+                        }
+                    )
+
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    SettingsSwitchRow(
+                        title = strings.flipToStop,
+                        checked = settings.flipToStopEnabled,
+                        onCheckedChange = { enabled ->
+                            viewModel.updateFlipToStopEnabled(enabled)
                         }
                     )
                 }
@@ -1630,6 +1663,16 @@ fun SettingsScreen(
             selected = settings.stopBehavior,
             onSelect = { viewModel.updateStopBehavior(it) },
             onDismiss = { showStopBehaviorDialog = false }
+        )
+    }
+
+    if (showVolumeStopDialog) {
+        SelectionDialog(
+            title = strings.dialogVolumeButtonStop,
+            options = VolumeStopTrigger.entries.map { it to it.title },
+            selected = settings.volumeStopTrigger,
+            onSelect = { viewModel.updateVolumeStopTrigger(it) },
+            onDismiss = { showVolumeStopDialog = false }
         )
     }
 

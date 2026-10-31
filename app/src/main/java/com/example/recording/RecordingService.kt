@@ -104,6 +104,22 @@ class RecordingService : LifecycleService() {
         }
     }
 
+    private var isScreenOffReceiverRegistered = false
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                if (!_recordingStatus.value.isRecording) return
+                val settings = SettingsPreferences(applicationContext).settings.value
+                if (settings.stopOnScreenOff && !settings.backgroundRecordingEnabled) {
+                    Log.d(TAG, "Screen off / power button detected during recording. Initiating non-touch stop.")
+                    BlindOperationHaptics.vibrateSaved(applicationContext)
+                    stopActiveRecording()
+                    com.example.MainActivity.nonTouchStopTrigger.tryEmit(Unit)
+                }
+            }
+        }
+    }
+
     private var audioRecorder: AudioRecorder? = null
     private var videoManager: VideoRecordingManager? = null
     private var wakeLock: PowerManager.WakeLock? = null
@@ -230,6 +246,7 @@ class RecordingService : LifecycleService() {
                 BlindOperationHaptics.vibrateStarted(applicationContext)
             }
             registerBatteryReceiver()
+            registerScreenOffReceiver()
             startStorageSafetyMonitoring()
             startTimer()
             startAmplitudeMonitoring()
@@ -354,6 +371,7 @@ class RecordingService : LifecycleService() {
                         BlindOperationHaptics.vibrateStarted(applicationContext)
                     }
                     registerBatteryReceiver()
+            registerScreenOffReceiver()
                     startStorageSafetyMonitoring()
                     startTimer()
                 } else {
@@ -450,6 +468,7 @@ class RecordingService : LifecycleService() {
         storageSafetyJob?.cancel()
         storageSafetyJob = null
         unregisterBatteryReceiver()
+        unregisterScreenOffReceiver()
         _liveAudioLevel.value = 0f
         _stopEvent.tryEmit(Unit)
 
@@ -665,9 +684,11 @@ class RecordingService : LifecycleService() {
         storageSafetyJob?.cancel()
         storageSafetyJob = null
         unregisterBatteryReceiver()
+        unregisterScreenOffReceiver()
         storageSafetyJob?.cancel()
         storageSafetyJob = null
         unregisterBatteryReceiver()
+        unregisterScreenOffReceiver()
         _liveAudioLevel.value = 0f
 
         videoManager?.release()
@@ -754,6 +775,7 @@ class RecordingService : LifecycleService() {
         storageSafetyJob?.cancel()
         storageSafetyJob = null
         unregisterBatteryReceiver()
+        unregisterScreenOffReceiver()
 
         // Emergency flush: if service is killed unexpectedly by OS while recording, finalize and flush
         if (_recordingStatus.value.isRecording) {
@@ -813,6 +835,26 @@ class RecordingService : LifecycleService() {
                 unregisterReceiver(batteryReceiver)
             } catch (_: Exception) {}
             isBatteryReceiverRegistered = false
+        }
+    }
+
+    private fun registerScreenOffReceiver() {
+        if (!isScreenOffReceiverRegistered) {
+            try {
+                registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+                isScreenOffReceiverRegistered = true
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register screen off receiver", e)
+            }
+        }
+    }
+
+    private fun unregisterScreenOffReceiver() {
+        if (isScreenOffReceiverRegistered) {
+            try {
+                unregisterReceiver(screenOffReceiver)
+            } catch (_: Exception) {}
+            isScreenOffReceiverRegistered = false
         }
     }
 

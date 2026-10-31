@@ -22,6 +22,7 @@ import com.example.storage.StopBehavior
 import com.example.storage.StorageCapacityEstimator
 import com.example.storage.StorageStats
 import com.example.storage.UserSettings
+import com.example.storage.VolumeStopTrigger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -248,6 +249,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateExitMethod(method: ExitMethod) = settingsPrefs.updateExitMethod(method)
     fun updateExitGesture(gesture: ExitGesture) = settingsPrefs.updateExitGesture(gesture)
     fun updateQuickStopAndExit(enabled: Boolean) = settingsPrefs.updateQuickStopAndExit(enabled)
+    fun updateVolumeStopTrigger(trigger: VolumeStopTrigger) = settingsPrefs.updateVolumeStopTrigger(trigger)
+    fun updateStopOnScreenOff(enabled: Boolean) = settingsPrefs.updateStopOnScreenOff(enabled)
+    fun updateShakeToStopEnabled(enabled: Boolean) = settingsPrefs.updateShakeToStopEnabled(enabled)
+    fun updateFlipToStopEnabled(enabled: Boolean) = settingsPrefs.updateFlipToStopEnabled(enabled)
     fun applyPreset(presetId: RecordingPresetId) = settingsPrefs.applyPreset(presetId)
     fun updatePreferredMicrophone(micId: String) = settingsPrefs.updatePreferredMicrophone(micId)
     fun updateAudioQuality(quality: String) = settingsPrefs.updateAudioQuality(quality)

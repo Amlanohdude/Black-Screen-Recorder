@@ -357,6 +357,15 @@ data class AppStrings(
     val exportingToCustomFolder: String = "Exporting to Custom Folder..."
 )
 
+val AppStrings.volumeButtonStop: String get() = "Volume button stop"
+val AppStrings.dialogVolumeButtonStop: String get() = "Volume button stop trigger"
+val AppStrings.stopOnScreenOff: String get() = "Stop on Power button"
+val AppStrings.stopOnScreenOffDesc: String get() = "Pressing power button to turn off screen ends and saves recording"
+val AppStrings.shakeToStop: String get() = "Shake phone to stop"
+val AppStrings.shakeToStopDesc: String get() = "Firmly shake phone to end and save recording without touching screen"
+val AppStrings.flipToStop: String get() = "Flip face-down to stop"
+val AppStrings.flipToStopDesc: String get() = "Turn phone face-down to end and save recording"
+
 fun AppStrings.getMicName(mic: AudioMicSource): String {
     return when (mic) {
         AudioMicSource.PHONE_MIC -> audioSheet.micPhoneTitle

@@ -124,6 +124,7 @@ import com.example.ads.RewardedAdManager
 import com.example.billing.AppBillingManager
 import com.example.billing.PremiumManager
 import com.example.storage.EntitlementManager
+import com.example.storage.VolumeStopTrigger
 import com.example.ui.pro.ProScreen
 
 enum class MainTab(val title: String, val icon: ImageVector, val tag: String) {
@@ -214,19 +215,36 @@ MainAppContent(viewModel = viewModel)
 }
 
 override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN) {
-val isRecording = viewModel.recordingStatus.value.isRecording
-if (isRecording) {
-val now = System.currentTimeMillis()
-if (now - lastVolumeDownPressTime < 800L) {
-lastVolumeDownPressTime = 0L
-volumeDownExitTrigger.tryEmit(Unit)
-} else {
-lastVolumeDownPressTime = now
-}
-}
-}
-return super.onKeyDown(keyCode, event)
+    val isRecording = viewModel.recordingStatus.value.isRecording
+    if (isRecording) {
+        val trigger = viewModel.userSettings.value.volumeStopTrigger
+        val isTargetKey = when (trigger) {
+            VolumeStopTrigger.VOLUME_DOWN_TWICE,
+            VolumeStopTrigger.VOLUME_DOWN_SINGLE -> keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN
+            VolumeStopTrigger.VOLUME_UP_TWICE -> keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP
+            VolumeStopTrigger.ANY_VOLUME_TWICE,
+            VolumeStopTrigger.ANY_VOLUME_SINGLE -> keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP
+            VolumeStopTrigger.DISABLED -> false
+        }
+
+        if (isTargetKey) {
+            val isSingle = trigger == VolumeStopTrigger.VOLUME_DOWN_SINGLE || trigger == VolumeStopTrigger.ANY_VOLUME_SINGLE
+            if (isSingle) {
+                nonTouchStopTrigger.tryEmit(Unit)
+                return true
+            } else {
+                val now = System.currentTimeMillis()
+                if (now - lastVolumeDownPressTime < 850L) {
+                    lastVolumeDownPressTime = 0L
+                    nonTouchStopTrigger.tryEmit(Unit)
+                } else {
+                    lastVolumeDownPressTime = now
+                }
+                return true
+            }
+        }
+    }
+    return super.onKeyDown(keyCode, event)
 }
 
 override fun onResume() {
@@ -242,10 +260,11 @@ InAppUpdateManager.onDestroy()
 }
 
 companion object {
-val volumeDownExitTrigger = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(
-extraBufferCapacity = 1,
-onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
-)
+    val nonTouchStopTrigger = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+    )
+    val volumeDownExitTrigger = nonTouchStopTrigger
 }
 }
 

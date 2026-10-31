@@ -78,6 +78,8 @@ import com.example.covers.ControlGesture
 import com.example.covers.CoverConfig
 import com.example.covers.CoverDisplay
 import com.example.recording.AudioMicSource
+import com.example.recording.BlindOperationHaptics
+import com.example.recording.NonTouchStopSensorManager
 import com.example.recording.RecordingService
 import com.example.recording.RecordingStage
 import com.example.recording.RecordingType
@@ -258,12 +260,38 @@ fun RecordingScreen(
         }
     }
 
-    // Listen to volume down twice quick exit trigger
-    LaunchedEffect(settings.exitAfterRecordingEnabled, settings.exitMethod, settings.exitGesture) {
-        if (settings.exitAfterRecordingEnabled && settings.exitMethod == ExitMethod.GESTURE && settings.exitGesture == ExitGesture.VOLUME_DOWN_TWICE) {
-            MainActivity.volumeDownExitTrigger.collect {
-                triggerGestureExit()
+    // Non-touch hardware button stop trigger (Volume buttons, Power button / Screen Off)
+    LaunchedEffect(Unit) {
+        MainActivity.nonTouchStopTrigger.collect {
+            if (!isFinalizing && status.isRecording) {
+                BlindOperationHaptics.vibrateSaved(context)
+                val shouldExit = settings.exitAfterRecordingEnabled
+                executeStop(isQuickExit = shouldExit)
             }
+        }
+    }
+
+    // Sensor gestures to stop without touching screen (Shake, Flip face-down)
+    DisposableEffect(status.isRecording, settings.shakeToStopEnabled, settings.flipToStopEnabled) {
+        if (status.isRecording && (settings.shakeToStopEnabled || settings.flipToStopEnabled)) {
+            val sensorManager = NonTouchStopSensorManager(
+                context = context,
+                shakeEnabled = settings.shakeToStopEnabled,
+                flipEnabled = settings.flipToStopEnabled,
+                onStopTriggered = {
+                    if (!isFinalizing && status.isRecording) {
+                        BlindOperationHaptics.vibrateSaved(context)
+                        val shouldExit = settings.exitAfterRecordingEnabled
+                        executeStop(isQuickExit = shouldExit)
+                    }
+                }
+            )
+            sensorManager.start()
+            onDispose {
+                sensorManager.stop()
+            }
+        } else {
+            onDispose { }
         }
     }
 
