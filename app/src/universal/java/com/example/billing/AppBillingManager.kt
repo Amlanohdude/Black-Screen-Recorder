@@ -18,8 +18,8 @@ object AppBillingManager {
     private const val TAG = "AppBillingManager[Universal]"
     const val PRO_PRODUCT_ID = BillingConstants.PRO_PRODUCT_ID
 
-    // Replace with live key for production release or via build config / environment
-    var RAZORPAY_KEY_ID: String = "rzp_test_placeholder"
+    // Live Razorpay Key for production releases
+    var RAZORPAY_KEY_ID: String = "rzp_live_Tpq3EDKpfAms0U"
 
     private var appContext: Context? = null
     private val _uiState = MutableStateFlow(
