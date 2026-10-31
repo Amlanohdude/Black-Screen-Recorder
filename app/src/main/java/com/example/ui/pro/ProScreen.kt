@@ -540,9 +540,9 @@ fun ProScreen(
                                 isAlt = false
                             )
                             CleanBenefitRow(
-                                icon = Icons.Default.Tune,
-                                title = "Hardware Volume & Motion Stop",
-                                badgeText = "GESTURES",
+                                icon = Icons.Default.Timer,
+                                title = "Auto-Stop Duration Timer",
+                                badgeText = "AUTO-STOP",
                                 isAlt = true
                             )
                             CleanBenefitRow(
@@ -1253,11 +1253,19 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
             )
 
             ComparisonRow(
+                icon = Icons.Default.Tune,
+                title = strings.proComparisonHardwareStop,
+                freeContent = { IncludedBadge(false, strings.proBadgeIncluded) },
+                proContent = { IncludedBadge(true, strings.proBadgeIncluded) },
+                isAltRow = true
+            )
+
+            ComparisonRow(
                 icon = Icons.Default.Shield,
                 title = strings.proComparisonBasicFeatures,
                 freeContent = { IncludedBadge(false, strings.proBadgeIncluded) },
                 proContent = { IncludedBadge(true, strings.proBadgeIncluded) },
-                isAltRow = true
+                isAltRow = false
             )
 
             ComparisonRow(
@@ -1265,7 +1273,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = strings.proComparisonAds,
                 freeContent = { TextBadge(strings.proBadgeNativeAds, isMuted = true) },
                 proContent = { TextBadge(strings.proBadgeNone, isGold = true) },
-                isAltRow = false
+                isAltRow = true
             )
 
             ComparisonRow(
@@ -1273,7 +1281,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = strings.proComparisonVideoQuality,
                 freeContent = { TextBadge(strings.proBadge1080p) },
                 proContent = { TextBadge(strings.proBadge4k, isGold = true) },
-                isAltRow = true
+                isAltRow = false
             )
 
             ComparisonRow(
@@ -1281,7 +1289,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = strings.proComparisonCustomCovers,
                 freeContent = { TextBadge(strings.proBadge1Use) },
                 proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
-                isAltRow = false
+                isAltRow = true
             )
 
             ComparisonRow(
@@ -1289,7 +1297,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = strings.proComparisonCustomFolder,
                 freeContent = { TextBadge(strings.proBadge1Use) },
                 proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
-                isAltRow = true
+                isAltRow = false
             )
 
             ComparisonRow(
@@ -1297,7 +1305,7 @@ private fun PlanComparisonCard(modifier: Modifier = Modifier) {
                 title = strings.proComparisonAutoStop,
                 freeContent = { TextBadge(strings.proBadge1Use) },
                 proContent = { UnlimitedBadge(strings.proBadgeUnlimited) },
-                isAltRow = false
+                isAltRow = true
             )
         }
     }
