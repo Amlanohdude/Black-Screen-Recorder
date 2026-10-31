@@ -9,9 +9,9 @@ object AdsConfig {
     const val TEST_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
     const val TEST_REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
 
-    private const val PROD_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
-    private const val PROD_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/ZZZZZZZZZZ"
-    private const val PROD_REWARDED_AD_UNIT_ID = "ca-app-pub-XXXXXXXXXXXXXXXX/WWWWWWWWWW"
+    private const val PROD_NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-6996252057357821/4208354575"
+    private const val PROD_NATIVE_STATIC_AD_UNIT_ID = "ca-app-pub-6996252057357821/4208354575"
+    private const val PROD_REWARDED_AD_UNIT_ID = "ca-app-pub-6996252057357821/3183494626"
 
     const val showInCovers: Boolean = true
     const val coversFrequency: Int = 4
