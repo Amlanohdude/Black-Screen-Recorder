@@ -48,6 +48,56 @@ class BillingManagerTest {
     }
 
     @Test
+    fun formatPriceFromMicros_eurPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "3,99 €",
+            targetMicros = 8_490_000L,
+            currencyCode = "EUR"
+        )
+        assertEquals("8,49 €", formatted)
+    }
+
+    @Test
+    fun formatPriceFromMicros_audPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "AUD 5.49",
+            targetMicros = 10_990_000L,
+            currencyCode = "AUD"
+        )
+        assertEquals("AUD 10.99", formatted)
+    }
+
+    @Test
+    fun formatPriceFromMicros_brlPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "R$ 4,90",
+            targetMicros = 9_990_000L,
+            currencyCode = "BRL"
+        )
+        assertEquals("R$ 9,99", formatted)
+    }
+
+    @Test
+    fun formatPriceFromMicros_cadPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "CAD 1.49",
+            targetMicros = 2_890_000L,
+            currencyCode = "CAD"
+        )
+        assertEquals("CAD 2.89", formatted)
+    }
+
+    @Test
+    fun formatPriceFromMicros_mxnPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "MXN 19.99",
+            targetMicros = 43_000_000L,
+            currencyCode = "MXN"
+        )
+        assertEquals("MXN 43.00", formatted)
+    }
+
+    @Test
     fun calculateOriginalPrice_usdPriceWithDecimals_calculatesFiftyPercentAnchor() {
         val original = BillingManager.calculateOriginalPrice(
             formattedPrice = "$3.50",
