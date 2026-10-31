@@ -115,6 +115,52 @@ object BillingManager : PurchasesUpdatedListener {
         }
     }
 
+    fun calculateOriginalPrice(
+        formattedPrice: String,
+        amountMicros: Long,
+        currencyCode: String?,
+        discountPercentage: Int = 50
+    ): String? {
+        if (formattedPrice.isBlank() || amountMicros <= 0L || discountPercentage <= 0 || discountPercentage >= 100) {
+            return null
+        }
+
+        val factor = 100.0 / (100.0 - discountPercentage)
+        val originalAmount = (amountMicros.toDouble() * factor) / 1_000_000.0
+
+        // 1. Try regex replacement in formattedPrice to preserve exact currency symbol and position
+        val pattern = java.util.regex.Pattern.compile("([0-9][0-9.,\\s]*[0-9]|[0-9]+)")
+        val matcher = pattern.matcher(formattedPrice)
+        if (matcher.find()) {
+            val numStr = matcher.group(1)?.trim() ?: ""
+            val hasTwoDecimalsComma = numStr.matches(Regex(""".*,[0-9]{2}$"""))
+            val hasTwoDecimalsDot = numStr.matches(Regex(""".*\.[0-9]{2}$"""))
+
+            val replacement = when {
+                hasTwoDecimalsComma -> String.format(java.util.Locale.US, "%.2f", originalAmount).replace('.', ',')
+                hasTwoDecimalsDot -> String.format(java.util.Locale.US, "%.2f", originalAmount)
+                originalAmount % 1.0 != 0.0 -> String.format(java.util.Locale.US, "%.2f", originalAmount)
+                else -> String.format(java.util.Locale.US, "%.0f", originalAmount)
+            }
+            return matcher.replaceFirst(replacement)
+        }
+
+        // 2. Fallback to NumberFormat with currencyCode
+        if (!currencyCode.isNullOrEmpty()) {
+            try {
+                val currency = java.util.Currency.getInstance(currencyCode)
+                val format = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.getDefault()).apply {
+                    this.currency = currency
+                    maximumFractionDigits = 2
+                    minimumFractionDigits = if (originalAmount % 1.0 == 0.0) 0 else 2
+                }
+                return format.format(originalAmount)
+            } catch (_: Exception) {}
+        }
+
+        return null
+    }
+
     fun queryProductDetails() {
         val client = billingClient ?: return
         if (!client.isReady) return
@@ -136,11 +182,20 @@ object BillingManager : PurchasesUpdatedListener {
                 if (details != null) {
                     val offer = details.oneTimePurchaseOfferDetails
                     val formattedPrice = offer?.formattedPrice
+                    val amountMicros = offer?.priceAmountMicros ?: 0L
+                    val currencyCode = offer?.priceCurrencyCode
+                    val discountPercentage = 50
+                    val originalPrice = if (formattedPrice != null && amountMicros > 0L) {
+                        calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
+                    } else null
+
                     _uiState.value = _uiState.value.copy(
                         productAvailable = true,
                         productDetails = details,
                         formattedPrice = formattedPrice,
-                        standardFormattedPrice = formattedPrice
+                        standardFormattedPrice = originalPrice ?: formattedPrice,
+                        originalFormattedPrice = originalPrice,
+                        discountPercentage = if (originalPrice != null) discountPercentage else null
                     )
                 }
             }
