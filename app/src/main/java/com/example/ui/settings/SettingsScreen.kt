@@ -605,25 +605,27 @@ fun SettingsScreen(
                         modifier = Modifier
                             .testTag("settings_version_row")
                             .clickable {
-                                val currentTime = System.currentTimeMillis()
-                                if (currentTime - lastDevTapTime > 2500L) {
-                                    devTapCount = 1
-                                } else {
-                                    devTapCount++
-                                }
-                                lastDevTapTime = currentTime
+                                if (com.example.BuildConfig.DEBUG) {
+                                    val currentTime = System.currentTimeMillis()
+                                    if (currentTime - lastDevTapTime > 2500L) {
+                                        devTapCount = 1
+                                    } else {
+                                        devTapCount++
+                                    }
+                                    lastDevTapTime = currentTime
 
-                                if (devTapCount in 2..4) {
-                                    val remaining = 5 - devTapCount
-                                    Toast.makeText(
-                                        context,
-                                        "$remaining tap${if (remaining > 1) "s" else ""} away from Developer QA Mode",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else if (devTapCount >= 5) {
-                                    devTapCount = 0
-                                    showDevQaDialog = true
-                                    Toast.makeText(context, "Developer QA Mode Unlocked", Toast.LENGTH_SHORT).show()
+                                    if (devTapCount in 2..4) {
+                                        val remaining = 5 - devTapCount
+                                        Toast.makeText(
+                                            context,
+                                            "$remaining tap${if (remaining > 1) "s" else ""} away from Developer QA Mode",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else if (devTapCount >= 5) {
+                                        devTapCount = 0
+                                        showDevQaDialog = true
+                                        Toast.makeText(context, "Developer QA Mode Unlocked", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                     )
@@ -2021,7 +2023,7 @@ fun SettingsScreen(
         )
     }
 
-    if (showDevQaDialog) {
+    if (com.example.BuildConfig.DEBUG && showDevQaDialog) {
         DeveloperQaDialog(
             viewModel = viewModel,
             onPreviewOnboarding = {
