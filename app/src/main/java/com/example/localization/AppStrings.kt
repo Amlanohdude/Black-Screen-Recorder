@@ -380,6 +380,10 @@ val AppStrings.proCoffeeFraming: String get() = "Less than a cup of coffee for l
 val AppStrings.proSingleSessionDrawerTitle: String get() = "Need a single session? Try with rewarded ads"
 val AppStrings.proSingleSessionDrawerDesc: String get() = "Watch a short ad to unlock 1 temporary use of any PRO feature"
 
+val OnboardingStrings.titleNonTouch: String get() = "Blind Hardware Controls"
+val OnboardingStrings.descNonTouch: String get() = "Stop and save recording blindly using physical volume keys, shake, or flip face-down without touching the screen."
+val OnboardingStrings.skip: String get() = "Skip"
+
 fun AppStrings.getMicName(mic: AudioMicSource): String {
     return when (mic) {
         AudioMicSource.PHONE_MIC -> audioSheet.micPhoneTitle
