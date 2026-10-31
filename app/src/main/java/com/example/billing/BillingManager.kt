@@ -115,6 +115,44 @@ object BillingManager : PurchasesUpdatedListener {
         }
     }
 
+    fun formatPriceFromMicros(
+        formattedSample: String,
+        targetMicros: Long,
+        currencyCode: String?
+    ): String? {
+        if (formattedSample.isBlank() || targetMicros <= 0L) return null
+        val targetAmount = targetMicros.toDouble() / 1_000_000.0
+
+        val pattern = java.util.regex.Pattern.compile("([0-9][0-9.,\\s]*[0-9]|[0-9]+)")
+        val matcher = pattern.matcher(formattedSample)
+        if (matcher.find()) {
+            val numStr = matcher.group(1)?.trim() ?: ""
+            val hasTwoDecimalsComma = numStr.matches(Regex(""".*,[0-9]{2}$"""))
+            val hasTwoDecimalsDot = numStr.matches(Regex(""".*\.[0-9]{2}$"""))
+
+            val replacement = when {
+                hasTwoDecimalsComma -> String.format(java.util.Locale.US, "%.2f", targetAmount).replace('.', ',')
+                hasTwoDecimalsDot -> String.format(java.util.Locale.US, "%.2f", targetAmount)
+                targetAmount % 1.0 != 0.0 -> String.format(java.util.Locale.US, "%.2f", targetAmount)
+                else -> String.format(java.util.Locale.US, "%.0f", targetAmount)
+            }
+            return matcher.replaceFirst(replacement)
+        }
+
+        if (!currencyCode.isNullOrEmpty()) {
+            try {
+                val currency = java.util.Currency.getInstance(currencyCode)
+                val format = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.getDefault()).apply {
+                    this.currency = currency
+                    maximumFractionDigits = 2
+                    minimumFractionDigits = if (targetAmount % 1.0 == 0.0) 0 else 2
+                }
+                return format.format(targetAmount)
+            } catch (_: Exception) {}
+        }
+        return null
+    }
+
     fun calculateOriginalPrice(
         formattedPrice: String,
         amountMicros: Long,
@@ -126,39 +164,8 @@ object BillingManager : PurchasesUpdatedListener {
         }
 
         val factor = 100.0 / (100.0 - discountPercentage)
-        val originalAmount = (amountMicros.toDouble() * factor) / 1_000_000.0
-
-        // 1. Try regex replacement in formattedPrice to preserve exact currency symbol and position
-        val pattern = java.util.regex.Pattern.compile("([0-9][0-9.,\\s]*[0-9]|[0-9]+)")
-        val matcher = pattern.matcher(formattedPrice)
-        if (matcher.find()) {
-            val numStr = matcher.group(1)?.trim() ?: ""
-            val hasTwoDecimalsComma = numStr.matches(Regex(""".*,[0-9]{2}$"""))
-            val hasTwoDecimalsDot = numStr.matches(Regex(""".*\.[0-9]{2}$"""))
-
-            val replacement = when {
-                hasTwoDecimalsComma -> String.format(java.util.Locale.US, "%.2f", originalAmount).replace('.', ',')
-                hasTwoDecimalsDot -> String.format(java.util.Locale.US, "%.2f", originalAmount)
-                originalAmount % 1.0 != 0.0 -> String.format(java.util.Locale.US, "%.2f", originalAmount)
-                else -> String.format(java.util.Locale.US, "%.0f", originalAmount)
-            }
-            return matcher.replaceFirst(replacement)
-        }
-
-        // 2. Fallback to NumberFormat with currencyCode
-        if (!currencyCode.isNullOrEmpty()) {
-            try {
-                val currency = java.util.Currency.getInstance(currencyCode)
-                val format = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.getDefault()).apply {
-                    this.currency = currency
-                    maximumFractionDigits = 2
-                    minimumFractionDigits = if (originalAmount % 1.0 == 0.0) 0 else 2
-                }
-                return format.format(originalAmount)
-            } catch (_: Exception) {}
-        }
-
-        return null
+        val originalAmountMicros = (amountMicros.toDouble() * factor).toLong()
+        return formatPriceFromMicros(formattedPrice, originalAmountMicros, currencyCode)
     }
 
     fun queryProductDetails() {
@@ -180,14 +187,32 @@ object BillingManager : PurchasesUpdatedListener {
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 val details = queryProductDetailsResult.productDetailsList.firstOrNull { it.productId == PRO_PRODUCT_ID }
                 if (details != null) {
-                    val offer = details.oneTimePurchaseOfferDetails
+                    val defaultOffer = details.oneTimePurchaseOfferDetails
+                    val allOffers = details.oneTimePurchaseOfferDetailsList
+                    Log.d(TAG, "ProductDetails found: defaultOffer=$defaultOffer, totalOffers=${allOffers?.size}")
+                    allOffers?.forEachIndexed { index, o ->
+                        Log.d(TAG, "Offer[$index]: id=${o.offerId}, optionId=${o.purchaseOptionId}, formattedPrice=${o.formattedPrice}, micros=${o.priceAmountMicros}, fullMicros=${o.fullPriceMicros}, discount=${o.discountDisplayInfo?.percentageDiscount}, token=${o.offerToken}")
+                    }
+
+                    // Prefer discounted offer or offer with lower price / active discount if available
+                    val offer = allOffers?.minByOrNull { it.priceAmountMicros } ?: defaultOffer
                     val formattedPrice = offer?.formattedPrice
                     val amountMicros = offer?.priceAmountMicros ?: 0L
                     val currencyCode = offer?.priceCurrencyCode
-                    val discountPercentage = 50
-                    val originalPrice = if (formattedPrice != null && amountMicros > 0L) {
-                        calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
-                    } else null
+                    val fullPriceMicros = offer?.fullPriceMicros
+                    val offerToken = offer?.offerToken
+
+                    // Base offer is the full-price base option
+                    val baseOffer = allOffers?.maxByOrNull { it.priceAmountMicros }
+                    val baseFormattedPrice = baseOffer?.formattedPrice
+
+                    val discountPercentage = offer?.discountDisplayInfo?.percentageDiscount ?: 50
+                    val originalPrice = when {
+                        !baseFormattedPrice.isNullOrEmpty() && baseFormattedPrice != formattedPrice -> baseFormattedPrice
+                        fullPriceMicros != null && fullPriceMicros > amountMicros -> formatPriceFromMicros(formattedPrice ?: "", fullPriceMicros, currencyCode)
+                        formattedPrice != null && amountMicros > 0L -> calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
+                        else -> null
+                    }
 
                     _uiState.value = _uiState.value.copy(
                         productAvailable = true,
@@ -195,7 +220,8 @@ object BillingManager : PurchasesUpdatedListener {
                         formattedPrice = formattedPrice,
                         standardFormattedPrice = originalPrice ?: formattedPrice,
                         originalFormattedPrice = originalPrice,
-                        discountPercentage = if (originalPrice != null) discountPercentage else null
+                        discountPercentage = if (originalPrice != null) discountPercentage else null,
+                        selectedOfferToken = offerToken
                     )
                 }
             }
@@ -205,15 +231,19 @@ object BillingManager : PurchasesUpdatedListener {
     fun launchPurchaseFlow(activity: Activity): Boolean {
         val client = billingClient ?: return false
         val details = _uiState.value.productDetails ?: return false
+        val token = _uiState.value.selectedOfferToken
 
-        val productDetailsParamsList = listOf(
-            BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(details)
-                .build()
-        )
+        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+            .setProductDetails(details)
+            .apply {
+                if (!token.isNullOrEmpty()) {
+                    setOfferToken(token)
+                }
+            }
+            .build()
 
         val billingFlowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(productDetailsParamsList)
+            .setProductDetailsParamsList(listOf(productDetailsParams))
             .build()
 
         val responseCode = client.launchBillingFlow(activity, billingFlowParams).responseCode

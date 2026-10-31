@@ -9,52 +9,62 @@ class BillingManagerTest {
     @Test
     fun calculateOriginalPrice_inrPriceWithDecimals_calculatesFiftyPercentAnchor() {
         val original = BillingManager.calculateOriginalPrice(
-            formattedPrice = "₹200.00",
-            amountMicros = 200_000_000L,
+            formattedPrice = "₹100.00",
+            amountMicros = 100_000_000L,
             currencyCode = "INR",
             discountPercentage = 50
         )
-        assertEquals("₹400.00", original)
+        assertEquals("₹200.00", original)
+    }
+
+    @Test
+    fun formatPriceFromMicros_formatsTargetMicrosDirectly() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "₹100.00",
+            targetMicros = 200_000_000L,
+            currencyCode = "INR"
+        )
+        assertEquals("₹200.00", formatted)
     }
 
     @Test
     fun calculateOriginalPrice_usdPriceWithDecimals_calculatesFiftyPercentAnchor() {
         val original = BillingManager.calculateOriginalPrice(
-            formattedPrice = "$2.99",
-            amountMicros = 2_990_000L,
+            formattedPrice = "$3.50",
+            amountMicros = 3_500_000L,
             currencyCode = "USD",
             discountPercentage = 50
         )
-        assertEquals("$5.98", original)
+        assertEquals("$7.00", original)
     }
 
     @Test
     fun calculateOriginalPrice_eurPriceWithComma_preservesCommaSeparator() {
         val original = BillingManager.calculateOriginalPrice(
-            formattedPrice = "2,49 €",
-            amountMicros = 2_490_000L,
+            formattedPrice = "4,25 €",
+            amountMicros = 4_250_000L,
             currencyCode = "EUR",
             discountPercentage = 50
         )
-        assertEquals("4,98 €", original)
+        assertEquals("8,50 €", original)
     }
 
     @Test
     fun calculateOriginalPrice_inrPriceWithoutDecimals_calculatesFiftyPercentAnchorWithoutDecimals() {
         val original = BillingManager.calculateOriginalPrice(
-            formattedPrice = "₹200",
-            amountMicros = 200_000_000L,
+            formattedPrice = "₹100",
+            amountMicros = 100_000_000L,
             currencyCode = "INR",
             discountPercentage = 50
         )
-        assertEquals("₹400", original)
+        assertEquals("₹200", original)
     }
 
     @Test
     fun calculateOriginalPrice_invalidInputs_returnsNull() {
-        assertNull(BillingManager.calculateOriginalPrice("", 200_000_000L, "INR", 50))
-        assertNull(BillingManager.calculateOriginalPrice("₹200.00", 0L, "INR", 50))
-        assertNull(BillingManager.calculateOriginalPrice("₹200.00", 200_000_000L, "INR", 0))
-        assertNull(BillingManager.calculateOriginalPrice("₹200.00", 200_000_000L, "INR", 100))
+        assertNull(BillingManager.calculateOriginalPrice("", 100_000_000L, "INR", 50))
+        assertNull(BillingManager.calculateOriginalPrice("₹100.00", 0L, "INR", 50))
+        assertNull(BillingManager.calculateOriginalPrice("₹100.00", 100_000_000L, "INR", 0))
+        assertNull(BillingManager.calculateOriginalPrice("₹100.00", 100_000_000L, "INR", 100))
     }
 }
