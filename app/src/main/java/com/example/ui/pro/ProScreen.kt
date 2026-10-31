@@ -1,11 +1,9 @@
 package com.example.ui.pro
 
 import android.app.Activity
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -77,6 +75,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -96,13 +95,7 @@ import com.example.billing.AppBillingManager
 import com.example.billing.BillingUiState
 import com.example.localization.AppStrings
 import com.example.localization.LocalAppStrings
-import com.example.localization.proCoffeeFraming
 import com.example.localization.proLaunchSpecialBadge
-import com.example.localization.proOutcome4k
-import com.example.localization.proOutcomeAdFree
-import com.example.localization.proOutcomeCovers
-import com.example.localization.proOutcomeFolder
-import com.example.localization.proOutcomeNonTouch
 import com.example.localization.proSingleSessionDrawerDesc
 import com.example.localization.proSingleSessionDrawerTitle
 import com.example.localization.proTrustNoSubs
@@ -198,44 +191,114 @@ fun ProScreen(
     var pendingFeatureToUnlock by remember { mutableStateOf<UnlockableFeature?>(null) }
     var showAdDrawer by remember { mutableStateOf(false) }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pro_screen_shimmer")
+    // Multi-Layer Fluid Animations
+    val infiniteTransition = rememberInfiniteTransition(label = "pro_screen_motion")
+
+    // Perimeter Border Sweep
     val borderSweep by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 800f,
+        targetValue = 900f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3800, easing = LinearEasing),
+            animation = tween(3400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "border_sweep"
     )
-    val badgePulse by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.05f,
+
+    // Ambient Aura Breathing Behind Emblem
+    val auraScale by infiniteTransition.animateFloat(
+        initialValue = 0.88f,
+        targetValue = 1.18f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aura_scale"
+    )
+    val auraAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.16f,
+        targetValue = 0.38f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "aura_alpha"
+    )
+
+    // Halo Ring Pulse Around Emblem
+    val haloScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "halo_scale"
+    )
+    val haloAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "halo_alpha"
+    )
+
+    // Launch Pass Badge Pulse
+    val badgePulse by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1300, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "badge_pulse"
     )
+
+    // Crown Icon Micro-Pulse
     val crownPulse by infiniteTransition.animateFloat(
-        initialValue = 0.94f,
-        targetValue = 1.06f,
+        initialValue = 0.95f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = LinearEasing),
+            animation = tween(1600, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "crown_pulse"
     )
+
+    // Primary CTA Button Light-Beam Gleam Sweep
     val ctaBeamOffset by infiniteTransition.animateFloat(
-        initialValue = -300f,
-        targetValue = 900f,
+        initialValue = -350f,
+        targetValue = 950f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = FastOutSlowInEasing),
+            animation = tween(2400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "cta_beam_offset"
     )
 
+    // Primary CTA Ambient Drop Glow Pulse
+    val ctaGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.65f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cta_glow_alpha"
+    )
+    val ctaGlowScale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cta_glow_scale"
+    )
+
+    // Expandable Drawer Arrow Animation
     val drawerArrowRotation by animateFloatAsState(
         targetValue = if (showAdDrawer) 180f else 0f,
         animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
@@ -247,19 +310,19 @@ fun ProScreen(
         if (isPro) {
             Brush.linearGradient(
                 colors = listOf(
-                    GoldAccent.copy(alpha = 0.85f),
+                    GoldAccent.copy(alpha = 0.9f),
                     GoldAccentDark.copy(alpha = 0.35f),
-                    GoldAccent.copy(alpha = 0.85f)
+                    GoldAccent.copy(alpha = 0.9f)
                 ),
                 start = Offset(borderSweep, 0f),
-                end = Offset(borderSweep + 400f, 400f)
+                end = Offset(borderSweep + 450f, 450f)
             )
         } else {
             Brush.linearGradient(
                 colors = listOf(
-                    GoldAccent.copy(alpha = 0.75f),
+                    GoldAccent.copy(alpha = 0.8f),
                     Color(0xFF26262B),
-                    GoldAccent.copy(alpha = 0.75f)
+                    GoldAccent.copy(alpha = 0.8f)
                 ),
                 start = Offset(borderSweep, 0f),
                 end = Offset(borderSweep + 500f, 500f)
@@ -320,7 +383,7 @@ fun ProScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
+                        .padding(horizontal = 18.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Top Tier Special Launch Badge with Breathing Pulse
@@ -331,10 +394,10 @@ fun ProScreen(
                                 scaleY = if (!isPro) badgePulse else 1f
                             }
                             .clip(RoundedCornerShape(20.dp))
-                            .background(if (isPro) GoldAccent.copy(alpha = 0.16f) else GoldAccent.copy(alpha = 0.12f))
+                            .background(GoldAccent.copy(alpha = 0.12f))
                             .border(
                                 1.dp,
-                                if (isPro) GoldAccent.copy(alpha = 0.5f) else GoldAccent.copy(alpha = 0.4f),
+                                GoldAccent.copy(alpha = 0.45f),
                                 RoundedCornerShape(20.dp)
                             )
                             .padding(horizontal = 14.dp, vertical = 6.dp)
@@ -359,41 +422,81 @@ fun ProScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Emblem
+                    // Living Emblem with Animated Ambient Aura and Halo Ring
                     Box(
-                        modifier = Modifier
-                            .size(62.dp)
-                            .graphicsLayer {
-                                scaleX = crownPulse
-                                scaleY = crownPulse
-                            }
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        GoldAccent.copy(alpha = 0.22f),
-                                        SurfaceSecondary
-                                    )
-                                )
-                            )
-                            .border(
-                                1.dp,
-                                if (isPro) GoldAccent.copy(alpha = 0.55f) else GoldAccent.copy(alpha = 0.35f),
-                                RoundedCornerShape(20.dp)
-                            ),
+                        modifier = Modifier.size(76.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.WorkspacePremium,
-                            contentDescription = null,
-                            tint = GoldAccent,
-                            modifier = Modifier.size(34.dp)
+                        // Ambient Radial Glow Orb
+                        Box(
+                            modifier = Modifier
+                                .size(76.dp)
+                                .graphicsLayer {
+                                    scaleX = auraScale
+                                    scaleY = auraScale
+                                }
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            GoldAccent.copy(alpha = auraAlpha),
+                                            Color.Transparent
+                                        )
+                                    ),
+                                    CircleShape
+                                )
                         )
+
+                        // Pulsing Halo Ring
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .graphicsLayer {
+                                    scaleX = haloScale
+                                    scaleY = haloScale
+                                }
+                                .border(
+                                    1.dp,
+                                    GoldAccent.copy(alpha = haloAlpha),
+                                    RoundedCornerShape(18.dp)
+                                )
+                        )
+
+                        // Center Crown Emblem Container
+                        Box(
+                            modifier = Modifier
+                                .size(58.dp)
+                                .graphicsLayer {
+                                    scaleX = crownPulse
+                                    scaleY = crownPulse
+                                }
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            GoldAccent.copy(alpha = 0.24f),
+                                            SurfaceSecondary
+                                        )
+                                    )
+                                )
+                                .border(
+                                    1.dp,
+                                    GoldAccent.copy(alpha = 0.5f),
+                                    RoundedCornerShape(18.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WorkspacePremium,
+                                contentDescription = null,
+                                tint = GoldAccent,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
                         text = strings.proHeroTitle,
@@ -406,54 +509,47 @@ fun ProScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = strings.proHeroSubtitle,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Normal
-                        ),
-                        color = TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Outcome-Oriented Benefit Rows (Mobbin / Jonathan Parra conversion principles)
+                    // Streamlined, Visual-First Feature List (Zero Paragraph Clutter)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(SurfaceSecondary.copy(alpha = 0.5f))
+                            .background(SurfaceSecondary.copy(alpha = 0.45f))
                             .border(0.5.dp, BorderSubtle, RoundedCornerShape(16.dp))
-                            .padding(14.dp)
+                            .padding(8.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutcomeBenefitRow(
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            CleanBenefitRow(
                                 icon = Icons.Default.Block,
-                                title = strings.proFeatureAdFree,
-                                subtitle = strings.proOutcomeAdFree
+                                title = "100% Ad-Free Experience",
+                                badgeText = "ZERO ADS",
+                                isAlt = false
                             )
-                            OutcomeBenefitRow(
+                            CleanBenefitRow(
                                 icon = Icons.Default.Videocam,
-                                title = strings.proFeatureVideo4k,
-                                subtitle = strings.proOutcome4k
+                                title = "4K Ultra HD Recording",
+                                badgeText = "ULTRA HD",
+                                isAlt = true
                             )
-                            OutcomeBenefitRow(
+                            CleanBenefitRow(
                                 icon = Icons.Default.Palette,
-                                title = strings.proFeatureCovers,
-                                subtitle = strings.proOutcomeCovers
+                                title = "All Stealth Disguise Covers",
+                                badgeText = "UNLIMITED",
+                                isAlt = false
                             )
-                            OutcomeBenefitRow(
+                            CleanBenefitRow(
                                 icon = Icons.Default.Tune,
-                                title = "Hardware & Motion Controls",
-                                subtitle = strings.proOutcomeNonTouch
+                                title = "Hardware Volume & Motion Stop",
+                                badgeText = "GESTURES",
+                                isAlt = true
                             )
-                            OutcomeBenefitRow(
+                            CleanBenefitRow(
                                 icon = Icons.Default.Folder,
-                                title = strings.proFeatureFolder,
-                                subtitle = strings.proOutcomeFolder
+                                title = "Private Vault & Custom Export",
+                                badgeText = "PROTECTED",
+                                isAlt = false
                             )
                         }
                     }
@@ -534,7 +630,7 @@ fun ProScreen(
                             }
                         }
                     } else {
-                        // Pricing & CTA Button
+                        // Pricing & Dynamic Living CTA Button
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -574,6 +670,10 @@ fun ProScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Box(
                                         modifier = Modifier
+                                            .graphicsLayer {
+                                                scaleX = badgePulse
+                                                scaleY = badgePulse
+                                            }
                                             .clip(RoundedCornerShape(6.dp))
                                             .background(GoldAccent.copy(alpha = 0.15f))
                                             .border(1.dp, GoldAccent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
@@ -589,16 +689,6 @@ fun ProScreen(
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = strings.proCoffeeFraming,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Normal
-                                    ),
-                                    color = TextMuted,
-                                    textAlign = TextAlign.Center
-                                )
                                 Spacer(modifier = Modifier.height(10.dp))
                             } else if (billingState.formattedPrice != null) {
                                 Text(
@@ -612,7 +702,7 @@ fun ProScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                             }
 
-                            // Dynamic Gleaming Primary CTA Button
+                            // Dynamic Gleaming Primary CTA Button with Ambient Drop-Glow Aura
                             val ctaBrush = Brush.linearGradient(
                                 colors = listOf(
                                     AccentRed,
@@ -626,53 +716,73 @@ fun ProScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(ctaBrush)
-                                    .clickable {
-                                        val activity = context as? Activity
-                                        if (activity != null) {
-                                            AppBillingManager.launchPurchaseFlow(activity)
-                                        }
-                                    }
-                                    .padding(vertical = 14.dp)
-                                    .testTag("buy_pro_button"),
+                                    .height(52.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                // Pulsing Red Ambient Drop Glow Behind CTA
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.92f)
+                                        .height(42.dp)
+                                        .graphicsLayer {
+                                            scaleX = ctaGlowScale
+                                            scaleY = ctaGlowScale
+                                        }
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(AccentRed.copy(alpha = ctaGlowAlpha))
+                                )
+
+                                // Main CTA Surface
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(ctaBrush)
+                                        .clickable {
+                                            val activity = context as? Activity
+                                            if (activity != null) {
+                                                AppBillingManager.launchPurchaseFlow(activity)
+                                            }
+                                        }
+                                        .testTag("buy_pro_button"),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.WorkspacePremium,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(19.dp),
-                                        tint = Color.White
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = strings.proUnlockProCta.format(activePrice),
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontSize = 14.5.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            letterSpacing = 0.6.sp
-                                        ),
-                                        color = Color.White
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.WorkspacePremium,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(19.dp),
+                                            tint = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = strings.proUnlockProCta.format(activePrice),
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontSize = 14.5.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                letterSpacing = 0.6.sp
+                                            ),
+                                            color = Color.White
+                                        )
+                                    }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = strings.proLifetimeOneTime,
+                                text = "One-time payment • Lifetime access",
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                                 color = TextMuted,
                                 textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                            // Trust Badges Row (Jonathan Parra Conversion Principle)
+                            // Trust Badges Row
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -748,7 +858,7 @@ fun ProScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // Restore Purchases Button
                     TextButton(
@@ -986,61 +1096,65 @@ fun ProScreen(
 }
 
 @Composable
-private fun OutcomeBenefitRow(
+private fun CleanBenefitRow(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    badgeText: String,
+    isAlt: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isAlt) SurfaceSecondary.copy(alpha = 0.45f) else Color.Transparent)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(34.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(GoldAccent.copy(alpha = 0.12f))
-                .border(0.5.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
+                .background(GoldAccent.copy(alpha = 0.14f))
+                .border(0.5.dp, GoldAccent.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = GoldAccent,
-                modifier = Modifier.size(17.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.3.sp
+            ),
+            color = TextPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(GoldAccent.copy(alpha = 0.12f))
+                .border(0.5.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+                .padding(horizontal = 7.dp, vertical = 3.dp)
+        ) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
+                text = badgeText,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 9.5.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.2.sp
+                    letterSpacing = 0.5.sp
                 ),
-                color = TextPrimary
-            )
-            Spacer(modifier = Modifier.height(1.dp))
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp
-                ),
-                color = TextSecondary
+                color = GoldAccent
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Icon(
-            imageVector = Icons.Default.Check,
-            contentDescription = null,
-            tint = GoldAccent,
-            modifier = Modifier.size(16.dp)
-        )
     }
 }
 
