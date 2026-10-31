@@ -38,6 +38,16 @@ class BillingManagerTest {
     }
 
     @Test
+    fun formatPriceFromMicros_gbpPsychologicalPricing_formatsBasePrice() {
+        val formatted = BillingManager.formatPriceFromMicros(
+            formattedSample = "£3.49",
+            targetMicros = 6_990_000L,
+            currencyCode = "GBP"
+        )
+        assertEquals("£6.99", formatted)
+    }
+
+    @Test
     fun calculateOriginalPrice_usdPriceWithDecimals_calculatesFiftyPercentAnchor() {
         val original = BillingManager.calculateOriginalPrice(
             formattedPrice = "$3.50",
