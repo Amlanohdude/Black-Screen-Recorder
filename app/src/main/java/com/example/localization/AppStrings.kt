@@ -382,6 +382,10 @@ val AppStrings.proSingleSessionDrawerDesc: String get() = "Watch a short ad to u
 
 val OnboardingStrings.titleNonTouch: String get() = "Blind Hardware Controls"
 val OnboardingStrings.descNonTouch: String get() = "Stop and save blindly using physical volume keys, shake, or flip without touching the screen."
+val OnboardingStrings.titleBgWidgets: String get() = "Background & Widgets"
+val OnboardingStrings.descBgWidgets: String get() = "Record in background while using other apps"
+val OnboardingStrings.titleCustomCovers: String get() = "Custom Cover Screens"
+val OnboardingStrings.descCustomCovers: String get() = "Disguise screen as a live clock or calculator"
 val OnboardingStrings.skip: String get() = "Skip"
 
 fun AppStrings.getMicName(mic: AudioMicSource): String {
