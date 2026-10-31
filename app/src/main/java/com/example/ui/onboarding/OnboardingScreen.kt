@@ -94,7 +94,6 @@ private data class OnboardingPageData(
     val description: String,
     val accentColor: Color,
     val secondaryColor: Color,
-    val badgeLabel: String,
     val showcaseType: ShowcaseType
 )
 
@@ -118,34 +117,30 @@ fun OnboardingScreen(
         listOf(
             OnboardingPageData(
                 title = strings.onboarding.title1,
-                description = strings.onboarding.desc1,
+                description = "Record video and audio while screen is black",
                 accentColor = AccentRed,
                 secondaryColor = Color(0xFFFF5252),
-                badgeLabel = "DISCREET RECORDING",
                 showcaseType = ShowcaseType.SCREEN_OFF
             ),
             OnboardingPageData(
                 title = strings.onboarding.titleNonTouch,
-                description = strings.onboarding.descNonTouch,
+                description = "Stop recording with volume buttons or a shake",
                 accentColor = Color(0xFF388E3C),
                 secondaryColor = Color(0xFF81C784),
-                badgeLabel = "HARDWARE GESTURES",
                 showcaseType = ShowcaseType.HARDWARE_BUTTONS
             ),
             OnboardingPageData(
                 title = strings.onboarding.title2,
-                description = strings.onboarding.desc2,
+                description = "AMOLED true black uses 0% display power",
                 accentColor = Color(0xFF00B0FF),
                 secondaryColor = Color(0xFF40C4FF),
-                badgeLabel = "OLED EFFICIENCY",
                 showcaseType = ShowcaseType.BATTERY_SAVER
             ),
             OnboardingPageData(
                 title = strings.onboarding.title3,
-                description = strings.onboarding.desc3,
+                description = "Encrypted and hidden from gallery",
                 accentColor = Color(0xFFFFD54F),
                 secondaryColor = Color(0xFFFFA000),
-                badgeLabel = "PRIVATE VAULT",
                 showcaseType = ShowcaseType.BIOMETRIC_VAULT
             )
         )
@@ -246,40 +241,19 @@ fun OnboardingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Feature Category Pill
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(pageData.accentColor.copy(alpha = 0.12f))
-                            .border(0.8.dp, pageData.accentColor.copy(alpha = 0.45f), RoundedCornerShape(20.dp))
-                            .padding(horizontal = 10.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = pageData.badgeLabel,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 9.5.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 1.sp
-                            ),
-                            color = pageData.accentColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // 3D Live Interactive Phone Mockup Showcase
+                    // 3D Live Interactive Phone Mockup Showcase (Sleek 19:9 Ratio)
                     PhoneMockup3DShowcase(
                         showcaseType = pageData.showcaseType,
                         accentColor = pageData.accentColor
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Title
                     Text(
                         text = pageData.title,
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontSize = 19.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.3.sp
                         ),
@@ -289,17 +263,17 @@ fun OnboardingScreen(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Streamlined Subtext - Crisp, non-heavy 2-line maximum
+                    // Streamlined Subtext - Crisp single line, zero text clutter
                     Text(
                         text = pageData.description,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.5.sp,
+                            fontSize = 12.sp,
                             lineHeight = 16.sp,
                             fontWeight = FontWeight.Normal
                         ),
                         color = TextSecondary,
                         textAlign = TextAlign.Center,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 14.dp)
                     )
@@ -494,10 +468,10 @@ private fun PhoneMockup3DShowcase(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "phone_3d_motion")
 
-    // Dynamic 3D perspective floating & rotation angles (pronounced 3D perspective)
+    // Dynamic 3D perspective floating & rotation angles
     val rotY by infiniteTransition.animateFloat(
-        initialValue = -24f,
-        targetValue = -18f,
+        initialValue = -22f,
+        targetValue = -16f,
         animationSpec = infiniteRepeatable(
             animation = tween(3800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -505,8 +479,8 @@ private fun PhoneMockup3DShowcase(
         label = "rot_y"
     )
     val rotX by infiniteTransition.animateFloat(
-        initialValue = 16f,
-        targetValue = 20f,
+        initialValue = 14f,
+        targetValue = 18f,
         animationSpec = infiniteRepeatable(
             animation = tween(4200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -514,8 +488,8 @@ private fun PhoneMockup3DShowcase(
         label = "rot_x"
     )
     val floatY by infiniteTransition.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
+        initialValue = -4f,
+        targetValue = 4f,
         animationSpec = infiniteRepeatable(
             animation = tween(3000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -528,7 +502,7 @@ private fun PhoneMockup3DShowcase(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(4200, easing = LinearEasing),
+            animation = tween(4000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "hw_cycle"
@@ -536,7 +510,7 @@ private fun PhoneMockup3DShowcase(
     val isHwShake = showcaseType == ShowcaseType.HARDWARE_BUTTONS && hwCycle in 0.36f..0.52f
     val hwShakeAngle = if (isHwShake) {
         val progress = (hwCycle - 0.36f) / 0.16f
-        kotlin.math.sin(progress * kotlin.math.PI * 4).toFloat() * 6f
+        kotlin.math.sin(progress * kotlin.math.PI * 4).toFloat() * 5f
     } else 0f
     val isVolumeActive = showcaseType == ShowcaseType.HARDWARE_BUTTONS && hwCycle in 0.35f..0.85f
 
@@ -545,7 +519,7 @@ private fun PhoneMockup3DShowcase(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(4800, easing = LinearEasing),
+            animation = tween(4500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "battery_cycle"
@@ -557,7 +531,7 @@ private fun PhoneMockup3DShowcase(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(4500, easing = LinearEasing),
+            animation = tween(4200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "vault_cycle"
@@ -574,21 +548,21 @@ private fun PhoneMockup3DShowcase(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(280.dp),
+            .height(295.dp),
         contentAlignment = Alignment.Center
     ) {
         // 3D Perspective Ground Contact Shadow
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(x = (-8).dp, y = 10.dp)
-                .width(165.dp)
-                .height(24.dp)
+                .offset(x = (-6).dp, y = 8.dp)
+                .width(135.dp)
+                .height(20.dp)
                 .background(
                     Brush.radialGradient(
                         listOf(
-                            dynamicAmbientColor.copy(alpha = 0.4f),
-                            Color.Black.copy(alpha = 0.55f),
+                            dynamicAmbientColor.copy(alpha = 0.35f),
+                            Color.Black.copy(alpha = 0.5f),
                             Color.Transparent
                         )
                     ),
@@ -596,34 +570,34 @@ private fun PhoneMockup3DShowcase(
                 )
         )
 
-        // 3D Floating Smartphone Chassis
+        // 3D Floating Smartphone Chassis (Modern Flagship 19.5:9 Aspect Ratio)
         Box(
             modifier = Modifier
                 .offset(y = floatY.dp)
                 .graphicsLayer {
                     rotationY = rotY
                     rotationX = rotX
-                    rotationZ = -4f + hwShakeAngle
-                    cameraDistance = 12f * density
-                    shadowElevation = 24.dp.toPx()
-                    shape = RoundedCornerShape(28.dp)
+                    rotationZ = -3.5f + hwShakeAngle
+                    cameraDistance = 14f * density
+                    shadowElevation = 20.dp.toPx()
+                    shape = RoundedCornerShape(30.dp)
                     clip = false
                 }
-                .width(172.dp)
-                .height(262.dp)
+                .width(138.dp)
+                .height(286.dp)
         ) {
-            // Extruded 3D Side Bezel Depth Layer (reveals thickness when rotated in 3D)
+            // Extruded 3D Side Bezel Depth Layer (reveals metallic thickness in perspective)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .offset(x = 6.dp, y = 5.dp)
-                    .clip(RoundedCornerShape(28.dp))
+                    .offset(x = 5.dp, y = 4.5.dp)
+                    .clip(RoundedCornerShape(30.dp))
                     .background(
                         Brush.linearGradient(
                             listOf(
-                                Color(0xFF26262E),
+                                Color(0xFF282830),
                                 Color(0xFF141418),
-                                Color(0xFF1C1C22)
+                                Color(0xFF1A1A20)
                             )
                         )
                     )
@@ -633,7 +607,7 @@ private fun PhoneMockup3DShowcase(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(30.dp))
                     .background(
                         Brush.verticalGradient(
                             listOf(
@@ -644,7 +618,7 @@ private fun PhoneMockup3DShowcase(
                         )
                     )
                     .border(
-                        1.5.dp,
+                        1.2.dp,
                         Brush.verticalGradient(
                             listOf(
                                 Color(0xFF565666),
@@ -652,24 +626,24 @@ private fun PhoneMockup3DShowcase(
                                 Color(0xFF3E3E4C)
                             )
                         ),
-                        RoundedCornerShape(28.dp)
+                        RoundedCornerShape(30.dp)
                     )
-                    .padding(5.dp)
+                    .padding(4.5.dp)
             ) {
                 // Inner AMOLED Screen Display
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(23.dp))
+                        .clip(RoundedCornerShape(25.dp))
                         .background(Color.Black)
-                        .border(0.5.dp, Color(0xFF1A1A22), RoundedCornerShape(23.dp))
+                        .border(0.5.dp, Color(0xFF181820), RoundedCornerShape(25.dp))
                 ) {
                     // Render Live Interactive Micro-Scene
                     when (showcaseType) {
                         ShowcaseType.SCREEN_OFF -> ScreenOff3DLiveScene()
-                        ShowcaseType.HARDWARE_BUTTONS -> HardwareButtons3DLiveScene(isClicked = isVolumeActive)
-                        ShowcaseType.BATTERY_SAVER -> BatterySaver3DLiveScene(cycle = batteryCycle)
-                        ShowcaseType.BIOMETRIC_VAULT -> BiometricVault3DLiveScene(cycle = vaultCycle)
+                        ShowcaseType.HARDWARE_BUTTONS -> HardwareButtons3DLiveScene()
+                        ShowcaseType.BATTERY_SAVER -> BatterySaver3DLiveScene()
+                        ShowcaseType.BIOMETRIC_VAULT -> BiometricVault3DLiveScene()
                     }
 
                     // Curved Glass Sheen / Specular Light Reflection
@@ -679,13 +653,13 @@ private fun PhoneMockup3DShowcase(
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.07f),
-                                        Color.White.copy(alpha = 0.02f),
+                                        Color.White.copy(alpha = 0.06f),
+                                        Color.White.copy(alpha = 0.015f),
                                         Color.Transparent,
                                         Color.Transparent
                                     ),
                                     start = Offset(0f, 0f),
-                                    end = Offset(240f, 480f)
+                                    end = Offset(200f, 440f)
                                 )
                             )
                     )
@@ -695,7 +669,7 @@ private fun PhoneMockup3DShowcase(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = 5.dp)
-                            .size(width = 18.dp, height = 4.5.dp)
+                            .size(width = 16.dp, height = 4.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF0D0D10))
                             .border(0.4.dp, Color(0xFF24242C), CircleShape)
@@ -707,9 +681,9 @@ private fun PhoneMockup3DShowcase(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (-3.5).dp, y = (-14).dp)
-                    .width(3.5.dp)
-                    .height(34.dp)
+                    .offset(x = (-3).dp, y = (-18).dp)
+                    .width(3.dp)
+                    .height(30.dp)
                     .clip(RoundedCornerShape(topStart = 2.dp, bottomStart = 2.dp))
                     .background(
                         if (isVolumeActive) Color(0xFF4CAF50) else Color(0xFF3C3C46)
@@ -720,9 +694,9 @@ private fun PhoneMockup3DShowcase(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (-3.5).dp, y = 24.dp)
-                    .width(3.5.dp)
-                    .height(34.dp)
+                    .offset(x = (-3).dp, y = 16.dp)
+                    .width(3.dp)
+                    .height(30.dp)
                     .clip(RoundedCornerShape(topStart = 2.dp, bottomStart = 2.dp))
                     .background(
                         if (isVolumeActive) Color(0xFF81C784) else Color(0xFF32323A)
@@ -733,20 +707,20 @@ private fun PhoneMockup3DShowcase(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .offset(x = 3.5.dp, y = (-6).dp)
-                    .width(3.5.dp)
-                    .height(28.dp)
+                    .offset(x = 3.dp, y = (-8).dp)
+                    .width(3.dp)
+                    .height(26.dp)
                     .clip(RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp))
                     .background(Color(0xFF383842))
             )
 
-            // Glowing Drop Aura for Volume Key Click
+            // Glowing Indicator for Volume Key Click
             if (isVolumeActive) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .offset(x = (-12).dp, y = 5.dp)
-                        .size(24.dp)
+                        .offset(x = (-10).dp, y = 0.dp)
+                        .size(20.dp)
                         .background(
                             Brush.radialGradient(
                                 listOf(
@@ -778,39 +752,39 @@ private fun ScreenOff3DLiveScene() {
         label = "cycle"
     )
 
-    // Phase 1 (0f .. 0.40f): Bright colorful camera viewfinder recording
-    // Phase 2 (0.40f .. 0.50f): Shutter wipes down from top to bottom
-    // Phase 3 (0.50f .. 1f): 100% pitch black screen with covert stealth HUD
+    // Phase 1 (0f .. 0.42f): Bright camera viewfinder
+    // Phase 2 (0.42f .. 0.50f): Shutter wipe down
+    // Phase 3 (0.50f .. 1f): 100% pitch black screen
     val isBlackout = cycle >= 0.48f
 
     val recBlink by transition.animateFloat(
-        initialValue = 0.2f,
+        initialValue = 0.3f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(450, easing = LinearEasing),
+            animation = tween(500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "rec_blink"
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Base Layer: BRIGHT VIVID ACTIVE SCREEN
+        // Base Layer: REAL CAMERA VIEWFINDER
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color(0xFFFF3D00),
-                            Color(0xFFFF9100),
-                            Color(0xFFFFD600)
+                            Color(0xFF1A1A24),
+                            Color(0xFF2E2638),
+                            Color(0xFF1A1A24)
                         )
                     )
                 )
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Status Bar
+            // Camera Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -818,90 +792,71 @@ private fun ScreenOff3DLiveScene() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("09:41", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(5.dp)
-                            .background(Color.White, CircleShape)
+                            .background(Color.Red.copy(alpha = recBlink), CircleShape)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
-                    Icon(
-                        imageVector = Icons.Default.BatteryFull,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(10.dp)
+                    Text(
+                        "00:03",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
-            }
-
-            // Vibrant Center Content (Simulating live camera viewfinder / video capture)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.35f))
-                    .border(0.8.dp, Color.White.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
-                    .padding(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Color.Red.copy(alpha = recBlink), CircleShape)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text("LIVE REC", fontSize = 7.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                    }
-                    Text("1080P", fontSize = 7.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD54F))
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Icon(
-                    imageVector = Icons.Default.Videocam,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
                 Text(
-                    text = "BRIGHT SCREEN ACTIVE",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    "4K 60",
+                    fontSize = 7.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.8f)
                 )
             }
 
-            // Bottom Tap Action Prompt
+            // Viewfinder Center: Realistic Focus Reticle
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Black.copy(alpha = 0.65f))
-                    .padding(vertical = 4.dp),
+                    .size(56.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (cycle < 0.40f) "TAP TO BLACKOUT" else "BLACKING OUT...",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .background(Color(0xFFFFD54F).copy(alpha = 0.8f), CircleShape)
                 )
+            }
+
+            // Camera Bottom Controls (Authentic Shutter)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Outer Ring + Red Recording Core Shutter Button
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .border(1.5.dp, Color.White, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Red)
+                    )
+                }
             }
         }
 
-        // Overlay Shutter Layer: Sweeps down to completely turn screen off!
-        if (cycle >= 0.40f) {
-            val sweepAlpha = ((cycle - 0.40f) / 0.08f).coerceIn(0f, 1f)
+        // Overlay Shutter Layer: Sweeps down to completely turn screen off
+        if (cycle >= 0.42f) {
+            val sweepAlpha = ((cycle - 0.42f) / 0.08f).coerceIn(0f, 1f)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -910,54 +865,36 @@ private fun ScreenOff3DLiveScene() {
                 contentAlignment = Alignment.Center
             ) {
                 if (isBlackout) {
-                    // 100% PITCH BLACK AMOLED COVERT STEALTH RECORDING
+                    // 100% PURE AMOLED COVERT BLACKOUT
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // Covert Pulsing Stealth Red Dot
+                        // Minimal stealth red dot
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(7.dp)
                                 .background(AccentRed.copy(alpha = recBlink), CircleShape)
-                                .border(0.8.dp, Color(0xFF660000), CircleShape)
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "SCREEN OFF",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp,
-                            color = Color(0xFFEEEEEE)
-                        )
-
-                        Spacer(modifier = Modifier.height(3.dp))
-
-                        Text(
-                            text = "● REC 00:04 · 1080P",
-                            fontSize = 8.5.sp,
+                            text = "REC",
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
                             color = AccentRed
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF141416))
-                                .border(0.6.dp, Color(0xFF282830), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = "0% BRIGHTNESS · COVERT",
-                                fontSize = 7.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFAAAAAA)
-                            )
-                        }
+                        Text(
+                            text = "00:04",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF666666)
+                        )
                     }
                 }
             }
@@ -969,27 +906,36 @@ private fun ScreenOff3DLiveScene() {
  * Slide 2: Hardware Physical Buttons & Motion Shake Simulation
  */
 @Composable
-private fun HardwareButtons3DLiveScene(isClicked: Boolean) {
+private fun HardwareButtons3DLiveScene() {
+    val transition = rememberInfiniteTransition(label = "hw_buttons_3d")
+    val cycle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "hw_cycle"
+    )
+    val isClicked = cycle in 0.40f..0.90f
+
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         if (!isClicked) {
-            // Screen is black, recording in stealth
+            // Black screen recording in pocket
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF16161A))
-                        .border(0.8.dp, Color(0xFF2E2E36), CircleShape),
+                        .background(Color(0xFF141418)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -1003,8 +949,49 @@ private fun HardwareButtons3DLiveScene(isClicked: Boolean) {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "RECORDING IN POCKET",
+                    text = "Screen Off",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = "Press volume to stop",
                     fontSize = 8.5.sp,
+                    color = Color(0xFF888888)
+                )
+            }
+        } else {
+            // Native system pill toast: Clean, authentic OS style
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1B3820)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Saved",
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -1012,258 +999,151 @@ private fun HardwareButtons3DLiveScene(isClicked: Boolean) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "● REC 00:18",
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "Zero touch",
+                    fontSize = 8.5.sp,
                     color = Color(0xFF81C784)
                 )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF1E281E))
-                        .border(0.6.dp, Color(0xFF388E3C), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 7.dp, vertical = 3.dp)
-                ) {
-                    Text(
-                        text = "PRESS VOLUME TO STOP",
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFA5D6A7)
-                    )
-                }
-            }
-        } else {
-            // STOPPED & SAVED CONFIRMATION
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF081208))
-                    .padding(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2E7D32).copy(alpha = 0.25f))
-                        .border(1.2.dp, Color(0xFF4CAF50), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = "STOPPED & SAVED",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF4CAF50)
-                )
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                Text(
-                    text = "ZERO TOUCH NEEDED",
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFC8E6C9)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF1B3B1B))
-                        .border(0.5.dp, Color(0xFF4CAF50), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "SAVED TO VAULT",
-                        fontSize = 6.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF81C784)
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Slide 3: True OLED Battery Efficiency Gauge Simulation
+ * Slide 3: True OLED Battery Efficiency Simulation
  */
 @Composable
-private fun BatterySaver3DLiveScene(cycle: Float) {
+private fun BatterySaver3DLiveScene() {
+    val transition = rememberInfiniteTransition(label = "battery_3d")
+    val cycle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "battery_cycle"
+    )
     val isBlackout = cycle >= 0.45f
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (!isBlackout) Color(0xFF1E1410) else Color.Black)
+            .padding(10.dp),
+        contentAlignment = Alignment.Center
+    ) {
         if (!isBlackout) {
-            // BRIGHT WHITE / HIGH DRAIN STATE
+            // Screen On: High Drain
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0xFFFF6D00),
-                                Color(0xFFFF9100),
-                                Color(0xFFFFAB40)
-                            )
-                        )
-                    )
-                    .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.BatteryFull,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    tint = Color(0xFFFF7043),
+                    modifier = Modifier.size(30.dp)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "4.8W POWER DRAIN",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    text = "Screen On",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "SCREEN ON · DRAINING FAST",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFE0B2)
+                    text = "High Power Drain",
+                    fontSize = 8.sp,
+                    color = Color(0xFFFF8A65)
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.5f))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "HEATS PHONE & BATTERY",
-                        fontSize = 6.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD180)
-                    )
-                }
             }
         } else {
-            // TRUE BLACK / 0.0W DRAIN STATE
+            // OLED Pixels Off: 0% Drain
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF00B0FF).copy(alpha = 0.15f))
-                        .border(1.2.dp, Color(0xFF00B0FF), CircleShape),
+                        .background(Color(0xFF003350)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.BatteryFull,
                         contentDescription = null,
                         tint = Color(0xFF00B0FF),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "0.0W DRAIN",
+                    text = "0% Display Drain",
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF00B0FF)
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = "ALL OLED PIXELS OFF",
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFE0E0E0)
+                    text = "OLED Pixels Off",
+                    fontSize = 8.sp,
+                    color = Color(0xFF80D8FF)
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF002238))
-                        .border(0.5.dp, Color(0xFF00B0FF), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "ANTI-BURN-IN ACTIVE",
-                        fontSize = 6.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF80D8FF)
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Slide 4: Biometric Fingerprint & Encrypted Vault Simulation
+ * Slide 4: Biometric & Encrypted Vault Simulation
  */
 @Composable
-private fun BiometricVault3DLiveScene(cycle: Float) {
+private fun BiometricVault3DLiveScene() {
+    val transition = rememberInfiniteTransition(label = "vault_3d")
+    val cycle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "vault_cycle"
+    )
     val isHidden = cycle >= 0.46f
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         if (!isHidden) {
-            // Simulated Public Media Gallery
+            // Gallery View
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF16161A))
                     .padding(8.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("PUBLIC GALLERY", fontSize = 7.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFAAAAAA))
-                    Text("VISIBLE", fontSize = 6.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF5252))
-                }
+                Text(
+                    "Gallery",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF888888),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
 
-                // 4 Simulated video cards
+                // Clean 2x2 grid
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -1277,22 +1157,20 @@ private fun BiometricVault3DLiveScene(cycle: Float) {
                                 .weight(1f)
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF2A2A34))
-                                .border(0.5.dp, Color(0xFF444450), RoundedCornerShape(6.dp)),
+                                .background(Color(0xFF22222A)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF888894), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF666677), modifier = Modifier.size(16.dp))
                         }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF2A2A34))
-                                .border(0.5.dp, Color(0xFF444450), RoundedCornerShape(6.dp)),
+                                .background(Color(0xFF22222A)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF888894), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF666677), modifier = Modifier.size(16.dp))
                         }
                     }
                     Row(
@@ -1304,97 +1182,68 @@ private fun BiometricVault3DLiveScene(cycle: Float) {
                                 .weight(1f)
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF2A2A34))
-                                .border(0.5.dp, Color(0xFF444450), RoundedCornerShape(6.dp)),
+                                .background(Color(0xFF22222A)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF888894), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF666677), modifier = Modifier.size(16.dp))
                         }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(38.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF2A2A34))
-                                .border(0.5.dp, Color(0xFF444450), RoundedCornerShape(6.dp)),
+                                .background(Color(0xFF22222A)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF888894), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Videocam, contentDescription = null, tint = Color(0xFF666677), modifier = Modifier.size(16.dp))
                         }
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFFF5252).copy(alpha = 0.15f))
-                        .padding(vertical = 2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("HIDING INTO VAULT...", fontSize = 6.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF8A80))
-                }
+                Text(
+                    "Moving to vault...",
+                    fontSize = 7.sp,
+                    color = Color(0xFFFFD54F),
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 2.dp)
+                )
             }
         } else {
-            // ENCRYPTED & HIDDEN FROM GALLERY
+            // Encrypted Vault
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF0F0E08))
-                    .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFFFD54F).copy(alpha = 0.18f))
-                        .border(1.2.dp, Color(0xFFFFD54F), RoundedCornerShape(14.dp)),
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF332808)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
                         tint = Color(0xFFFFD54F),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "VAULT ENCRYPTED",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFFD54F)
+                    text = "Vault Locked",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
-                    text = "HIDDEN FROM GALLERY",
-                    fontSize = 7.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFEEEEEE)
+                    text = "Hidden from gallery",
+                    fontSize = 8.sp,
+                    color = Color(0xFFFFD54F)
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFF282208))
-                        .border(0.5.dp, Color(0xFFFFD54F), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "BIOMETRIC PIN ONLY",
-                        fontSize = 6.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFE082)
-                    )
-                }
             }
         }
     }
