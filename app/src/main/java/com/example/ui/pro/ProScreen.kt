@@ -367,6 +367,7 @@ fun ProScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 strings.proFeatureAdFree,
+                                strings.proFeatureVideo4k,
                                 strings.proFeatureCovers,
                                 strings.proFeatureFolder,
                                 strings.proFeatureAutoStop

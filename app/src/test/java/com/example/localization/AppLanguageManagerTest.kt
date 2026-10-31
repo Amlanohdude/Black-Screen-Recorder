@@ -60,6 +60,7 @@ class AppLanguageManagerTest {
             assertNotNull(strings.recordingUi.ok)
             assertNotNull(strings.recordingUi.apply)
             assertNotNull(strings.audioSheet.title)
+            assertNotNull(strings.proFeatureVideo4k)
             assertFalse(strings.tabRecord.isBlank())
             assertFalse(strings.language.isBlank())
             assertFalse(strings.autoDetect.isBlank())
@@ -69,6 +70,7 @@ class AppLanguageManagerTest {
             assertFalse(strings.recordingUi.ok.isBlank())
             assertFalse(strings.recordingUi.apply.isBlank())
             assertFalse(strings.audioSheet.title.isBlank())
+            assertFalse(strings.proFeatureVideo4k.isBlank())
         }
     }
 
