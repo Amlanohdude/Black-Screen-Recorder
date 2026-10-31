@@ -366,6 +366,20 @@ val AppStrings.shakeToStopDesc: String get() = "Firmly shake phone to end and sa
 val AppStrings.flipToStop: String get() = "Flip face-down to stop"
 val AppStrings.flipToStopDesc: String get() = "Turn phone face-down to end and save recording"
 
+val AppStrings.proOutcomeAdFree: String get() = "Instant capture without popups or commercial delays"
+val AppStrings.proOutcome4k: String get() = "Maximum evidence clarity for day and night recordings"
+val AppStrings.proOutcomeCovers: String get() = "Discreet browser, calculator, and custom blackout disguises"
+val AppStrings.proOutcomeNonTouch: String get() = "Hardware volume buttons and shake to stop blind"
+val AppStrings.proOutcomeFolder: String get() = "Store securely in custom directories or private vault"
+
+val AppStrings.proTrustOffline: String get() = "100% Offline"
+val AppStrings.proTrustNoSubs: String get() = "No Subscription"
+val AppStrings.proTrustSecure: String get() = "Store Verified"
+val AppStrings.proLaunchSpecialBadge: String get() = "SPECIAL LAUNCH PASS"
+val AppStrings.proCoffeeFraming: String get() = "Less than a cup of coffee for lifetime peace of mind"
+val AppStrings.proSingleSessionDrawerTitle: String get() = "Need a single session? Try with rewarded ads"
+val AppStrings.proSingleSessionDrawerDesc: String get() = "Watch a short ad to unlock 1 temporary use of any PRO feature"
+
 fun AppStrings.getMicName(mic: AudioMicSource): String {
     return when (mic) {
         AudioMicSource.PHONE_MIC -> audioSheet.micPhoneTitle

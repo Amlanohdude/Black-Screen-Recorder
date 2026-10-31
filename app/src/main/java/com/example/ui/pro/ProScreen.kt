@@ -4,14 +4,20 @@ import android.app.Activity
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,14 +41,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -69,6 +78,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -84,8 +94,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ads.RewardedAdManager
 import com.example.billing.AppBillingManager
 import com.example.billing.BillingUiState
-import com.example.localization.LocalAppStrings
 import com.example.localization.AppStrings
+import com.example.localization.LocalAppStrings
+import com.example.localization.proCoffeeFraming
+import com.example.localization.proLaunchSpecialBadge
+import com.example.localization.proOutcome4k
+import com.example.localization.proOutcomeAdFree
+import com.example.localization.proOutcomeCovers
+import com.example.localization.proOutcomeFolder
+import com.example.localization.proOutcomeNonTouch
+import com.example.localization.proSingleSessionDrawerDesc
+import com.example.localization.proSingleSessionDrawerTitle
+import com.example.localization.proTrustNoSubs
+import com.example.localization.proTrustOffline
+import com.example.localization.proTrustSecure
 import com.example.storage.EntitlementManager
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BgDark
@@ -155,7 +177,6 @@ fun AppStrings.getFeatureSuccessMsg(feature: UnlockableFeature): String = when (
     UnlockableFeature.VIDEO_4K -> featureVideo4kSuccess
 }
 
-
 @Composable
 fun ProScreen(
     onBack: () -> Unit,
@@ -175,16 +196,26 @@ fun ProScreen(
     val isAdLoading by RewardedAdManager.isLoading.collectAsStateWithLifecycle()
 
     var pendingFeatureToUnlock by remember { mutableStateOf<UnlockableFeature?>(null) }
+    var showAdDrawer by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pro_screen_shimmer")
-    val borderAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.9f,
+    val borderSweep by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 800f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(3800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "border_sweep"
+    )
+    val badgePulse by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "border_shimmer"
+        label = "badge_pulse"
     )
     val crownPulse by infiniteTransition.animateFloat(
         initialValue = 0.94f,
@@ -195,22 +226,43 @@ fun ProScreen(
         ),
         label = "crown_pulse"
     )
+    val ctaBeamOffset by infiniteTransition.animateFloat(
+        initialValue = -300f,
+        targetValue = 900f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cta_beam_offset"
+    )
+
+    val drawerArrowRotation by animateFloatAsState(
+        targetValue = if (showAdDrawer) 180f else 0f,
+        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+        label = "drawer_arrow"
+    )
 
     val isPro = entitlements.isPro
-    val heroBorderBrush = remember(isPro, borderAlpha) {
+    val heroBorderBrush = remember(isPro, borderSweep) {
         if (isPro) {
             Brush.linearGradient(
-                listOf(
-                    GoldAccent.copy(alpha = borderAlpha),
-                    GoldAccentDark.copy(alpha = borderAlpha * 0.7f)
-                )
+                colors = listOf(
+                    GoldAccent.copy(alpha = 0.85f),
+                    GoldAccentDark.copy(alpha = 0.35f),
+                    GoldAccent.copy(alpha = 0.85f)
+                ),
+                start = Offset(borderSweep, 0f),
+                end = Offset(borderSweep + 400f, 400f)
             )
         } else {
             Brush.linearGradient(
-                listOf(
-                    GoldAccent.copy(alpha = borderAlpha * 0.6f),
-                    Color(0xFF333333)
-                )
+                colors = listOf(
+                    GoldAccent.copy(alpha = 0.75f),
+                    Color(0xFF26262B),
+                    GoldAccent.copy(alpha = 0.75f)
+                ),
+                start = Offset(borderSweep, 0f),
+                end = Offset(borderSweep + 500f, 500f)
             )
         }
     }
@@ -225,7 +277,7 @@ fun ProScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Top Navigation Bar
@@ -256,12 +308,12 @@ fun ProScreen(
                 )
             }
 
-            // Animated Hero Banner Card
+            // Animated Luxury Hero Banner Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("pro_purchase_hero_card"),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(22.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, heroBorderBrush)
             ) {
@@ -271,34 +323,38 @@ fun ProScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Top Tier Status Badge
+                    // Top Tier Special Launch Badge with Breathing Pulse
                     Box(
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = if (!isPro) badgePulse else 1f
+                                scaleY = if (!isPro) badgePulse else 1f
+                            }
                             .clip(RoundedCornerShape(20.dp))
-                            .background(if (isPro) GoldAccent.copy(alpha = 0.15f) else SurfaceSecondary)
+                            .background(if (isPro) GoldAccent.copy(alpha = 0.16f) else GoldAccent.copy(alpha = 0.12f))
                             .border(
                                 1.dp,
-                                if (isPro) GoldAccent.copy(alpha = 0.4f) else BorderSubtle,
+                                if (isPro) GoldAccent.copy(alpha = 0.5f) else GoldAccent.copy(alpha = 0.4f),
                                 RoundedCornerShape(20.dp)
                             )
-                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = if (isPro) Icons.Default.CheckCircle else Icons.Default.WorkspacePremium,
                                 contentDescription = null,
-                                tint = if (isPro) GoldAccent else AccentRed,
+                                tint = GoldAccent,
                                 modifier = Modifier.size(13.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isPro) strings.proLifetimeActive else strings.proLifetimeUpgrade,
+                                text = if (isPro) strings.proLifetimeActive else "${strings.proLaunchSpecialBadge} · 50% OFF",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.8.sp,
                                     fontSize = 10.5.sp
                                 ),
-                                color = if (isPro) GoldAccent else TextSecondary
+                                color = GoldAccent
                             )
                         }
                     }
@@ -308,25 +364,32 @@ fun ProScreen(
                     // Emblem
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
+                            .size(62.dp)
                             .graphicsLayer {
                                 scaleX = crownPulse
                                 scaleY = crownPulse
                             }
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(if (isPro) GoldAccent.copy(alpha = 0.18f) else SurfaceSecondary)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        GoldAccent.copy(alpha = 0.22f),
+                                        SurfaceSecondary
+                                    )
+                                )
+                            )
                             .border(
                                 1.dp,
-                                if (isPro) GoldAccent.copy(alpha = 0.45f) else BorderSubtle,
-                                RoundedCornerShape(18.dp)
+                                if (isPro) GoldAccent.copy(alpha = 0.55f) else GoldAccent.copy(alpha = 0.35f),
+                                RoundedCornerShape(20.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.WorkspacePremium,
                             contentDescription = null,
-                            tint = if (isPro) GoldAccent else AccentRed,
-                            modifier = Modifier.size(32.dp)
+                            tint = GoldAccent,
+                            modifier = Modifier.size(34.dp)
                         )
                     }
 
@@ -334,12 +397,13 @@ fun ProScreen(
 
                     Text(
                         text = strings.proHeroTitle,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 17.sp,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 19.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.2.sp
+                            letterSpacing = 1.1.sp
                         ),
-                        color = if (isPro) GoldAccent else TextPrimary
+                        color = if (isPro) GoldAccent else TextPrimary,
+                        textAlign = TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -350,59 +414,60 @@ fun ProScreen(
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Normal
                         ),
-                        color = TextSecondary
+                        color = TextSecondary,
+                        textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                    // Features Column
+                    // Outcome-Oriented Benefit Rows (Mobbin / Jonathan Parra conversion principles)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(SurfaceSecondary.copy(alpha = 0.6f))
-                            .border(0.5.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(SurfaceSecondary.copy(alpha = 0.5f))
+                            .border(0.5.dp, BorderSubtle, RoundedCornerShape(16.dp))
                             .padding(14.dp)
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(
-                                strings.proFeatureAdFree,
-                                strings.proFeatureVideo4k,
-                                strings.proFeatureCovers,
-                                strings.proFeatureFolder,
-                                strings.proFeatureAutoStop
-                            ).forEach { item ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = GoldAccent,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = item,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = TextPrimary
-                                    )
-                                }
-                            }
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutcomeBenefitRow(
+                                icon = Icons.Default.Block,
+                                title = strings.proFeatureAdFree,
+                                subtitle = strings.proOutcomeAdFree
+                            )
+                            OutcomeBenefitRow(
+                                icon = Icons.Default.Videocam,
+                                title = strings.proFeatureVideo4k,
+                                subtitle = strings.proOutcome4k
+                            )
+                            OutcomeBenefitRow(
+                                icon = Icons.Default.Palette,
+                                title = strings.proFeatureCovers,
+                                subtitle = strings.proOutcomeCovers
+                            )
+                            OutcomeBenefitRow(
+                                icon = Icons.Default.Tune,
+                                title = "Hardware & Motion Controls",
+                                subtitle = strings.proOutcomeNonTouch
+                            )
+                            OutcomeBenefitRow(
+                                icon = Icons.Default.Folder,
+                                title = strings.proFeatureFolder,
+                                subtitle = strings.proOutcomeFolder
+                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     // Purchase State Section
                     if (isPro || billingState.isPro) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(14.dp))
                                 .background(GoldAccent.copy(alpha = 0.12f))
-                                .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                                .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                                 .padding(vertical = 14.dp, horizontal = 16.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -438,7 +503,7 @@ fun ProScreen(
                     } else if (billingState.isPurchasePending) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = SurfaceSecondary)
                         ) {
                             Column(
@@ -469,7 +534,7 @@ fun ProScreen(
                             }
                         }
                     } else {
-                        // Pricing & Buy Button
+                        // Pricing & CTA Button
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -486,7 +551,7 @@ fun ProScreen(
                                     Text(
                                         text = regPrice,
                                         style = MaterialTheme.typography.titleSmall.copy(
-                                            fontSize = 14.sp,
+                                            fontSize = 14.5.sp,
                                             textDecoration = TextDecoration.LineThrough
                                         ),
                                         color = TextMuted
@@ -501,8 +566,8 @@ fun ProScreen(
                                     Text(
                                         text = activePrice,
                                         style = MaterialTheme.typography.titleMedium.copy(
-                                            fontSize = 17.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.ExtraBold
                                         ),
                                         color = GoldAccent
                                     )
@@ -512,7 +577,7 @@ fun ProScreen(
                                             .clip(RoundedCornerShape(6.dp))
                                             .background(GoldAccent.copy(alpha = 0.15f))
                                             .border(1.dp, GoldAccent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
                                     ) {
                                         Text(
                                             text = "$discount% OFF",
@@ -524,6 +589,16 @@ fun ProScreen(
                                         )
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = strings.proCoffeeFraming,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Normal
+                                    ),
+                                    color = TextMuted,
+                                    textAlign = TextAlign.Center
+                                )
                                 Spacer(modifier = Modifier.height(10.dp))
                             } else if (billingState.formattedPrice != null) {
                                 Text(
@@ -537,18 +612,31 @@ fun ProScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                             }
 
-                            Button(
-                                onClick = {
-                                    val activity = context as? Activity
-                                    if (activity != null) {
-                                        AppBillingManager.launchPurchaseFlow(activity)
-                                    }
-                                },
+                            // Dynamic Gleaming Primary CTA Button
+                            val ctaBrush = Brush.linearGradient(
+                                colors = listOf(
+                                    AccentRed,
+                                    Color(0xFFFF5E5E),
+                                    AccentRed
+                                ),
+                                start = Offset(ctaBeamOffset, 0f),
+                                end = Offset(ctaBeamOffset + 240f, 160f)
+                            )
+
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(ctaBrush)
+                                    .clickable {
+                                        val activity = context as? Activity
+                                        if (activity != null) {
+                                            AppBillingManager.launchPurchaseFlow(activity)
+                                        }
+                                    }
+                                    .padding(vertical = 14.dp)
                                     .testTag("buy_pro_button"),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                                contentAlignment = Alignment.Center
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -557,7 +645,7 @@ fun ProScreen(
                                     Icon(
                                         imageVector = Icons.Default.WorkspacePremium,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(19.dp),
                                         tint = Color.White
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -565,15 +653,15 @@ fun ProScreen(
                                         text = strings.proUnlockProCta.format(activePrice),
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontSize = 14.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 0.5.sp
+                                            fontWeight = FontWeight.ExtraBold,
+                                            letterSpacing = 0.6.sp
                                         ),
                                         color = Color.White
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
                                 text = strings.proLifetimeOneTime,
@@ -581,6 +669,31 @@ fun ProScreen(
                                 color = TextMuted,
                                 textAlign = TextAlign.Center
                             )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Trust Badges Row (Jonathan Parra Conversion Principle)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TrustBadge(icon = Icons.Default.Shield, label = strings.proTrustOffline)
+                                Box(
+                                    modifier = Modifier
+                                        .size(3.dp)
+                                        .background(BorderSubtle, CircleShape)
+                                )
+                                TrustBadge(icon = Icons.Default.AllInclusive, label = strings.proTrustNoSubs)
+                                Box(
+                                    modifier = Modifier
+                                        .size(3.dp)
+                                        .background(BorderSubtle, CircleShape)
+                                )
+                                TrustBadge(icon = Icons.Default.Lock, label = strings.proTrustSecure)
+                            }
 
                             if (billingState.isConnecting) {
                                 Spacer(modifier = Modifier.height(10.dp))
@@ -635,7 +748,7 @@ fun ProScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     // Restore Purchases Button
                     TextButton(
@@ -657,14 +770,14 @@ fun ProScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = strings.proRestoringPurchases,
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                 color = TextSecondary
                             )
                         } else {
                             Text(
                                 text = strings.proRestorePurchases,
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 12.5.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 color = TextSecondary
@@ -677,69 +790,123 @@ fun ProScreen(
             // Plan Comparison Table Card
             PlanComparisonCard()
 
-            // Free Uses Card Section
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Column {
-                    Text(
-                        text = strings.proFreeUsesTitle,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = strings.proFreeUsesSubtitle,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
-                        color = TextSecondary
-                    )
+            // Anti-Cannibalization Collapsible Drawer for Single-Session Rewarded Ad Passes
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { showAdDrawer = !showAdDrawer },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceSecondary)
+                                .border(0.5.dp, BorderSubtle, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = AccentRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = strings.proSingleSessionDrawerTitle,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = strings.proSingleSessionDrawerDesc,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = TextSecondary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer { rotationZ = drawerArrowRotation }
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = showAdDrawer,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(top = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ProFeatureCard(
+                                feature = UnlockableFeature.CUSTOM_COVERS,
+                                isPro = isPro,
+                                credits = entitlements.customCoverCredits,
+                                isAdLoading = isAdLoading,
+                                onWatchAdClick = {
+                                    pendingFeatureToUnlock = UnlockableFeature.CUSTOM_COVERS
+                                },
+                                onUseClick = onNavigateToCovers
+                            )
+
+                            ProFeatureCard(
+                                feature = UnlockableFeature.CUSTOM_FOLDER,
+                                isPro = isPro,
+                                credits = entitlements.customFolderExportCredits,
+                                isAdLoading = isAdLoading,
+                                onWatchAdClick = {
+                                    pendingFeatureToUnlock = UnlockableFeature.CUSTOM_FOLDER
+                                },
+                                onUseClick = onNavigateToSettings ?: onNavigateToRecordings
+                            )
+
+                            ProFeatureCard(
+                                feature = UnlockableFeature.AUTO_STOP,
+                                isPro = isPro,
+                                credits = entitlements.autoStopCredits,
+                                isAdLoading = isAdLoading,
+                                onWatchAdClick = {
+                                    pendingFeatureToUnlock = UnlockableFeature.AUTO_STOP
+                                },
+                                onUseClick = onNavigateToSettings
+                            )
+
+                            ProFeatureCard(
+                                feature = UnlockableFeature.VIDEO_4K,
+                                isPro = isPro,
+                                credits = entitlements.video4kCredits,
+                                isAdLoading = isAdLoading,
+                                onWatchAdClick = {
+                                    pendingFeatureToUnlock = UnlockableFeature.VIDEO_4K
+                                },
+                                onUseClick = onNavigateToSettings
+                            )
+                        }
+                    }
                 }
-
-                ProFeatureCard(
-                    feature = UnlockableFeature.CUSTOM_COVERS,
-                    isPro = isPro,
-                    credits = entitlements.customCoverCredits,
-                    isAdLoading = isAdLoading,
-                    onWatchAdClick = {
-                        pendingFeatureToUnlock = UnlockableFeature.CUSTOM_COVERS
-                    },
-                    onUseClick = onNavigateToCovers
-                )
-
-                ProFeatureCard(
-                    feature = UnlockableFeature.CUSTOM_FOLDER,
-                    isPro = isPro,
-                    credits = entitlements.customFolderExportCredits,
-                    isAdLoading = isAdLoading,
-                    onWatchAdClick = {
-                        pendingFeatureToUnlock = UnlockableFeature.CUSTOM_FOLDER
-                    },
-                    onUseClick = onNavigateToSettings ?: onNavigateToRecordings
-                )
-
-                ProFeatureCard(
-                    feature = UnlockableFeature.AUTO_STOP,
-                    isPro = isPro,
-                    credits = entitlements.autoStopCredits,
-                    isAdLoading = isAdLoading,
-                    onWatchAdClick = {
-                        pendingFeatureToUnlock = UnlockableFeature.AUTO_STOP
-                    },
-                    onUseClick = onNavigateToSettings
-                )
-
-                ProFeatureCard(
-                    feature = UnlockableFeature.VIDEO_4K,
-                    isPro = isPro,
-                    credits = entitlements.video4kCredits,
-                    isAdLoading = isAdLoading,
-                    onWatchAdClick = {
-                        pendingFeatureToUnlock = UnlockableFeature.VIDEO_4K
-                    },
-                    onUseClick = onNavigateToSettings
-                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -814,6 +981,95 @@ fun ProScreen(
             },
             containerColor = SurfacePrimary,
             shape = RoundedCornerShape(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun OutcomeBenefitRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(GoldAccent.copy(alpha = 0.12f))
+                .border(0.5.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = GoldAccent,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.2.sp
+                ),
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(1.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp
+                ),
+                color = TextSecondary
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = null,
+            tint = GoldAccent,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun TrustBadge(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.size(11.dp)
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = TextMuted,
+            maxLines = 1
         )
     }
 }
@@ -1091,7 +1347,7 @@ private fun ProFeatureCard(
             .fillMaxWidth()
             .testTag("pro_feature_card_$lowerCase"),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfacePrimary),
+        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary.copy(alpha = 0.7f)),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             if (isPro) GoldAccent.copy(alpha = 0.45f) else BorderSubtle
@@ -1111,7 +1367,7 @@ private fun ProFeatureCard(
                     val iconBg = when {
                         isPro -> GoldAccent.copy(alpha = 0.15f)
                         credits > 0 -> GreenUnlocked.copy(alpha = 0.15f)
-                        else -> SurfaceSecondary
+                        else -> SurfacePrimary
                     }
                     val iconBorder = when {
                         isPro -> GoldAccent.copy(alpha = 0.4f)
@@ -1174,7 +1430,7 @@ private fun ProFeatureCard(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(if (targetCredits > 0) GreenUnlocked.copy(alpha = 0.15f) else SurfaceSecondary)
+                                .background(if (targetCredits > 0) GreenUnlocked.copy(alpha = 0.15f) else SurfacePrimary)
                                 .border(
                                     0.5.dp,
                                     if (targetCredits > 0) GreenUnlocked.copy(alpha = 0.4f) else BorderSubtle,
@@ -1275,7 +1531,7 @@ private fun ProFeatureCard(
                             modifier = Modifier.testTag("watch_ad_button_$lowerCase"),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = SurfaceSecondary,
+                                containerColor = SurfacePrimary,
                                 contentColor = TextPrimary
                             ),
                             border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
@@ -1319,7 +1575,7 @@ private fun ProFeatureCard(
                         modifier = Modifier.testTag("watch_ad_button_$lowerCase"),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SurfaceSecondary,
+                            containerColor = SurfacePrimary,
                             contentColor = TextPrimary
                         ),
                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderSubtle),
