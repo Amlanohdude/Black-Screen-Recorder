@@ -381,7 +381,7 @@ val AppStrings.proSingleSessionDrawerTitle: String get() = "Need a single sessio
 val AppStrings.proSingleSessionDrawerDesc: String get() = "Watch a short ad to unlock 1 temporary use of any PRO feature"
 
 val OnboardingStrings.titleNonTouch: String get() = "Blind Hardware Controls"
-val OnboardingStrings.descNonTouch: String get() = "Stop and save recording blindly using physical volume keys, shake, or flip face-down without touching the screen."
+val OnboardingStrings.descNonTouch: String get() = "Stop and save blindly using physical volume keys, shake, or flip without touching the screen."
 val OnboardingStrings.skip: String get() = "Skip"
 
 fun AppStrings.getMicName(mic: AudioMicSource): String {
