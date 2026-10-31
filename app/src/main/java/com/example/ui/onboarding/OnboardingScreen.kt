@@ -208,10 +208,14 @@ fun OnboardingScreen(
                     )
                 }
 
-                // Top-Right Skip Button
+                // Top-Right Skip Button - Animates directly to the final slide for legal consent & Get Started
                 if (!isLastPage) {
                     TextButton(
-                        onClick = onFinished,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(pages.lastIndex)
+                            }
+                        },
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .testTag("onboarding_skip_button")
@@ -300,7 +304,7 @@ fun OnboardingScreen(
                         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
                         label = "indicator_width_$i"
                     )
-                    val indicatorColor = if (isActive) pages[currentPage].accentColor else BorderSubtle
+                    val indicatorColor = if (isActive) AccentRed else BorderSubtle
 
                     Box(
                         modifier = Modifier
@@ -318,13 +322,12 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Primary Dynamic CTA Button
-            val activeColor = pages[currentPage].accentColor
+            // Primary Brand Red CTA Button
             val ctaBrush = Brush.linearGradient(
                 colors = listOf(
-                    activeColor,
-                    pages[currentPage].secondaryColor,
-                    activeColor
+                    AccentRed,
+                    Color(0xFFFF3344),
+                    AccentRed
                 ),
                 start = Offset(ctaBeamOffset, 0f),
                 end = Offset(ctaBeamOffset + 260f, 160f)
@@ -337,9 +340,9 @@ fun OnboardingScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(ctaBrush)
                     .clickable {
-                        if (currentPage < pages.lastIndex) {
+                        if (pagerState.currentPage < pages.lastIndex) {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(currentPage + 1)
+                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
                             }
                         } else {
                             onFinished()
