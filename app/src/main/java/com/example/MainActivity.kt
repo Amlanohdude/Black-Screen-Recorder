@@ -121,7 +121,8 @@ import com.example.ui.theme.TextSecondary
 import com.example.ads.ConsentManager
 import com.example.ads.NativeAdManager
 import com.example.ads.RewardedAdManager
-import com.example.billing.BillingManager
+import com.example.billing.AppBillingManager
+import com.example.billing.PremiumManager
 import com.example.storage.EntitlementManager
 import com.example.ui.pro.ProScreen
 
@@ -141,11 +142,12 @@ override fun onCreate(savedInstanceState: Bundle?) {
 super.onCreate(savedInstanceState)
 enableEdgeToEdge()
 
-// Initialize EntitlementManager from local storage
+// Initialize Premium and Entitlement Managers
+PremiumManager.init(applicationContext)
 EntitlementManager.init(applicationContext)
 
-// Initialize Google Play BillingManager
-BillingManager.init(applicationContext)
+// Initialize store-specific AppBillingManager
+AppBillingManager.init(applicationContext)
 
 // Gather consent in a non-blocking manner and initialize Mobile Ads
 ConsentManager.gatherConsent(this) { canRequestAds ->
@@ -229,7 +231,7 @@ return super.onKeyDown(keyCode, event)
 
 override fun onResume() {
 super.onResume()
-BillingManager.onResume()
+AppBillingManager.onResume()
 InAppUpdateManager.onResume(this)
 }
 

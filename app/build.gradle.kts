@@ -23,6 +23,22 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  flavorDimensions += "distribution"
+  productFlavors {
+    create("play") {
+      dimension = "distribution"
+    }
+    create("amazon") {
+      dimension = "distribution"
+    }
+    create("xiaomi") {
+      dimension = "distribution"
+    }
+    create("universal") {
+      dimension = "distribution"
+    }
+  }
+
   val localProperties = Properties()
   val localPropertiesFile = rootProject.file("local.properties")
   if (localPropertiesFile.exists()) {
@@ -109,7 +125,11 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   implementation(libs.play.services.ads)
   implementation(libs.user.messaging.platform)
-  implementation(libs.billing.ktx)
+  // Store Billing SDKs (Strict Flavor Isolation - never in main implementation)
+  "playImplementation"(libs.billing.ktx)
+  "amazonImplementation"("com.amazon.device:amazon-appstore-sdk:3.0.9")
+  "xiaomiImplementation"("com.xiaomi.billingclient:billing:1.2.3")
+  "universalImplementation"("com.razorpay:checkout:1.6.41")
   implementation(libs.play.app.update)
   implementation(libs.play.app.update.ktx)
   implementation(libs.play.review)
@@ -150,4 +170,8 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   // "ksp"(libs.moshi.kotlin.codegen)
+}
+
+tasks.withType<Test>().configureEach {
+  jvmArgs("-noverify")
 }

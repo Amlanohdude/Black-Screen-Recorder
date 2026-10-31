@@ -7,10 +7,16 @@
 -renamesourcefileattribute SourceFile
 
 # -------------------------------------------------------------
-# Google Play Billing Library 9.1.0
+# Store Billing SDKs (Play, Amazon, Xiaomi, Razorpay)
 # -------------------------------------------------------------
 -keep class com.android.billingclient.api.** { *; }
 -dontwarn com.android.billingclient.**
+-keep class com.amazon.device.iap.** { *; }
+-dontwarn com.amazon.device.**
+-keep class com.xiaomi.billingclient.api.** { *; }
+-dontwarn com.xiaomi.billingclient.**
+-keep class com.razorpay.** { *; }
+-dontwarn com.razorpay.**
 
 # -------------------------------------------------------------
 # Google Mobile Ads (AdMob) & User Messaging Platform (UMP)

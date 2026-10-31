@@ -82,7 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ads.RewardedAdManager
-import com.example.billing.BillingManager
+import com.example.billing.AppBillingManager
 import com.example.billing.BillingUiState
 import com.example.localization.LocalAppStrings
 import com.example.localization.AppStrings
@@ -171,7 +171,7 @@ fun ProScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
-    val billingState by BillingManager.uiState.collectAsStateWithLifecycle()
+    val billingState by AppBillingManager.uiState.collectAsStateWithLifecycle()
     val isAdLoading by RewardedAdManager.isLoading.collectAsStateWithLifecycle()
 
     var pendingFeatureToUnlock by remember { mutableStateOf<UnlockableFeature?>(null) }
@@ -541,7 +541,7 @@ fun ProScreen(
                                 onClick = {
                                     val activity = context as? Activity
                                     if (activity != null) {
-                                        BillingManager.launchPurchaseFlow(activity)
+                                        AppBillingManager.launchPurchaseFlow(activity)
                                     }
                                 },
                                 modifier = Modifier
@@ -617,8 +617,8 @@ fun ProScreen(
                                 )
                                 TextButton(
                                     onClick = {
-                                        BillingManager.startConnection {
-                                            BillingManager.queryProductDetails()
+                                        AppBillingManager.startConnection {
+                                            AppBillingManager.queryProductDetails()
                                         }
                                     }
                                 ) {
@@ -640,7 +640,7 @@ fun ProScreen(
                     // Restore Purchases Button
                     TextButton(
                         onClick = {
-                            BillingManager.restorePurchases { _, message ->
+                            AppBillingManager.restorePurchases { _, message ->
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(message)
                                 }

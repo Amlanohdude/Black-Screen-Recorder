@@ -4,35 +4,20 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.android.billingclient.api.*
-import com.example.storage.EntitlementManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
-data class BillingUiState(
-    val isConnecting: Boolean = false,
-    val isPro: Boolean = false,
-    val productAvailable: Boolean = false,
-    val productDetails: ProductDetails? = null,
-    val formattedPrice: String? = null,
-    val standardFormattedPrice: String? = null,
-    val offerAvailable: Boolean = false,
-    val discountedFormattedPrice: String? = null,
-    val originalFormattedPrice: String? = null,
-    val discountPercentage: Int? = null,
-    val selectedOfferToken: String? = null,
-    val isPurchasePending: Boolean = false,
-    val isRestoring: Boolean = false,
-    val userMessage: String? = null
-)
-
-object BillingManager : PurchasesUpdatedListener {
-    private const val TAG = "BillingManager"
-    const val PRO_PRODUCT_ID = "black_screen_recorder_pro_lifetime"
+/**
+ * Google Play Store Billing implementation of AppBillingManager.
+ * Strictly isolated to the 'play' product flavor.
+ */
+object AppBillingManager : PurchasesUpdatedListener {
+    private const val TAG = "AppBillingManager[Play]"
+    const val PRO_PRODUCT_ID = BillingConstants.PRO_PRODUCT_ID
     private const val MAX_RECONNECT_ATTEMPTS = 5
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -40,6 +25,7 @@ object BillingManager : PurchasesUpdatedListener {
     private var appContext: Context? = null
     private var isConnecting = false
     private var reconnectAttempts = 0
+    private var cachedProductDetails: ProductDetails? = null
 
     private val _uiState = MutableStateFlow(BillingUiState())
     val uiState: StateFlow<BillingUiState> = _uiState.asStateFlow()
@@ -48,8 +34,10 @@ object BillingManager : PurchasesUpdatedListener {
         if (appContext != null) return
         val app = context.applicationContext
         appContext = app
+
+        PremiumManager.init(app)
         _uiState.value = _uiState.value.copy(
-            isPro = EntitlementManager.entitlements.value.isPro
+            isPro = PremiumManager.isPro()
         )
 
         val pendingParams = PendingPurchasesParams.newBuilder()
@@ -115,59 +103,6 @@ object BillingManager : PurchasesUpdatedListener {
         }
     }
 
-    fun formatPriceFromMicros(
-        formattedSample: String,
-        targetMicros: Long,
-        currencyCode: String?
-    ): String? {
-        if (formattedSample.isBlank() || targetMicros <= 0L) return null
-        val targetAmount = targetMicros.toDouble() / 1_000_000.0
-
-        val pattern = java.util.regex.Pattern.compile("([0-9][0-9.,\\s]*[0-9]|[0-9]+)")
-        val matcher = pattern.matcher(formattedSample)
-        if (matcher.find()) {
-            val numStr = matcher.group(1)?.trim() ?: ""
-            val hasTwoDecimalsComma = numStr.matches(Regex(""".*,[0-9]{2}$"""))
-            val hasTwoDecimalsDot = numStr.matches(Regex(""".*\.[0-9]{2}$"""))
-
-            val replacement = when {
-                hasTwoDecimalsComma -> String.format(java.util.Locale.US, "%.2f", targetAmount).replace('.', ',')
-                hasTwoDecimalsDot -> String.format(java.util.Locale.US, "%.2f", targetAmount)
-                targetAmount % 1.0 != 0.0 -> String.format(java.util.Locale.US, "%.2f", targetAmount)
-                else -> String.format(java.util.Locale.US, "%.0f", targetAmount)
-            }
-            return matcher.replaceFirst(replacement)
-        }
-
-        if (!currencyCode.isNullOrEmpty()) {
-            try {
-                val currency = java.util.Currency.getInstance(currencyCode)
-                val format = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.getDefault()).apply {
-                    this.currency = currency
-                    maximumFractionDigits = 2
-                    minimumFractionDigits = if (targetAmount % 1.0 == 0.0) 0 else 2
-                }
-                return format.format(targetAmount)
-            } catch (_: Exception) {}
-        }
-        return null
-    }
-
-    fun calculateOriginalPrice(
-        formattedPrice: String,
-        amountMicros: Long,
-        currencyCode: String?,
-        discountPercentage: Int = 50
-    ): String? {
-        if (formattedPrice.isBlank() || amountMicros <= 0L || discountPercentage <= 0 || discountPercentage >= 100) {
-            return null
-        }
-
-        val factor = 100.0 / (100.0 - discountPercentage)
-        val originalAmountMicros = (amountMicros.toDouble() * factor).toLong()
-        return formatPriceFromMicros(formattedPrice, originalAmountMicros, currencyCode)
-    }
-
     fun queryProductDetails() {
         val client = billingClient ?: return
         if (!client.isReady) return
@@ -187,14 +122,10 @@ object BillingManager : PurchasesUpdatedListener {
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 val details = queryProductDetailsResult.productDetailsList.firstOrNull { it.productId == PRO_PRODUCT_ID }
                 if (details != null) {
+                    cachedProductDetails = details
                     val defaultOffer = details.oneTimePurchaseOfferDetails
                     val allOffers = details.oneTimePurchaseOfferDetailsList
-                    Log.d(TAG, "ProductDetails found: defaultOffer=$defaultOffer, totalOffers=${allOffers?.size}")
-                    allOffers?.forEachIndexed { index, o ->
-                        Log.d(TAG, "Offer[$index]: id=${o.offerId}, optionId=${o.purchaseOptionId}, formattedPrice=${o.formattedPrice}, micros=${o.priceAmountMicros}, fullMicros=${o.fullPriceMicros}, discount=${o.discountDisplayInfo?.percentageDiscount}, token=${o.offerToken}")
-                    }
 
-                    // Prefer discounted offer or offer with lower price / active discount if available
                     val offer = allOffers?.minByOrNull { it.priceAmountMicros } ?: defaultOffer
                     val formattedPrice = offer?.formattedPrice
                     val amountMicros = offer?.priceAmountMicros ?: 0L
@@ -202,21 +133,21 @@ object BillingManager : PurchasesUpdatedListener {
                     val fullPriceMicros = offer?.fullPriceMicros
                     val offerToken = offer?.offerToken
 
-                    // Base offer is the full-price base option
                     val baseOffer = allOffers?.maxByOrNull { it.priceAmountMicros }
                     val baseFormattedPrice = baseOffer?.formattedPrice
 
                     val discountPercentage = offer?.discountDisplayInfo?.percentageDiscount ?: 50
                     val originalPrice = when {
                         !baseFormattedPrice.isNullOrEmpty() && baseFormattedPrice != formattedPrice -> baseFormattedPrice
-                        fullPriceMicros != null && fullPriceMicros > amountMicros -> formatPriceFromMicros(formattedPrice ?: "", fullPriceMicros, currencyCode)
-                        formattedPrice != null && amountMicros > 0L -> calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
+                        fullPriceMicros != null && fullPriceMicros > amountMicros ->
+                            PriceFormatter.formatPriceFromMicros(formattedPrice ?: "", fullPriceMicros, currencyCode)
+                        formattedPrice != null && amountMicros > 0L ->
+                            PriceFormatter.calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
                         else -> null
                     }
 
                     _uiState.value = _uiState.value.copy(
                         productAvailable = true,
-                        productDetails = details,
                         formattedPrice = formattedPrice,
                         standardFormattedPrice = originalPrice ?: formattedPrice,
                         originalFormattedPrice = originalPrice,
@@ -228,9 +159,9 @@ object BillingManager : PurchasesUpdatedListener {
         }
     }
 
-    fun launchPurchaseFlow(activity: Activity): Boolean {
+    fun launchPurchaseFlow(activity: Activity, skuId: String = PRO_PRODUCT_ID): Boolean {
         val client = billingClient ?: return false
-        val details = _uiState.value.productDetails ?: return false
+        val details = cachedProductDetails ?: return false
         val token = _uiState.value.selectedOfferToken
 
         val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -270,7 +201,7 @@ object BillingManager : PurchasesUpdatedListener {
     private fun handlePurchase(purchase: Purchase) {
         if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
             if (purchase.products.contains(PRO_PRODUCT_ID)) {
-                EntitlementManager.grantPro(true)
+                PremiumManager.setPro(true)
                 _uiState.value = _uiState.value.copy(
                     isPro = true,
                     userMessage = "PRO Lifetime Activated!"
@@ -306,11 +237,15 @@ object BillingManager : PurchasesUpdatedListener {
                 }
             }
             if (hasPro) {
-                EntitlementManager.grantPro(true)
+                PremiumManager.setPro(true)
             }
-            _uiState.value = _uiState.value.copy(isPro = hasPro || EntitlementManager.entitlements.value.isPro)
+            _uiState.value = _uiState.value.copy(isPro = hasPro || PremiumManager.isPro())
             onResult?.invoke(hasPro)
         }
+    }
+
+    fun restorePurchases(activity: Activity, onComplete: (Boolean) -> Unit) {
+        restorePurchases { success, _ -> onComplete(success) }
     }
 
     fun restorePurchases(onFeedback: (Boolean, String) -> Unit) {
@@ -330,4 +265,14 @@ object BillingManager : PurchasesUpdatedListener {
     fun clearUserMessage() {
         _uiState.value = _uiState.value.copy(userMessage = null)
     }
+
+    fun formatPriceFromMicros(formattedSample: String, targetMicros: Long, currencyCode: String?): String? =
+        PriceFormatter.formatPriceFromMicros(formattedSample, targetMicros, currencyCode)
+
+    fun calculateOriginalPrice(
+        formattedPrice: String,
+        amountMicros: Long,
+        currencyCode: String?,
+        discountPercentage: Int = 50
+    ): String? = PriceFormatter.calculateOriginalPrice(formattedPrice, amountMicros, currencyCode, discountPercentage)
 }
