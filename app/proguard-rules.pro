@@ -67,4 +67,9 @@
     public static int v(...);
     public static int d(...);
     public static int i(...);
+    public static int w(...);
+}
+-assumenosideeffects class java.io.PrintStream {
+    public void println(...);
+    public void print(...);
 }

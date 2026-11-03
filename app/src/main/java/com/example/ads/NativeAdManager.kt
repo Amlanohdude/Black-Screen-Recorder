@@ -29,6 +29,13 @@ object NativeAdManager {
     fun initialize(context: Context) {
         if (isInitialized.compareAndSet(false, true)) {
             try {
+                // Enforce G-rated family/general ad content filtering to strictly block
+                // skill-based/chance-based real money gaming, gambling, betting, profanity, and mature ads.
+                val requestConfiguration = com.google.android.gms.ads.RequestConfiguration.Builder()
+                    .setMaxAdContentRating(com.google.android.gms.ads.RequestConfiguration.MAX_AD_CONTENT_RATING_G)
+                    .build()
+                com.google.android.gms.ads.MobileAds.setRequestConfiguration(requestConfiguration)
+
                 com.google.android.gms.ads.MobileAds.initialize(context.applicationContext) {
                     android.util.Log.d(TAG, "Google Mobile Ads initialized successfully.")
                 }

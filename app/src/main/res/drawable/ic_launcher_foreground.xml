@@ -7,8 +7,8 @@
     <group
         android:pivotX="183.5"
         android:pivotY="183.0"
-        android:scaleX="0.195"
-        android:scaleY="0.195"
+        android:scaleX="0.207"
+        android:scaleY="0.207"
         android:translateX="-129.5"
         android:translateY="-129.0">
         <!-- Phone Body / Frame -->

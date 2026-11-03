@@ -602,10 +602,10 @@ fun SettingsScreen(
                     SettingsInfoRow(
                         title = strings.version,
                         value = BuildConfig.VERSION_NAME,
-                        modifier = Modifier
-                            .testTag("settings_version_row")
-                            .clickable {
-                                if (com.example.BuildConfig.DEBUG) {
+                        modifier = if (com.example.BuildConfig.DEBUG) {
+                            Modifier
+                                .testTag("settings_version_row")
+                                .clickable {
                                     val currentTime = System.currentTimeMillis()
                                     if (currentTime - lastDevTapTime > 2500L) {
                                         devTapCount = 1
@@ -627,7 +627,9 @@ fun SettingsScreen(
                                         Toast.makeText(context, "Developer QA Mode Unlocked", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                            }
+                        } else {
+                            Modifier.testTag("settings_version_row")
+                        }
                     )
                 }
 
