@@ -51,6 +51,10 @@ object InAppReviewManager {
      * Google handles the presentation, quota management, and submission.
      */
     fun launchInAppReview(activity: Activity, onComplete: () -> Unit = {}) {
+        if (com.example.BuildConfig.FLAVOR != "play") {
+            onComplete()
+            return
+        }
         try {
             val manager = ReviewManagerFactory.create(activity)
             val request = manager.requestReviewFlow()
@@ -67,18 +71,36 @@ object InAppReviewManager {
                     onComplete()
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception launching in-app review", e)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Exception launching in-app review", t)
             onComplete()
         }
     }
 
     /**
-     * Directly opens the app's Google Play Store listing for manual review/rating.
-     * Used by the "Rate on Google Play" button in Settings.
+     * Directly opens the app's store listing for manual review/rating.
+     * Supports Google Play and Amazon Appstore.
      */
     fun openPlayStorePage(context: Context) {
         val packageName = context.packageName
+        if (com.example.BuildConfig.FLAVOR == "amazon") {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("amzn://apps/android?p=$packageName")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                return
+            } catch (_: Throwable) {
+                try {
+                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.amazon.com/gp/mas/dl/android?p=$packageName")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(webIntent)
+                    return
+                } catch (_: Throwable) {}
+            }
+        }
+
         val marketUri = Uri.parse("market://details?id=$packageName")
         val goToMarket = Intent(Intent.ACTION_VIEW, marketUri).apply {
             addFlags(
@@ -92,13 +114,15 @@ object InAppReviewManager {
         }
         try {
             context.startActivity(goToMarket)
-        } catch (_: ActivityNotFoundException) {
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PLAY_STORE_URL)).apply {
-                if (context !is Activity) {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        } catch (_: Throwable) {
+            try {
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(AppLinks.PLAY_STORE_URL)).apply {
+                    if (context !is Activity) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
                 }
-            }
-            context.startActivity(webIntent)
+                context.startActivity(webIntent)
+            } catch (_: Throwable) {}
         }
     }
 

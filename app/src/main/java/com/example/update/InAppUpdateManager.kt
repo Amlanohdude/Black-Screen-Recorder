@@ -51,10 +51,15 @@ object InAppUpdateManager {
         }
     }
 
-    private fun getAppUpdateManager(context: Context): AppUpdateManager {
-        return appUpdateManager ?: AppUpdateManagerFactory.create(context.applicationContext).also {
-            appUpdateManager = it
-            registerListenerIfNeeded(it)
+    private fun getAppUpdateManager(context: Context): AppUpdateManager? {
+        return try {
+            appUpdateManager ?: AppUpdateManagerFactory.create(context.applicationContext).also {
+                appUpdateManager = it
+                registerListenerIfNeeded(it)
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "Failed to create AppUpdateManager: ${t.message}")
+            null
         }
     }
 
@@ -63,8 +68,8 @@ object InAppUpdateManager {
             try {
                 manager.registerListener(installStateUpdatedListener)
                 isListenerRegistered = true
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to register install state listener", e)
+            } catch (t: Throwable) {
+                Log.w(TAG, "Failed to register install state listener", t)
             }
         }
     }
@@ -78,7 +83,7 @@ object InAppUpdateManager {
             val network = cm.activeNetwork ?: return false
             val caps = cm.getNetworkCapabilities(network) ?: return false
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             false
         }
     }
@@ -88,13 +93,16 @@ object InAppUpdateManager {
      * Guaranteed 100% offline-safe: if offline, returns immediately without any error or prompt.
      */
     fun checkForUpdateSilently(activity: Activity) {
+        if (BuildConfig.FLAVOR != "play") {
+            return
+        }
         if (!isNetworkAvailable(activity)) {
             // Strictly offline: do nothing, zero delay, zero prompt.
             return
         }
 
         try {
-            val manager = getAppUpdateManager(activity)
+            val manager = getAppUpdateManager(activity) ?: return
             manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
                 if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                     cachedAppUpdateInfo = appUpdateInfo
@@ -106,8 +114,8 @@ object InAppUpdateManager {
                 // Silently ignore: Play Store might not be installed or device is offline
                 Log.d(TAG, "Silent update check failed/ignored: ${e.message}")
             }
-        } catch (e: Exception) {
-            Log.d(TAG, "Failed to initialize update check", e)
+        } catch (t: Throwable) {
+            Log.d(TAG, "Failed to initialize update check", t)
         }
     }
 
@@ -116,6 +124,15 @@ object InAppUpdateManager {
      * Provides clear, polite feedback for online, offline, and up-to-date states.
      */
     fun checkManualUpdate(activity: Activity) {
+        if (BuildConfig.FLAVOR != "play") {
+            Toast.makeText(
+                activity,
+                "You are on the latest version (${BuildConfig.VERSION_NAME})",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
         if (!isNetworkAvailable(activity)) {
             Toast.makeText(activity, "You're offline. App is fully functional offline.", Toast.LENGTH_SHORT).show()
             return
@@ -125,6 +142,10 @@ object InAppUpdateManager {
 
         try {
             val manager = getAppUpdateManager(activity)
+            if (manager == null) {
+                openPlayStore(activity)
+                return
+            }
             manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
                 when {
                     appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE -> {
@@ -162,7 +183,7 @@ object InAppUpdateManager {
                     openPlayStore(activity)
                 }
             }
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             openPlayStore(activity)
         }
     }
@@ -212,17 +233,17 @@ object InAppUpdateManager {
     fun triggerUpdateFlow(activity: Activity) {
         _isUpdatePromptVisible.value = false
         val info = cachedAppUpdateInfo
-        if (info != null && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+        val manager = getAppUpdateManager(activity)
+        if (manager != null && info != null && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
             try {
-                val manager = getAppUpdateManager(activity)
                 manager.startUpdateFlowForResult(
                     info,
                     activity,
                     AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
                     REQUEST_CODE_FLEXIBLE_UPDATE
                 )
-            } catch (e: Exception) {
-                Log.w(TAG, "Flexible update flow could not be started", e)
+            } catch (t: Throwable) {
+                Log.w(TAG, "Flexible update flow could not be started", t)
                 openPlayStore(activity)
             }
         } else {
@@ -238,20 +259,40 @@ object InAppUpdateManager {
     }
 
     /**
-     * Opens the app's Google Play Store listing.
+     * Opens the app's store listing. Supports Google Play and Amazon Appstore.
      */
     fun openPlayStore(context: Context) {
         val packageName = context.packageName
+        if (BuildConfig.FLAVOR == "amazon") {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("amzn://apps/android?p=$packageName")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                return
+            } catch (_: Throwable) {
+                try {
+                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.amazon.com/gp/mas/dl/android?p=$packageName")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(webIntent)
+                    return
+                } catch (_: Throwable) {}
+            }
+        }
+
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-        } catch (_: Exception) {
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(webIntent)
+        } catch (_: Throwable) {
+            try {
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(webIntent)
+            } catch (_: Throwable) {}
         }
     }
 

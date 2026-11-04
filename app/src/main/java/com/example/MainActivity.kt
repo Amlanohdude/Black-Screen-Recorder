@@ -144,23 +144,45 @@ super.onCreate(savedInstanceState)
 enableEdgeToEdge()
 
 // Initialize Premium and Entitlement Managers
-PremiumManager.init(applicationContext)
-EntitlementManager.init(applicationContext)
+try {
+    PremiumManager.init(applicationContext)
+    EntitlementManager.init(applicationContext)
+} catch (t: Throwable) {
+    android.util.Log.e("MainActivity", "Failed to init Premium/Entitlement Manager: ${t.message}", t)
+}
 
 // Initialize store-specific AppBillingManager
-AppBillingManager.init(applicationContext)
+try {
+    AppBillingManager.init(applicationContext)
+} catch (t: Throwable) {
+    android.util.Log.e("MainActivity", "Failed to init AppBillingManager: ${t.message}", t)
+}
 
 // Gather consent in a non-blocking manner and initialize Mobile Ads
-ConsentManager.gatherConsent(this) { canRequestAds ->
-if (canRequestAds) {
-NativeAdManager.initialize(applicationContext)
-NativeAdManager.preloadInitialAds(applicationContext)
-RewardedAdManager.loadAd(applicationContext)
-}
+try {
+    ConsentManager.gatherConsent(this) { canRequestAds ->
+        if (canRequestAds) {
+            try {
+                NativeAdManager.initialize(applicationContext)
+                NativeAdManager.preloadInitialAds(applicationContext)
+                RewardedAdManager.loadAd(applicationContext)
+            } catch (t: Throwable) {
+                android.util.Log.w("MainActivity", "Ad initialization failed: ${t.message}")
+            }
+        }
+    }
+} catch (t: Throwable) {
+    android.util.Log.w("MainActivity", "Consent gathering failed: ${t.message}")
 }
 
-// Non-blocking, 100% offline-safe in-app update check
-InAppUpdateManager.checkForUpdateSilently(this)
+// Non-blocking, 100% offline-safe in-app update check (Google Play only)
+if (com.example.BuildConfig.FLAVOR == "play") {
+    try {
+        InAppUpdateManager.checkForUpdateSilently(this)
+    } catch (t: Throwable) {
+        android.util.Log.w("MainActivity", "InAppUpdate check failed: ${t.message}")
+    }
+}
 
 setContent {
 MyApplicationTheme {
@@ -248,15 +270,31 @@ override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
 }
 
 override fun onResume() {
-super.onResume()
-AppBillingManager.onResume()
-InAppUpdateManager.onResume(this)
+    super.onResume()
+    try {
+        AppBillingManager.onResume()
+    } catch (t: Throwable) {
+        android.util.Log.w("MainActivity", "AppBillingManager onResume failed: ${t.message}")
+    }
+    if (com.example.BuildConfig.FLAVOR == "play") {
+        try {
+            InAppUpdateManager.onResume(this)
+        } catch (t: Throwable) {
+            android.util.Log.w("MainActivity", "InAppUpdateManager onResume failed: ${t.message}")
+        }
+    }
 }
 
 override fun onDestroy() {
-super.onDestroy()
-NativeAdManager.destroyAll()
-InAppUpdateManager.onDestroy()
+    super.onDestroy()
+    try {
+        NativeAdManager.destroyAll()
+    } catch (_: Throwable) {}
+    if (com.example.BuildConfig.FLAVOR == "play") {
+        try {
+            InAppUpdateManager.onDestroy()
+        } catch (_: Throwable) {}
+    }
 }
 
 companion object {

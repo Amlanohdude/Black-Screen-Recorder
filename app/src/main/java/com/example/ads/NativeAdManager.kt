@@ -39,8 +39,8 @@ object NativeAdManager {
                 com.google.android.gms.ads.MobileAds.initialize(context.applicationContext) {
                     android.util.Log.d(TAG, "Google Mobile Ads initialized successfully.")
                 }
-            } catch (e: Exception) {
-                android.util.Log.w(TAG, "Failed to initialize MobileAds: ${e.message}")
+            } catch (t: Throwable) {
+                android.util.Log.w(TAG, "Failed to initialize MobileAds: ${t.message}")
             }
         }
     }
@@ -176,8 +176,8 @@ object NativeAdManager {
                 .build()
 
             adLoader.loadAd(AdRequest.Builder().build())
-        } catch (e: Exception) {
-            Log.w(TAG, "Error initiating ad load for $screen: ${e.message}")
+        } catch (t: Throwable) {
+            Log.w(TAG, "Error initiating ad load for $screen: ${t.message}")
             setLoading(screen, false)
         }
     }

@@ -33,39 +33,61 @@ object AppBillingManager : PurchasingListener {
         val app = context.applicationContext
         appContext = app
 
-        PremiumManager.init(app)
-        _uiState.value = _uiState.value.copy(
-            isPro = PremiumManager.isPro()
-        )
+        try {
+            PremiumManager.init(app)
+            _uiState.value = _uiState.value.copy(
+                isPro = PremiumManager.isPro()
+            )
 
-        PurchasingService.registerListener(app, this)
-        PurchasingService.enablePendingPurchases()
+            PurchasingService.registerListener(app, this)
+            PurchasingService.enablePendingPurchases()
 
-        PurchasingService.getUserData()
-        PurchasingService.getPurchaseUpdates(false)
-        queryProductDetails()
+            PurchasingService.getUserData()
+            PurchasingService.getPurchaseUpdates(false)
+            queryProductDetails()
+        } catch (t: Throwable) {
+            Log.e(TAG, "Amazon IAP initialization failed: ${t.message}", t)
+        }
     }
 
     fun onResume() {
-        PurchasingService.getUserData()
-        PurchasingService.getPurchaseUpdates(false)
+        try {
+            PurchasingService.getUserData()
+            PurchasingService.getPurchaseUpdates(false)
+        } catch (t: Throwable) {
+            Log.w(TAG, "Amazon onResume query failed: ${t.message}")
+        }
     }
 
     fun startConnection(onConnected: (() -> Unit)? = null) {
-        PurchasingService.getUserData()
+        try {
+            PurchasingService.getUserData()
+        } catch (t: Throwable) {
+            Log.w(TAG, "startConnection failed: ${t.message}")
+        }
         onConnected?.invoke()
     }
 
     fun queryProductDetails() {
-        val skus = setOf(PRO_PRODUCT_ID)
-        PurchasingService.getProductData(skus)
+        try {
+            val skus = setOf(PRO_PRODUCT_ID)
+            PurchasingService.getProductData(skus)
+        } catch (t: Throwable) {
+            Log.w(TAG, "queryProductDetails failed: ${t.message}")
+        }
     }
 
     fun launchPurchaseFlow(activity: Activity, skuId: String = PRO_PRODUCT_ID): Boolean {
-        _uiState.value = _uiState.value.copy(isPurchasePending = true)
-        val requestId = PurchasingService.purchase(skuId)
-        Log.d(TAG, "Initiated Amazon purchase for $skuId, requestId=$requestId")
-        return true
+        return try {
+            _uiState.value = _uiState.value.copy(isPurchasePending = true)
+            val requestId = PurchasingService.purchase(skuId)
+            Log.d(TAG, "Initiated Amazon purchase for $skuId, requestId=$requestId")
+            true
+        } catch (t: Throwable) {
+            Log.e(TAG, "launchPurchaseFlow failed: ${t.message}", t)
+            _uiState.value = _uiState.value.copy(isPurchasePending = false)
+            false
+        }
     }
 
     fun restorePurchases(activity: Activity, onComplete: (Boolean) -> Unit) {
@@ -73,9 +95,15 @@ object AppBillingManager : PurchasingListener {
     }
 
     fun restorePurchases(onFeedback: (Boolean, String) -> Unit) {
-        _uiState.value = _uiState.value.copy(isRestoring = true)
-        pendingRestoreCallback = onFeedback
-        PurchasingService.getPurchaseUpdates(true)
+        try {
+            _uiState.value = _uiState.value.copy(isRestoring = true)
+            pendingRestoreCallback = onFeedback
+            PurchasingService.getPurchaseUpdates(true)
+        } catch (t: Throwable) {
+            Log.e(TAG, "restorePurchases failed: ${t.message}", t)
+            _uiState.value = _uiState.value.copy(isRestoring = false)
+            onFeedback(false, "Restore purchases failed.")
+        }
     }
 
     // --- Amazon PurchasingListener Callbacks ---

@@ -47,39 +47,44 @@ object RewardedAdManager {
         if (rewardedAd != null || _isLoading.value) {
             return
         }
-        NativeAdManager.initialize(context)
-        _isLoading.value = true
-        val adUnitId = AdsConfig.getRewardedAdUnitId()
-        val adRequest = AdRequest.Builder().build()
+        try {
+            NativeAdManager.initialize(context)
+            _isLoading.value = true
+            val adUnitId = AdsConfig.getRewardedAdUnitId()
+            val adRequest = AdRequest.Builder().build()
 
-        RewardedAd.load(
-            context.applicationContext,
-            adUnitId,
-            adRequest,
-            object : RewardedAdLoadCallback() {
-                override fun onAdLoaded(ad: RewardedAd) {
-                    if (isRecordingActive) {
+            RewardedAd.load(
+                context.applicationContext,
+                adUnitId,
+                adRequest,
+                object : RewardedAdLoadCallback() {
+                    override fun onAdLoaded(ad: RewardedAd) {
+                        if (isRecordingActive) {
+                            rewardedAd = null
+                            _isAdReady.value = false
+                            _isLoading.value = false
+                            return
+                        }
+                        if (AdsConfig.isTestMode()) {
+                            Log.d(TAG, "Rewarded ad loaded successfully.")
+                        }
+                        rewardedAd = ad
+                        _isAdReady.value = true
+                        _isLoading.value = false
+                    }
+
+                    override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                        Log.w(TAG, "Rewarded ad failed to load: [${loadAdError.code}] ${loadAdError.message}")
                         rewardedAd = null
                         _isAdReady.value = false
                         _isLoading.value = false
-                        return
                     }
-                    if (AdsConfig.isTestMode()) {
-                        Log.d(TAG, "Rewarded ad loaded successfully.")
-                    }
-                    rewardedAd = ad
-                    _isAdReady.value = true
-                    _isLoading.value = false
                 }
-
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    Log.w(TAG, "Rewarded ad failed to load: [${loadAdError.code}] ${loadAdError.message}")
-                    rewardedAd = null
-                    _isAdReady.value = false
-                    _isLoading.value = false
-                }
-            }
-        )
+            )
+        } catch (t: Throwable) {
+            Log.w(TAG, "RewardedAd.load failed: ${t.message}", t)
+            _isLoading.value = false
+        }
     }
 
     fun showAd(

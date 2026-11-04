@@ -26,29 +26,38 @@ object CameraHardwareHelper {
             return force4kSupportForTesting!!
         }
         return try {
-            val provider = ProcessCameraProvider.getInstance(context).get()
-            val cameraSelector = if (useFrontCamera) {
-                CameraSelector.DEFAULT_FRONT_CAMERA
+            val providerFuture = ProcessCameraProvider.getInstance(context)
+            if (providerFuture.isDone) {
+                val provider = providerFuture.get()
+                val cameraSelector = if (useFrontCamera) {
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                }
+                if (provider.hasCamera(cameraSelector)) {
+                    val cameraInfo = provider.getCameraInfo(cameraSelector)
+                    val videoCaps = Recorder.getVideoCapabilities(cameraInfo)
+                    val supported = videoCaps.isQualitySupported(Quality.UHD, DynamicRange.SDR)
+                    Log.d(TAG, "Camera 4K support (front=$useFrontCamera): $supported")
+                    supported
+                } else {
+                    false
+                }
             } else {
-                CameraSelector.DEFAULT_BACK_CAMERA
+                checkCamcorderProfile(useFrontCamera)
             }
-            if (provider.hasCamera(cameraSelector)) {
-                val cameraInfo = provider.getCameraInfo(cameraSelector)
-                val videoCaps = Recorder.getVideoCapabilities(cameraInfo)
-                val supported = videoCaps.isQualitySupported(Quality.UHD, DynamicRange.SDR)
-                Log.d(TAG, "Camera 4K support (front=$useFrontCamera): $supported")
-                supported
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "ProcessCameraProvider query failed, using CamcorderProfile fallback: ${e.message}")
-            val cameraId = if (useFrontCamera) 1 else 0
-            try {
-                CamcorderProfile.hasProfile(cameraId, CamcorderProfile.QUALITY_2160P)
-            } catch (_: Exception) {
-                false
-            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "ProcessCameraProvider query failed, using CamcorderProfile fallback: ${t.message}")
+            checkCamcorderProfile(useFrontCamera)
+        }
+    }
+
+    private fun checkCamcorderProfile(useFrontCamera: Boolean): Boolean {
+        val cameraId = if (useFrontCamera) 1 else 0
+        return try {
+            CamcorderProfile.hasProfile(cameraId, CamcorderProfile.QUALITY_2160P)
+        } catch (_: Throwable) {
+            false
         }
     }
 }
