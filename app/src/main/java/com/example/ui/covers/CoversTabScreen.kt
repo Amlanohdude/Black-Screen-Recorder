@@ -1,5 +1,6 @@
 package com.example.ui.covers
 
+import com.example.util.findActivity
 import com.example.ui.theme.*
 import com.example.ads.AdScreen
 import com.example.ads.NativeAdCard
@@ -153,7 +154,7 @@ Text(strings.cancel, color = TextSecondary)
 }
 
 if (showCustomCoversLockedDialog) {
-val activity = context as? Activity
+val activity = context.findActivity()
 val coverToActivate = pendingCustomCoverToActivate ?: activeCover
 AlertDialog(
 onDismissRequest = {

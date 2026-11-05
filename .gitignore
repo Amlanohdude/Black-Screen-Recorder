@@ -48,6 +48,7 @@ captures/
 *.keystore
 *.p12
 *.pem
+!app/src/amazon/assets/AppstoreAuthenticationKey.pem
 *.key
 *.pkcs12
 *.der

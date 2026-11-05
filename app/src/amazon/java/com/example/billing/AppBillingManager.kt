@@ -39,7 +39,8 @@ object AppBillingManager : PurchasingListener {
                 isPro = PremiumManager.isPro()
             )
 
-            PurchasingService.registerListener(app, this)
+            // Register listener with the passed context (Activity if available, else ApplicationContext)
+            PurchasingService.registerListener(context, this)
             PurchasingService.enablePendingPurchases()
 
             PurchasingService.getUserData()
@@ -79,13 +80,18 @@ object AppBillingManager : PurchasingListener {
 
     fun launchPurchaseFlow(activity: Activity, skuId: String = PRO_PRODUCT_ID): Boolean {
         return try {
-            _uiState.value = _uiState.value.copy(isPurchasePending = true)
+            _uiState.value = _uiState.value.copy(isPurchasePending = true, userMessage = null)
+            // Re-register with foreground Activity context to ensure modal attaches properly
+            PurchasingService.registerListener(activity, this)
             val requestId = PurchasingService.purchase(skuId)
             Log.d(TAG, "Initiated Amazon purchase for $skuId, requestId=$requestId")
             true
         } catch (t: Throwable) {
             Log.e(TAG, "launchPurchaseFlow failed: ${t.message}", t)
-            _uiState.value = _uiState.value.copy(isPurchasePending = false)
+            _uiState.value = _uiState.value.copy(
+                isPurchasePending = false,
+                userMessage = "Failed to launch Amazon Appstore purchase. Please try again."
+            )
             false
         }
     }
@@ -153,10 +159,23 @@ object AppBillingManager : PurchasingListener {
                     userMessage = "PRO Lifetime Restored!"
                 )
             }
-            PurchaseResponse.RequestStatus.FAILED,
-            PurchaseResponse.RequestStatus.INVALID_SKU,
+            PurchaseResponse.RequestStatus.FAILED -> {
+                Log.w(TAG, "Amazon purchase failed: ${response.requestStatus}")
+                _uiState.value = _uiState.value.copy(
+                    userMessage = "Purchase could not be completed. Please try again."
+                )
+            }
+            PurchaseResponse.RequestStatus.INVALID_SKU -> {
+                Log.w(TAG, "Amazon purchase failed: ${response.requestStatus}")
+                _uiState.value = _uiState.value.copy(
+                    userMessage = "Item temporarily unavailable in Amazon Appstore. Please check back shortly."
+                )
+            }
             PurchaseResponse.RequestStatus.NOT_SUPPORTED -> {
                 Log.w(TAG, "Amazon purchase failed: ${response.requestStatus}")
+                _uiState.value = _uiState.value.copy(
+                    userMessage = "In-App Purchases are not supported on this device/configuration."
+                )
             }
             PurchaseResponse.RequestStatus.PENDING -> {
                 _uiState.value = _uiState.value.copy(isPurchasePending = true)

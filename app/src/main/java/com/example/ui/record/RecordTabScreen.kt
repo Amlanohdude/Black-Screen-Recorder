@@ -2,6 +2,7 @@ package com.example.ui.record
 
 import android.Manifest
 import android.app.Activity
+import com.example.util.findActivity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -1239,7 +1240,7 @@ fun RecordTabScreen(
 
     // 4K UHD Locked Dialog
     if (show4kLockedDialog) {
-        val activity = context as? Activity
+        val activity = context.findActivity()
         AlertDialog(
             onDismissRequest = { show4kLockedDialog = false },
             title = {

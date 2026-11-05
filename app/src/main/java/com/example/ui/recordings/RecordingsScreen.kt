@@ -1,6 +1,7 @@
 package com.example.ui.recordings
 
 import android.app.Activity
+import com.example.util.findActivity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -883,7 +884,7 @@ confirmButton = {
 Button(
 onClick = {
 showExportAdDialog = false
-val activity = context as? Activity
+val activity = context.findActivity()
 if (activity != null) {
 RewardedAdManager.showAd(
 activity = activity,

@@ -153,7 +153,7 @@ try {
 
 // Initialize store-specific AppBillingManager
 try {
-    AppBillingManager.init(applicationContext)
+    AppBillingManager.init(this)
 } catch (t: Throwable) {
     android.util.Log.e("MainActivity", "Failed to init AppBillingManager: ${t.message}", t)
 }

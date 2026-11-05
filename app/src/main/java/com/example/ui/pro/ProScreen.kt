@@ -1,6 +1,7 @@
 package com.example.ui.pro
 
 import android.app.Activity
+import com.example.util.findActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -68,6 +69,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -187,6 +189,13 @@ fun ProScreen(
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
     val billingState by AppBillingManager.uiState.collectAsStateWithLifecycle()
     val isAdLoading by RewardedAdManager.isLoading.collectAsStateWithLifecycle()
+
+    LaunchedEffect(billingState.userMessage) {
+        val msg = billingState.userMessage
+        if (!msg.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
 
     var pendingFeatureToUnlock by remember { mutableStateOf<UnlockableFeature?>(null) }
     var showAdDrawer by remember { mutableStateOf(false) }
@@ -739,9 +748,19 @@ fun ProScreen(
                                         .clip(RoundedCornerShape(14.dp))
                                         .background(ctaBrush)
                                         .clickable {
-                                            val activity = context as? Activity
+                                            val activity = context.findActivity()
                                             if (activity != null) {
-                                                AppBillingManager.launchPurchaseFlow(activity)
+                                                val initiated = AppBillingManager.launchPurchaseFlow(activity)
+                                                if (!initiated) {
+                                                    coroutineScope.launch {
+                                                        snackbarHostState.showSnackbar("Unable to initiate purchase. Please check store connection.")
+                                                    }
+                                                }
+                                            } else {
+                                                android.util.Log.e("ProScreen", "Cannot find enclosing Activity to launch purchase flow")
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar("Unable to connect to purchase window. Please restart the app.")
+                                                }
                                             }
                                         }
                                         .testTag("buy_pro_button"),
@@ -1047,7 +1066,7 @@ fun ProScreen(
                     onClick = {
                         val featureToUnlock = feature
                         pendingFeatureToUnlock = null
-                        val activity = context as? Activity
+                        val activity = context.findActivity()
                         if (activity != null) {
                             RewardedAdManager.showAd(
                                 activity = activity,
