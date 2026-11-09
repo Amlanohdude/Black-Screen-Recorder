@@ -151,6 +151,15 @@ hs_err_pid*
 replay_pid*
 *.dmp
 
+# Transient scratch scripts and store upload payloads
+/*.js
+/*.ps1
+/generate_icons.html
+/render_icon_option2*.html
+/test_generated_svg.svg
+store_assets/base64_assets/
+store_assets/icon_base64.txt
+
 # ------------------------------------------------------------------------------
 # 11. Node / Web Studio Dependencies (for promo/mockup studios)
 # ------------------------------------------------------------------------------

@@ -1,15 +1,21 @@
 package com.example.ui
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.R
 import com.example.covers.CoverConfig
 import com.example.presets.RecordingPresetId
 import com.example.recording.RecordingService
+import com.example.recording.RecordingStage
 import com.example.recording.RecordingStatus
 import com.example.recording.RecordingType
+import com.example.recording.SafetyGuardrailManager
 import com.example.storage.AppDatabase
 import com.example.storage.ExitGesture
 import com.example.storage.ExitMethod
@@ -114,6 +120,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startAudio(context: Context) {
+        val hasMicPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasMicPermission) {
+            RecordingService.updateStatus(
+                RecordingStatus(
+                    stage = RecordingStage.ERROR,
+                    isRecording = false,
+                    error = context.getString(R.string.error_mic_unavailable)
+                )
+            )
+            return
+        }
+
+        val prefs = SettingsPreferences(context.applicationContext).settings.value
+        val preflight = SafetyGuardrailManager.checkPreflight(context.applicationContext, prefs)
+        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
+            RecordingService.updateStatus(
+                RecordingStatus(
+                    stage = RecordingStage.ERROR,
+                    isRecording = false,
+                    error = preflight.message
+                )
+            )
+            return
+        }
+
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START_AUDIO
         }
@@ -125,6 +160,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startVideo(context: Context) {
+        val hasCameraPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasCameraPermission) {
+            RecordingService.updateStatus(
+                RecordingStatus(
+                    stage = RecordingStage.ERROR,
+                    isRecording = false,
+                    error = context.getString(R.string.error_camera_unavailable)
+                )
+            )
+            return
+        }
+
+        val prefs = SettingsPreferences(context.applicationContext).settings.value
+        val preflight = SafetyGuardrailManager.checkPreflight(context.applicationContext, prefs)
+        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
+            RecordingService.updateStatus(
+                RecordingStatus(
+                    stage = RecordingStage.ERROR,
+                    isRecording = false,
+                    error = preflight.message
+                )
+            )
+            return
+        }
+
         val intent = Intent(context, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START_VIDEO
         }

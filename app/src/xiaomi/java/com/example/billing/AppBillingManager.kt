@@ -116,19 +116,54 @@ object AppBillingManager : PurchasesUpdatedListener {
     }
 
     fun launchPurchaseFlow(activity: Activity, skuId: String = PRO_PRODUCT_ID): Boolean {
-        val client = billingClient ?: return false
-        val skuDetails = cachedSkuDetails ?: return false
-
-        val flowParams = BillingFlowParams.newBuilder()
-            .setSkuDetails(skuDetails)
-            .build()
-
-        val result = client.launchBillingFlow(activity, flowParams)
-        if (result.responseCode == IBillingClient.BillingResponseCode.OK) {
-            _uiState.value = _uiState.value.copy(isPurchasePending = true)
-            return true
+        val client = billingClient
+        if (client == null || !client.isReady) {
+            Log.w(TAG, "launchPurchaseFlow called but billingClient is not ready. Reconnecting...")
+            _uiState.value = _uiState.value.copy(
+                userMessage = "Connecting to Xiaomi GetApps store. Please try again in a moment."
+            )
+            startConnection {
+                queryProductDetails()
+            }
+            return false
         }
-        return false
+
+        val skuDetails = cachedSkuDetails
+        if (skuDetails == null) {
+            Log.w(TAG, "launchPurchaseFlow called but cachedSkuDetails is null. Querying product details...")
+            _uiState.value = _uiState.value.copy(
+                userMessage = "Loading in-app item details from Xiaomi GetApps. Please try again in a moment."
+            )
+            queryProductDetails()
+            return false
+        }
+
+        return try {
+            val flowParams = BillingFlowParams.newBuilder()
+                .setSkuDetails(skuDetails)
+                .build()
+
+            val result = client.launchBillingFlow(activity, flowParams)
+            if (result.responseCode == IBillingClient.BillingResponseCode.OK) {
+                Log.d(TAG, "Xiaomi launchBillingFlow successful")
+                _uiState.value = _uiState.value.copy(isPurchasePending = true, userMessage = null)
+                true
+            } else {
+                Log.w(TAG, "Xiaomi launchBillingFlow returned error code: ${result.responseCode}")
+                _uiState.value = _uiState.value.copy(
+                    isPurchasePending = false,
+                    userMessage = "Xiaomi billing returned response code: ${result.responseCode}"
+                )
+                false
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "launchPurchaseFlow threw exception: ${t.message}", t)
+            _uiState.value = _uiState.value.copy(
+                isPurchasePending = false,
+                userMessage = "Failed to launch Xiaomi GetApps purchase: ${t.message}"
+            )
+            false
+        }
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {

@@ -15,6 +15,8 @@
 -dontwarn com.amazon.device.**
 -keep class com.xiaomi.billingclient.api.** { *; }
 -dontwarn com.xiaomi.billingclient.**
+-keep class com.iap.** { *; }
+-dontwarn com.iap.**
 -keep class com.razorpay.** { *; }
 -dontwarn com.razorpay.**
 

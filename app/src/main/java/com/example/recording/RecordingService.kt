@@ -192,6 +192,18 @@ class RecordingService : LifecycleService() {
             return
         }
 
+        // Fulfill Android OS Foreground Service watchdog contract immediately
+        val notification = createNotification("Audio Recording · Screen kept dark")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+
+        if (_recordingStatus.value.isRecording) {
+            return
+        }
+
         val prefs = SettingsPreferences(applicationContext).settings.value
         val preflight = SafetyGuardrailManager.checkPreflight(applicationContext, prefs)
         if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
@@ -206,18 +218,17 @@ class RecordingService : LifecycleService() {
                 (SafetyGuardrailManager.getAvailableStorageBytes(applicationContext) / (1024 * 1024)).toInt()
             }
             showSafetyNotification(preflight.reason, detail)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
             stopSelf()
             return
         }
 
         wakeLock?.acquire(3 * 60 * 60 * 1000L)
-        val notification = createNotification("Audio Recording · Screen kept dark")
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
-        }
 
         val audioConfig = AudioRecordingConfig(
             microphone = AudioMicSource.fromId(prefs.preferredMicrophone),
@@ -277,10 +288,6 @@ class RecordingService : LifecycleService() {
     }
 
     private fun startVideoRecordingForeground() {
-        if (_recordingStatus.value.isRecording) {
-            return
-        }
-
         val hasCameraPermission = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.CAMERA
@@ -301,27 +308,8 @@ class RecordingService : LifecycleService() {
             return
         }
 
-        val prefs = SettingsPreferences(applicationContext).settings.value
-        val preflight = SafetyGuardrailManager.checkPreflight(applicationContext, prefs)
-        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
-            _recordingStatus.value = RecordingStatus(
-                stage = RecordingStage.ERROR,
-                isRecording = false,
-                error = preflight.message
-            )
-            val detail = if (preflight.reason == SafetyStopReason.BATTERY_LOW) {
-                SafetyGuardrailManager.getBatteryInfo(applicationContext).percentage
-            } else {
-                (SafetyGuardrailManager.getAvailableStorageBytes(applicationContext) / (1024 * 1024)).toInt()
-            }
-            showSafetyNotification(preflight.reason, detail)
-            stopSelf()
-            return
-        }
-
-        wakeLock?.acquire(3 * 60 * 60 * 1000L)
+        // Fulfill Android OS Foreground Service watchdog contract immediately
         val notification = createNotification("Video Recording · Screen kept dark")
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             var fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
             if (hasMicPermission) {
@@ -340,6 +328,36 @@ class RecordingService : LifecycleService() {
             }
         } else {
             startForeground(NOTIFICATION_ID, notification)
+        }
+
+        if (_recordingStatus.value.isRecording) {
+            return
+        }
+
+        wakeLock?.acquire(3 * 60 * 60 * 1000L)
+
+        val prefs = SettingsPreferences(applicationContext).settings.value
+        val preflight = SafetyGuardrailManager.checkPreflight(applicationContext, prefs)
+        if (preflight is SafetyGuardrailManager.PreflightCheckResult.Blocked) {
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.ERROR,
+                isRecording = false,
+                error = preflight.message
+            )
+            val detail = if (preflight.reason == SafetyStopReason.BATTERY_LOW) {
+                SafetyGuardrailManager.getBatteryInfo(applicationContext).percentage
+            } else {
+                (SafetyGuardrailManager.getAvailableStorageBytes(applicationContext) / (1024 * 1024)).toInt()
+            }
+            showSafetyNotification(preflight.reason, detail)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            stopSelf()
+            return
         }
 
         val manager = VideoRecordingManager(applicationContext, PrivateAppStorageProvider(applicationContext))

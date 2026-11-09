@@ -203,6 +203,8 @@ fun RecordingScreen(
 
     // Controls visibility and interaction state
     var showControlsOverlay by remember { mutableStateOf(false) }
+    // Only show fading HUD if starting freshly (skip if already recording from widget or quick tile)
+    var showFadingRecOverlay by rememberSaveable { mutableStateOf(!status.isRecording || status.durationSeconds <= 1L) }
     var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
     var showCameraPeek by remember { mutableStateOf(false) }
 
@@ -231,16 +233,23 @@ fun RecordingScreen(
         }
     }
 
-    // Start recording service if not already recording
-    LaunchedEffect(type) {
+    // Start recording service execution
+    var hasStartedRecording by remember { mutableStateOf(status.isRecording) }
+
+    fun startRecordingNow() {
+        if (hasStartedRecording || status.isRecording) return
+        hasStartedRecording = true
         if (type == RecordingType.AUDIO) {
-            if (!status.isRecording) {
-                viewModel.startAudio(context)
-            }
+            viewModel.startAudio(context)
         } else if (type == RecordingType.VIDEO) {
-            if (!status.isRecording) {
-                viewModel.startVideo(context)
-            }
+            viewModel.startVideo(context)
+        }
+    }
+
+    // Start recording service if overlay is not active (e.g. widget start or resumed)
+    LaunchedEffect(showFadingRecOverlay, type) {
+        if (!showFadingRecOverlay && !status.isRecording && !hasStartedRecording) {
+            startRecordingNow()
         }
     }
 
@@ -422,6 +431,11 @@ fun RecordingScreen(
 
     // Back handler with stop protection
     BackHandler {
+        if (!status.isRecording && showFadingRecOverlay) {
+            showFadingRecOverlay = false
+            onQuickExit()
+            return@BackHandler
+        }
         when (settings.stopBehavior) {
             StopBehavior.TAP_TO_STOP -> executeStop()
             StopBehavior.HOLD_TO_STOP,
@@ -432,6 +446,9 @@ fun RecordingScreen(
     }
 
     fun onScreenGestureTriggered() {
+        if (showFadingRecOverlay) {
+            showFadingRecOverlay = false
+        }
         showControlsOverlay = !showControlsOverlay
         lastInteractionTime = System.currentTimeMillis()
     }
@@ -594,6 +611,16 @@ fun RecordingScreen(
                 modifier = Modifier.fillMaxSize(),
                 isRecording = true,
                 durationSeconds = status.durationSeconds
+            )
+        }
+
+        // Fading REC symbol and 3-second countdown overlay on startup
+        if (showFadingRecOverlay && !showCameraPeek) {
+            FadingRecCountdownOverlay(
+                onCountdownFinished = {
+                    startRecordingNow()
+                },
+                onFadeComplete = { showFadingRecOverlay = false }
             )
         }
 

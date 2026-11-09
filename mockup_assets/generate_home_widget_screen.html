@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Home Screen Widget Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Plus Jakarta Sans', sans-serif; }
+    canvas { max-height: 90vh; width: auto; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+    #status { margin-top: 15px; font-size: 16px; color: #4ade80; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="1080" height="2400"></canvas>
+  <div id="status">Generating pixel-perfect 1080x2400 mockup...</div>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    // Wait for fonts to load
+    document.fonts.ready.then(() => {
+      render();
+    });
+
+    function roundRect(ctx, x, y, w, h, r) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function render() {
+      // 1. Wallpaper (Sleek deep dark abstract mesh gradient)
+      const bgGrad = ctx.createLinearGradient(0, 0, 1080, 2400);
+      bgGrad.addColorStop(0, '#0a0d14');
+      bgGrad.addColorStop(0.35, '#12141c');
+      bgGrad.addColorStop(0.7, '#0d0f17');
+      bgGrad.addColorStop(1, '#06070a');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1080, 2400);
+
+      // Subtle background nebula glows
+      const redGlow = ctx.createRadialGradient(200, 450, 20, 200, 450, 450);
+      redGlow.addColorStop(0, 'rgba(229, 9, 20, 0.12)');
+      redGlow.addColorStop(1, 'rgba(229, 9, 20, 0)');
+      ctx.fillStyle = redGlow;
+      ctx.fillRect(0, 0, 1080, 2400);
+
+      const blueGlow = ctx.createRadialGradient(900, 1400, 20, 900, 1400, 500);
+      blueGlow.addColorStop(0, 'rgba(37, 99, 235, 0.08)');
+      blueGlow.addColorStop(1, 'rgba(37, 99, 235, 0)');
+      ctx.fillStyle = blueGlow;
+      ctx.fillRect(0, 0, 1080, 2400);
+
+      // 2. Status Bar (Top)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 36px "Plus Jakarta Sans"';
+      ctx.textAlign = 'left';
+      ctx.fillText('10:03', 70, 95);
+
+      // Status Bar Icons (Right: 5G, Wi-Fi, Battery, Camera privacy dot)
+      // Privacy green camera indicator dot
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(830, 80, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 28px "Plus Jakarta Sans"';
+      ctx.textAlign = 'right';
+      ctx.fillText('5G', 910, 90);
+
+      // Wi-Fi arcs
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(950, 88, 14, Math.PI * 1.2, Math.PI * 1.8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(950, 88, 8, Math.PI * 1.2, Math.PI * 1.8);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(950, 86, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Battery Pill
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      roundRect(ctx, 985, 70, 52, 28, 7);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, 990, 75, 36, 18, 4);
+      ctx.fill();
+      roundRect(ctx, 1038, 79, 4, 10, 2);
+      ctx.fill();
+
+      // 3. DATE & WEATHER ROW (Above widget)
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '600 32px "Plus Jakarta Sans"';
+      ctx.fillText('Sunday, Nov 1  •  24°C Sunny', 60, 200);
+
+      // 4. LONG RECTANGULAR WIDGET (Wide Horizontal Card)
+      const wX = 50;
+      const wY = 240;
+      const wW = 980;
+      const wH = 210;
+
+      // Outer Red Ambient Glow
+      ctx.save();
+      ctx.shadowColor = 'rgba(229, 9, 20, 0.45)';
+      ctx.shadowBlur = 35;
+      ctx.shadowOffsetY = 8;
+      ctx.fillStyle = '#141418';
+      roundRect(ctx, wX, wY, wW, wH, 36);
+      ctx.fill();
+      ctx.restore();
+
+      // Card Border & Subtle Gradient Surface
+      const cardGrad = ctx.createLinearGradient(wX, wY, wX, wY + wH);
+      cardGrad.addColorStop(0, '#1c1c22');
+      cardGrad.addColorStop(1, '#111115');
+      ctx.fillStyle = cardGrad;
+      roundRect(ctx, wX, wY, wW, wH, 36);
+      ctx.fill();
+      ctx.strokeStyle = '#2d2d38';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Top Highlight Rim
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(wX + 36, wY + 1);
+      ctx.lineTo(wX + wW - 36, wY + 1);
+      ctx.stroke();
+
+      // Widget Content:
+      // Left Record Icon Box
+      const iconBoxX = wX + 32;
+      const iconBoxY = wY + 38;
+      const iconBoxSize = 134;
+
+      const iconGrad = ctx.createLinearGradient(iconBoxX, iconBoxY, iconBoxX, iconBoxY + iconBoxSize);
+      iconGrad.addColorStop(0, '#e50914');
+      iconGrad.addColorStop(1, '#9b050d');
+      ctx.fillStyle = iconGrad;
+      roundRect(ctx, iconBoxX, iconBoxY, iconBoxSize, iconBoxSize, 28);
+      ctx.fill();
+
+      // Pulsing Camera Glyph inside
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, iconBoxX + 32, iconBoxY + 44, 70, 48, 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(iconBoxX + 98, iconBoxY + 54);
+      ctx.lineTo(iconBoxX + 118, iconBoxY + 40);
+      ctx.lineTo(iconBoxX + 118, iconBoxY + 96);
+      ctx.lineTo(iconBoxX + 98, iconBoxY + 82);
+      ctx.closePath();
+      ctx.fill();
+
+      // Central Title & Status
+      const textX = iconBoxX + iconBoxSize + 28;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 36px "Plus Jakarta Sans"';
+      ctx.textAlign = 'left';
+      ctx.fillText('RECORDING ACTIVE', textX, wY + 88);
+
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '600 26px "Plus Jakarta Sans"';
+      ctx.fillText('Screen Off Mode  •  1080p FHD', textX, wY + 130);
+
+      ctx.fillStyle = '#71717a';
+      ctx.font = '500 22px "Plus Jakarta Sans"';
+      ctx.fillText('Tap widget to stop recording', textX, wY + 168);
+
+      // Right: Glowing "LIVE REC" Pill & Timer
+      const badgeW = 210;
+      const badgeH = 68;
+      const badgeX = wX + wW - badgeW - 30;
+      const badgeY = wY + 71;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(229, 9, 20, 0.6)';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#e50914';
+      roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 20);
+      ctx.fill();
+      ctx.restore();
+
+      // Blinking red dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(badgeX + 28, badgeY + badgeH/2, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 26px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.fillText('00:01:42', badgeX + 48, badgeY + badgeH/2 + 9);
+
+      // 5. APP GRID (Filled 4x4 Grid of Popular Apps)
+      const apps = [
+        // Row 1
+        { name: 'YouTube', color1: '#FF0000', color2: '#CC0000', type: 'yt' },
+        { name: 'WhatsApp', color1: '#25D366', color2: '#128C7E', type: 'wa' },
+        { name: 'Instagram', color1: '#833AB4', color2: '#FD1D1D', type: 'ig' },
+        { name: 'Camera', color1: '#374151', color2: '#1F2937', type: 'cam' },
+        // Row 2
+        { name: 'Chrome', color1: '#4285F4', color2: '#34A853', type: 'chrome' },
+        { name: 'Spotify', color1: '#1DB954', color2: '#191414', type: 'spot' },
+        { name: 'Netflix', color1: '#141414', color2: '#000000', type: 'nflx' },
+        { name: 'Maps', color1: '#34A853', color2: '#4285F4', type: 'maps' },
+        // Row 3
+        { name: 'Gmail', color1: '#EA4335', color2: '#FBBC05', type: 'gmail' },
+        { name: 'Photos', color1: '#FFFFFF', color2: '#E5E7EB', type: 'photos' },
+        { name: 'TikTok', color1: '#010101', color2: '#111827', type: 'tiktok' },
+        { name: 'Telegram', color1: '#2AABEE', color2: '#229ED9', type: 'tg' },
+        // Row 4
+        { name: 'Play Store', color1: '#0086F8', color2: '#00C1A0', type: 'play' },
+        { name: 'Drive', color1: '#FFBA00', color2: '#00AC47', type: 'drive' },
+        { name: 'Discord', color1: '#5865F2', color2: '#4752C4', type: 'discord' },
+        { name: 'Settings', color1: '#4B5563', color2: '#374151', type: 'settings' }
+      ];
+
+      const startY = 530;
+      const rowGap = 290;
+      const colWidth = 1080 / 4;
+      const iconSize = 150;
+
+      apps.forEach((app, index) => {
+        const col = index % 4;
+        const row = Math.floor(index / 4);
+        const cx = col * colWidth + colWidth / 2;
+        const cy = startY + row * rowGap;
+
+        // App Icon Box
+        const ix = cx - iconSize / 2;
+        const iy = cy - iconSize / 2;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = 18;
+        ctx.shadowOffsetY = 6;
+
+        const iGrad = ctx.createLinearGradient(ix, iy, ix, iy + iconSize);
+        iGrad.addColorStop(0, app.color1);
+        iGrad.addColorStop(1, app.color2);
+        ctx.fillStyle = iGrad;
+        roundRect(ctx, ix, iy, iconSize, iconSize, 38);
+        ctx.fill();
+        ctx.restore();
+
+        // Icon Artwork Details
+        drawAppIconSymbol(ctx, cx, cy, app.type);
+
+        // App Label
+        ctx.fillStyle = '#f4f4f5';
+        ctx.font = '600 27px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText(app.name, cx, iy + iconSize + 48);
+      });
+
+      // 6. GOOGLE SEARCH BAR (Above Dock)
+      const sY = 1880;
+      const sW = 960;
+      const sH = 110;
+      const sX = (1080 - sW) / 2;
+
+      ctx.fillStyle = 'rgba(38, 38, 46, 0.85)';
+      roundRect(ctx, sX, sY, sW, sH, 55);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // "G" Logo
+      ctx.fillStyle = '#4285F4';
+      ctx.font = '800 44px "Plus Jakarta Sans"';
+      ctx.textAlign = 'left';
+      ctx.fillText('G', sX + 38, sY + 70);
+
+      // Search hint text
+      ctx.fillStyle = '#71717a';
+      ctx.font = '500 28px "Plus Jakarta Sans"';
+      ctx.fillText('Search web & apps...', sX + 105, sY + 68);
+
+      // Mic & Lens icons on right
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '600 26px "Plus Jakarta Sans"';
+      ctx.textAlign = 'right';
+      ctx.fillText('🎙  📷', sX + sW - 35, sY + 68);
+
+      // 7. BOTTOM DOCK (4 Primary Apps)
+      const dockY = 2050;
+      const dockApps = [
+        { name: 'Phone', color1: '#10B981', color2: '#059669', type: 'phone' },
+        { name: 'Messages', color1: '#3B82F6', color2: '#2563EB', type: 'msg' },
+        { name: 'Chrome', color1: '#4285F4', color2: '#34A853', type: 'chrome' },
+        { name: 'BSR Pro', color1: '#e50914', color2: '#800000', type: 'bsr' }
+      ];
+
+      dockApps.forEach((app, i) => {
+        const cx = i * colWidth + colWidth / 2;
+        const cy = dockY + 70;
+        const ix = cx - iconSize / 2;
+        const iy = cy - iconSize / 2;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 6;
+        const dGrad = ctx.createLinearGradient(ix, iy, ix, iy + iconSize);
+        dGrad.addColorStop(0, app.color1);
+        dGrad.addColorStop(1, app.color2);
+        ctx.fillStyle = dGrad;
+        roundRect(ctx, ix, iy, iconSize, iconSize, 38);
+        ctx.fill();
+        ctx.restore();
+
+        drawAppIconSymbol(ctx, cx, cy, app.type);
+      });
+
+      // Bottom Gesture Bar
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      roundRect(ctx, 360, 2355, 360, 10, 5);
+      ctx.fill();
+
+      // Trigger automatic high-res download
+      downloadImage();
+    }
+
+    function drawAppIconSymbol(ctx, cx, cy, type) {
+      ctx.fillStyle = '#ffffff';
+      if (type === 'yt') {
+        roundRect(ctx, cx - 44, cy - 30, 88, 60, 14);
+        ctx.fill();
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy - 18);
+        ctx.lineTo(cx + 18, cy);
+        ctx.lineTo(cx - 10, cy + 18);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'wa') {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#128C7E';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 32, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 40px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('📞', cx, cy + 14);
+      } else if (type === 'ig') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 9;
+        roundRect(ctx, cx - 36, cy - 36, 72, 72, 22);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx + 22, cy - 22, 5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'cam') {
+        roundRect(ctx, cx - 38, cy - 26, 76, 52, 12);
+        ctx.fill();
+        ctx.fillStyle = '#1F2937';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'chrome') {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4285F4';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'spot') {
+        ctx.strokeStyle = '#121212';
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(cx, cy + 30, 48, Math.PI * 1.25, Math.PI * 1.75);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy + 30, 32, Math.PI * 1.22, Math.PI * 1.78);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy + 30, 18, Math.PI * 1.2, Math.PI * 1.8);
+        ctx.stroke();
+      } else if (type === 'nflx') {
+        ctx.fillStyle = '#E50914';
+        ctx.font = '900 80px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('N', cx, cy + 30);
+      } else if (type === 'maps') {
+        ctx.fillStyle = '#EA4335';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 8, 26, Math.PI, 0);
+        ctx.lineTo(cx, cy + 32);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 8, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'gmail') {
+        ctx.fillStyle = '#EA4335';
+        ctx.font = '900 64px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('M', cx, cy + 24);
+      } else if (type === 'photos') {
+        const colors = ['#EA4335', '#4285F4', '#FBBC05', '#34A853'];
+        for (let i = 0; i < 4; i++) {
+          ctx.fillStyle = colors[i];
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(i * Math.PI/2) * 18, cy + Math.sin(i * Math.PI/2) * 18, 16, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'tiktok') {
+        ctx.fillStyle = '#00f2fe';
+        ctx.font = '900 66px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('♪', cx - 3, cy + 22);
+        ctx.fillStyle = '#fe0979';
+        ctx.fillText('♪', cx + 3, cy + 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('♪', cx, cy + 23);
+      } else if (type === 'tg') {
+        ctx.beginPath();
+        ctx.moveTo(cx - 32, cy);
+        ctx.lineTo(cx + 34, cy - 28);
+        ctx.lineTo(cx + 10, cy + 30);
+        ctx.lineTo(cx - 6, cy + 8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'play') {
+        ctx.beginPath();
+        ctx.moveTo(cx - 26, cy - 36);
+        ctx.lineTo(cx + 36, cy);
+        ctx.lineTo(cx - 26, cy + 36);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'drive') {
+        ctx.font = '800 52px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('▲', cx, cy + 20);
+      } else if (type === 'discord') {
+        ctx.font = '700 56px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('💬', cx, cy + 20);
+      } else if (type === 'settings') {
+        ctx.font = '700 56px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚙️', cx, cy + 20);
+      } else if (type === 'phone') {
+        ctx.font = '700 56px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('📞', cx, cy + 20);
+      } else if (type === 'msg') {
+        ctx.font = '700 56px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('💬', cx, cy + 20);
+      } else if (type === 'bsr') {
+        ctx.font = '800 36px "Plus Jakarta Sans"';
+        ctx.textAlign = 'center';
+        ctx.fillText('REC', cx, cy + 14);
+      }
+    }
+
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.download = 'screenshot_slide2_multitask_apps.png';
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      document.getElementById('status').innerText = 'Downloaded screenshot_slide2_multitask_apps.png to Downloads folder!';
+    }
+  </script>
+</body>
+</html>

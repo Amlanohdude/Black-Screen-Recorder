@@ -1,9 +1,12 @@
 package com.example.ui.recordings
 
 import android.content.Context
+import android.graphics.SurfaceTexture
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
-import android.widget.VideoView
+import android.view.Surface
+import android.view.TextureView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +15,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -105,24 +110,56 @@ fun RecordingDetailDialog(
     var totalDurationMs by remember { mutableLongStateOf(recording.durationSeconds * 1000L) }
 
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
-    var videoViewRef by remember { mutableStateOf<VideoView?>(null) }
+    var activeSurface by remember { mutableStateOf<Surface?>(null) }
 
     val isVideo = recording.type == "VIDEO"
     val file = remember(recording.filePath) { File(recording.filePath) }
 
-    // Audio playback setup
+    // Calculate natural aspect ratio of recorded video
+    val videoAspectRatio = remember(file) {
+        if (isVideo && file.exists()) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(file.absolutePath)
+                val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+                val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toFloatOrNull() ?: 16f
+                val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toFloatOrNull() ?: 9f
+                retriever.release()
+                val isRotated = rotation == 90 || rotation == 270
+                val effectiveWidth = if (isRotated) rawH else rawW
+                val effectiveHeight = if (isRotated) rawW else rawH
+                (effectiveWidth / effectiveHeight).coerceIn(0.45f, 2.2f)
+            } catch (_: Exception) {
+                16f / 9f
+            }
+        } else {
+            16f / 9f
+        }
+    }
+
+    // Unified MediaPlayer playback setup for both Video (via TextureView) and Audio
     DisposableEffect(recording.id) {
-        if (!isVideo && file.exists()) {
+        if (file.exists()) {
             val player = MediaPlayer().apply {
                 try {
-                    setDataSource(context, Uri.fromFile(file))
-                    prepare()
-                    totalDurationMs = duration.toLong()
+                    setDataSource(file.absolutePath)
+                    setOnPreparedListener { mp ->
+                        totalDurationMs = mp.duration.toLong()
+                        if (isVideo && activeSurface != null) {
+                            try {
+                                mp.setSurface(activeSurface)
+                                mp.seekTo(1)
+                            } catch (_: Exception) {}
+                        }
+                    }
                     setOnCompletionListener {
                         isPlaying = false
                         currentPositionMs = 0L
                     }
-                } catch (_: Exception) {}
+                    prepareAsync()
+                } catch (e: Exception) {
+                    android.util.Log.e("MediaPlayerDialog", "Error setting data source", e)
+                }
             }
             mediaPlayer = player
         }
@@ -130,7 +167,19 @@ fun RecordingDetailDialog(
         onDispose {
             mediaPlayer?.release()
             mediaPlayer = null
+            activeSurface?.release()
+            activeSurface = null
             NativeAdManager.destroyAd(AdScreen.PLAYBACK)
+        }
+    }
+
+    // Attach active surface to MediaPlayer whenever either updates
+    LaunchedEffect(mediaPlayer, activeSurface) {
+        if (isVideo && mediaPlayer != null && activeSurface != null) {
+            try {
+                mediaPlayer?.setSurface(activeSurface)
+                mediaPlayer?.seekTo(1)
+            } catch (_: Exception) {}
         }
     }
 
@@ -140,11 +189,6 @@ fun RecordingDetailDialog(
             mediaPlayer?.let { player ->
                 if (player.isPlaying) {
                     currentPositionMs = player.currentPosition.toLong()
-                }
-            }
-            videoViewRef?.let { vv ->
-                if (vv.isPlaying) {
-                    currentPositionMs = vv.currentPosition.toLong()
                 }
             }
             delay(200L)
@@ -237,11 +281,11 @@ fun RecordingDetailDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Media Preview
+                // Media Preview with Opaque Container & Aspect Ratio Alignment
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(if (isVideo) 16f / 9f else 2.5f)
+                        .height(230.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black),
                     contentAlignment = Alignment.Center
@@ -253,22 +297,69 @@ fun RecordingDetailDialog(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     } else if (isVideo) {
-                        AndroidView(
-                            factory = { ctx ->
-                                VideoView(ctx).apply {
-                                    videoViewRef = this
-                                    setVideoURI(Uri.fromFile(file))
-                                    setOnPreparedListener { mp ->
-                                        totalDurationMs = mp.duration.toLong()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(videoAspectRatio, matchHeightConstraintsFirst = true)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    TextureView(ctx).apply {
+                                        surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                                            override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+                                                val s = Surface(surface)
+                                                activeSurface = s
+                                                try {
+                                                    mediaPlayer?.setSurface(s)
+                                                    mediaPlayer?.seekTo(1)
+                                                } catch (_: Exception) {}
+                                            }
+
+                                            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
+                                            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                                                try {
+                                                    mediaPlayer?.setSurface(null)
+                                                } catch (_: Exception) {}
+                                                activeSurface?.release()
+                                                activeSurface = null
+                                                return true
+                                            }
+
+                                            override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+                                        }
                                     }
-                                    setOnCompletionListener {
-                                        isPlaying = false
-                                        currentPositionMs = 0L
-                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            // Play Button Overlay when paused
+                            if (!isPlaying) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.55f))
+                                        .clickable {
+                                            mediaPlayer?.let { mp ->
+                                                mp.start()
+                                                isPlaying = true
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(36.dp)
+                                    )
                                 }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                            }
+                        }
                     } else {
                         // Audio visualizer placeholder
                         Row(
@@ -293,25 +384,13 @@ fun RecordingDetailDialog(
                 ) {
                     IconButton(
                         onClick = {
-                            if (isVideo) {
-                                videoViewRef?.let { vv ->
-                                    if (vv.isPlaying) {
-                                        vv.pause()
-                                        isPlaying = false
-                                    } else {
-                                        vv.start()
-                                        isPlaying = true
-                                    }
-                                }
-                            } else {
-                                mediaPlayer?.let { mp ->
-                                    if (mp.isPlaying) {
-                                        mp.pause()
-                                        isPlaying = false
-                                    } else {
-                                        mp.start()
-                                        isPlaying = true
-                                    }
+                            mediaPlayer?.let { mp ->
+                                if (mp.isPlaying) {
+                                    mp.pause()
+                                    isPlaying = false
+                                } else {
+                                    mp.start()
+                                    isPlaying = true
                                 }
                             }
                         },
@@ -342,11 +421,7 @@ fun RecordingDetailDialog(
                         onValueChange = { fraction ->
                             val seekMs = (totalDurationMs * fraction).toLong()
                             currentPositionMs = seekMs
-                            if (isVideo) {
-                                videoViewRef?.seekTo(seekMs.toInt())
-                            } else {
-                                mediaPlayer?.seekTo(seekMs.toInt())
-                            }
+                            mediaPlayer?.seekTo(seekMs.toInt())
                         },
                         colors = SliderDefaults.colors(
                             thumbColor = AccentRed,
@@ -575,8 +650,6 @@ fun RecordingDetailDialog(
                             mediaPlayer?.stop()
                             mediaPlayer?.release()
                             mediaPlayer = null
-                            videoViewRef?.stopPlayback()
-                            videoViewRef?.setVideoURI(null)
                         } catch (_: Exception) {}
                         onDelete()
                         onDismiss()
