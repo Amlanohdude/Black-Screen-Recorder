@@ -283,6 +283,9 @@ override fun onResume() {
             android.util.Log.w("MainActivity", "InAppUpdateManager onResume failed: ${t.message}")
         }
     }
+    try {
+        com.example.widget.QuickRecordWidgetProvider.updateAllWidgets(applicationContext)
+    } catch (_: Throwable) {}
 }
 
 override fun onDestroy() {

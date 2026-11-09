@@ -22,6 +22,8 @@
     <string name="widget_quick_bar_description">Wide 1-tap recording action bar with live status badge.</string>
     <string name="widget_quick_dashboard_name">Recording Dashboard (2×2)</string>
     <string name="widget_quick_dashboard_description">Expanded recording control card with prominent trigger and session status.</string>
+    <string name="widget_dual_record_name">Dual Record (2×1)</string>
+    <string name="widget_dual_record_description">Dual 1-tap buttons for instant video and audio recording from your home screen.</string>
     <string name="tile_quick_record_label">Quick Record</string>
     <string name="tile_quick_audio_label">Quick Audio</string>
     <string name="tile_subtitle_tap_to_record">Tap to record</string>

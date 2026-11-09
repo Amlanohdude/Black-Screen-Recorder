@@ -99,7 +99,11 @@
             android:label="@string/widget_quick_bar_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_RECORD_VIDEO" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_RECORD_AUDIO" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_STOP_RECORD" />
                 <action android:name="com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_REFRESH_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -117,6 +121,23 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_dashboard_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.DualRecordWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_dual_record_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_RECORD_VIDEO" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_RECORD_AUDIO" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_STOP_RECORD" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_TOGGLE_RECORD" />
+                <action android:name="com.blackscreenrecorder.widget.ACTION_REFRESH_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_dual_widget_info" />
         </receiver>
 
         <service

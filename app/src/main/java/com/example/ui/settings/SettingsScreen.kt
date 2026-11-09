@@ -113,6 +113,7 @@ import com.example.storage.VolumeStopTrigger
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
 import com.example.growth.InAppReviewManager
+import com.example.widget.DualRecordWidgetProvider
 import com.example.widget.QuickAudioWidgetProvider
 import com.example.widget.QuickBarWidgetProvider
 import com.example.widget.QuickDashboardWidgetProvider
@@ -954,6 +955,49 @@ fun SettingsScreen(
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
+
+                    // Dual Record Option (Both Video & Audio)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pinWidget(DualRecordWidgetProvider::class.java, "Dual Record (2×1)") },
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = BorderStroke(1.dp, BorderSubtle),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(AccentRed.copy(alpha = 0.14f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Widgets,
+                                    contentDescription = "Dual Record",
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Dual Record (2×1 Dual Bar)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Both Video and Audio 1-tap options in one widget",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
 
                     // Audio Option
                     Card(

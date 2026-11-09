@@ -10,7 +10,7 @@
     android:maxResizeHeight="350dp"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_horizontal_2x1"
+    android:initialLayout="@layout/widget_dual_horizontal_2x1"
     android:previewImage="@drawable/ic_launcher_foreground"
     android:widgetCategory="home_screen"
     android:description="@string/widget_quick_bar_description" />
