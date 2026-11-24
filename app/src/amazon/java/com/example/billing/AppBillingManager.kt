@@ -39,8 +39,8 @@ object AppBillingManager : PurchasingListener {
                 isPro = PremiumManager.isPro()
             )
 
-            // Register listener with the passed context (Activity if available, else ApplicationContext)
-            PurchasingService.registerListener(context, this)
+            // Register listener once on ApplicationContext per Amazon SDK guidelines
+            PurchasingService.registerListener(app, this)
             PurchasingService.enablePendingPurchases()
 
             PurchasingService.getUserData()
@@ -81,8 +81,6 @@ object AppBillingManager : PurchasingListener {
     fun launchPurchaseFlow(activity: Activity, skuId: String = PRO_PRODUCT_ID): Boolean {
         return try {
             _uiState.value = _uiState.value.copy(isPurchasePending = true, userMessage = null)
-            // Re-register with foreground Activity context to ensure modal attaches properly
-            PurchasingService.registerListener(activity, this)
             val requestId = PurchasingService.purchase(skuId)
             Log.d(TAG, "Initiated Amazon purchase for $skuId, requestId=$requestId")
             true

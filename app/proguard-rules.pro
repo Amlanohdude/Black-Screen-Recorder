@@ -11,8 +11,10 @@
 # -------------------------------------------------------------
 -keep class com.android.billingclient.api.** { *; }
 -dontwarn com.android.billingclient.**
--keep class com.amazon.device.iap.** { *; }
--dontwarn com.amazon.device.**
+# Amazon Appstore SDK (IAP, Licensing & Kiwi Runtime)
+-dontwarn com.amazon.**
+-keep class com.amazon.** { *; }
+-keepattributes *Annotation*
 -keep class com.xiaomi.billingclient.api.** { *; }
 -dontwarn com.xiaomi.billingclient.**
 -keep class com.iap.** { *; }
