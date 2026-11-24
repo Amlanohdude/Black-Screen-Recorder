@@ -27,6 +27,14 @@ object InAppReviewManager {
     const val MILESTONE_TARGET_RECORDINGS = 3
 
     /**
+     * Returns total number of successfully completed and saved recordings.
+     */
+    fun getSuccessfulRecordingCount(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_RECORDING_SUCCESS_COUNT, 0)
+    }
+
+    /**
      * Called whenever a recording session finishes and is saved successfully.
      * When reaching the 3rd successful recording milestone, launches the official In-App Review sheet.
      */
@@ -83,6 +91,16 @@ object InAppReviewManager {
      */
     fun openPlayStorePage(context: Context) {
         val packageName = context.packageName
+        if (com.example.BuildConfig.FLAVOR == "xiaomi") {
+            try {
+                val miIntent = Intent(Intent.ACTION_VIEW, Uri.parse("mimarket://details?id=$packageName")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(miIntent)
+                return
+            } catch (_: Throwable) {}
+        }
+
         if (com.example.BuildConfig.FLAVOR == "amazon") {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("amzn://apps/android?p=$packageName")).apply {

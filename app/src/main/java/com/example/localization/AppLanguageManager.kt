@@ -97,10 +97,6 @@ object AppLanguageManager {
                 Locale.forLanguageTag(languageCode)
             }
             Locale.setDefault(targetLocale)
-            val config = Configuration(context.resources.configuration)
-            config.setLocale(targetLocale)
-            @Suppress("DEPRECATION")
-            context.resources.updateConfiguration(config, context.resources.displayMetrics)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val localeManager = context.getSystemService(LocaleManager::class.java)
@@ -111,8 +107,20 @@ object AppLanguageManager {
                         localeManager.applicationLocales = LocaleList(targetLocale)
                     }
                 }
+            } else {
+                try {
+                    val res = context.resources
+                    if (res != null) {
+                        val config = Configuration(res.configuration)
+                        config.setLocale(targetLocale)
+                        @Suppress("DEPRECATION")
+                        res.updateConfiguration(config, res.displayMetrics)
+                    }
+                } catch (_: Throwable) {
+                    // Prevent ActivityThread updateLocaleListFromAppContext NPE on OEM ROMs
+                }
             }
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             // Safe fallback
         }
     }

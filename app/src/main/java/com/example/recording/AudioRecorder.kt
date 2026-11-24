@@ -61,7 +61,7 @@ class AudioRecorder(
             mediaRecorder = recorder
             isRecording = true
             file
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e("AudioRecorder", "Failed to start audio recording", e)
             release()
             currentOutputFile?.let { if (it.exists() && it.length() == 0L) it.delete() }
@@ -74,7 +74,7 @@ class AudioRecorder(
         if (!isRecording) return 0
         return try {
             mediaRecorder?.maxAmplitude ?: 0
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             0
         }
     }
@@ -124,7 +124,7 @@ class AudioRecorder(
                 file?.delete()
                 null
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e("AudioRecorder", "Error stopping audio recorder", e)
             release()
             if (file != null && file.exists() && file.length() > 0) {
@@ -142,7 +142,7 @@ class AudioRecorder(
             routingSession = null
             mediaRecorder?.reset()
             mediaRecorder?.release()
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
         mediaRecorder = null
         isRecording = false
     }

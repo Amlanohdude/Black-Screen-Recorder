@@ -110,7 +110,7 @@ class RecordingService : LifecycleService() {
             if (intent?.action == Intent.ACTION_SCREEN_OFF) {
                 if (!_recordingStatus.value.isRecording) return
                 val settings = SettingsPreferences(applicationContext).settings.value
-                if (settings.stopOnScreenOff && !settings.backgroundRecordingEnabled) {
+                if (settings.stopOnScreenOff) {
                     Log.d(TAG, "Screen off / power button detected during recording. Initiating non-touch stop.")
                     BlindOperationHaptics.vibrateSaved(applicationContext)
                     stopActiveRecording()
@@ -194,10 +194,21 @@ class RecordingService : LifecycleService() {
 
         // Fulfill Android OS Foreground Service watchdog contract immediately
         val notification = createNotification("Audio Recording · Screen kept dark")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "SecurityException/Error in startForeground for audio recording: ${t.message}", t)
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.ERROR,
+                isRecording = false,
+                error = "Cannot start audio recording: ${t.localizedMessage}"
+            )
+            stopSelf()
+            return
         }
 
         if (_recordingStatus.value.isRecording) {
@@ -310,24 +321,35 @@ class RecordingService : LifecycleService() {
 
         // Fulfill Android OS Foreground Service watchdog contract immediately
         val notification = createNotification("Video Recording · Screen kept dark")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            var fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-            if (hasMicPermission) {
-                fgsType = fgsType or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-            }
-            startForeground(NOTIFICATION_ID, notification, fgsType)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            var fgsType = 0
-            if (hasMicPermission) {
-                fgsType = fgsType or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-            }
-            if (fgsType != 0) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                var fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+                if (hasMicPermission) {
+                    fgsType = fgsType or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                }
                 startForeground(NOTIFICATION_ID, notification, fgsType)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                var fgsType = 0
+                if (hasMicPermission) {
+                    fgsType = fgsType or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                }
+                if (fgsType != 0) {
+                    startForeground(NOTIFICATION_ID, notification, fgsType)
+                } else {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        } catch (t: Throwable) {
+            Log.e(TAG, "SecurityException/Error in startForeground for video recording: ${t.message}", t)
+            _recordingStatus.value = RecordingStatus(
+                stage = RecordingStage.ERROR,
+                isRecording = false,
+                error = "Cannot start video recording: ${t.localizedMessage}"
+            )
+            stopSelf()
+            return
         }
 
         if (_recordingStatus.value.isRecording) {

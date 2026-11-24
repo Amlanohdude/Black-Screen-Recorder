@@ -164,8 +164,6 @@ try {
         if (canRequestAds) {
             try {
                 NativeAdManager.initialize(applicationContext)
-                NativeAdManager.preloadInitialAds(applicationContext)
-                RewardedAdManager.loadAd(applicationContext)
             } catch (t: Throwable) {
                 android.util.Log.w("MainActivity", "Ad initialization failed: ${t.message}")
             }
@@ -190,7 +188,7 @@ var showSplash by remember { mutableStateOf(true) }
 val settings by viewModel.userSettings.collectAsStateWithLifecycle()
 val configuration = androidx.compose.ui.platform.LocalConfiguration.current
 
-LaunchedEffect(settings.languageCode, configuration) {
+LaunchedEffect(settings.languageCode) {
     AppLanguageManager.applyLocale(this@MainActivity, settings.languageCode)
 }
 
@@ -335,14 +333,15 @@ coverToCustomize == null &&
 selectedTab = MainTab.RECORD
 }
 
-// On RECORD tab: Show exit confirmation dialog
+// On RECORD tab: Show exit confirmation dialog ONLY if recording is active to prevent accidental exit
 BackHandler(
 enabled = selectedTab == MainTab.RECORD &&
 activeRecordingType == null &&
 completedSummary == null &&
 coverToCustomize == null &&
 !isProScreenVisible &&
-!showExitConfirmDialog
+!showExitConfirmDialog &&
+recordingStatus.isRecording
 ) {
 showExitConfirmDialog = true
 }
@@ -355,9 +354,12 @@ activeRecordingType = recordingStatus.type
 }
 
 // Full screen recording display without bottom bar
-if (activeRecordingType != null) {
+val currentActiveType = activeRecordingType
+val currentSummary = completedSummary
+val currentCover = coverToCustomize
+if (currentActiveType != null) {
 RecordingScreen(
-type = activeRecordingType!!,
+type = currentActiveType,
 viewModel = viewModel,
 onRecordingFinished = { summary ->
 activeRecordingType = null
@@ -368,9 +370,9 @@ activeRecordingType = null
 (context as? Activity)?.finish()
 }
 )
-} else if (completedSummary != null) {
+} else if (currentSummary != null) {
 RecordingSummaryScreen(
-summary = completedSummary!!,
+summary = currentSummary,
 viewModel = viewModel,
 onDone = {
 completedSummary = null
@@ -381,9 +383,9 @@ onNavigateToRecordings = {
     selectedTab = MainTab.RECORDINGS
 }
 )
-} else if (coverToCustomize != null) {
+} else if (currentCover != null) {
 CoverCustomizeDialog(
-initialCover = coverToCustomize!!,
+initialCover = currentCover,
 onDismiss = { viewModel.closeCoverDesigner() },
 onSaveOnly = { newCover ->
 viewModel.saveCustomCover(newCover)
@@ -484,6 +486,12 @@ onNavigateToPro = { isProScreenVisible = true }
 }
 }
 }
+
+        LaunchedEffect(showActivateCoverDialog) {
+            if (showActivateCoverDialog) {
+                RewardedAdManager.loadAd(context)
+            }
+        }
 
         if (showActivateCoverDialog && pendingCustomCoverToActivate != null) {
             val cover = pendingCustomCoverToActivate!!
@@ -635,8 +643,10 @@ onNavigateToPro = { isProScreenVisible = true }
     }
 
     if (isUpdatePromptVisible) {
+        val availableCode = InAppUpdateManager.getAvailableVersionCode()
+        val versionLabel = if (availableCode != null && availableCode > 0) "Build $availableCode" else null
         UpdatePromptDialog(
-            versionName = "1.0.2",
+            versionName = versionLabel,
             onUpdateClick = {
                 (context as? Activity)?.let { InAppUpdateManager.triggerUpdateFlow(it) }
             },

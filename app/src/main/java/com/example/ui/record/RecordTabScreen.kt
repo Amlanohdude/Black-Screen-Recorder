@@ -51,6 +51,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Layers
@@ -60,6 +61,7 @@ import androidx.compose.material.icons.filled.SettingsVoice
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -105,11 +107,15 @@ import com.example.covers.CoverDisplay
 import com.example.presets.RecordingPresetId
 import com.example.recording.AudioMicSource
 import com.example.recording.AudioQuality
+import com.example.recording.RecordingService
+import com.example.recording.RecordingStage
+import com.example.recording.RecordingStatus
 import com.example.storage.EntitlementManager
 import com.example.storage.ExitMethod
 import com.example.storage.StorageCapacityEstimator
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
+import com.example.ui.components.WidgetSelectionDialog
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.BgDark
 import com.example.ui.theme.BorderSubtle
@@ -136,9 +142,14 @@ fun RecordTabScreen(
 
     val settings by viewModel.userSettings.collectAsStateWithLifecycle()
     val storageStats by viewModel.storageStats.collectAsStateWithLifecycle()
+    val recordings by viewModel.recordings.collectAsStateWithLifecycle()
     val entitlements by EntitlementManager.entitlements.collectAsStateWithLifecycle()
     val isPro = entitlements.isPro
     val strings = LocalAppStrings.current
+
+    val hasCompletedFirstRecording = remember(recordings.size) {
+        recordings.isNotEmpty() || com.example.growth.InAppReviewManager.getSuccessfulRecordingCount(context) >= 1
+    }
 
     val activeCover = settings.activeCover
     val selectedMode = settings.defaultRecordingType // "VIDEO" or "AUDIO"
@@ -152,6 +163,12 @@ fun RecordTabScreen(
     var showAudioSettingsSheet by remember { mutableStateOf(false) }
     var show4kLockedDialog by remember { mutableStateOf(false) }
     var showBatteryOptimizationDialog by remember { mutableStateOf(false) }
+    var showPermissionRationaleDialog by remember { mutableStateOf(false) }
+    var showWidgetDialog by remember { mutableStateOf(false) }
+    val prefs = remember { context.getSharedPreferences("bsr_prefs", Context.MODE_PRIVATE) }
+    var isWidgetTipDismissed by remember {
+        mutableStateOf(prefs.getBoolean("quick_record_widget_tip_dismissed", prefs.getBoolean("stealth_widget_tip_dismissed", false)))
+    }
 
     val is4KSupported = remember(settings.useFrontCamera) {
         com.example.recording.CameraHardwareHelper.is4KSupported(context, settings.useFrontCamera)
@@ -180,6 +197,15 @@ fun RecordTabScreen(
         )
     }
 
+    val recordingStatus by viewModel.recordingStatus.collectAsStateWithLifecycle()
+    LaunchedEffect(recordingStatus.stage, recordingStatus.error) {
+        if (recordingStatus.stage == RecordingStage.ERROR && !recordingStatus.isRecording && recordingStatus.error != null) {
+            val errorMsg = recordingStatus.error ?: "Unable to start recording"
+            snackbarHostState.showSnackbar(errorMsg)
+            RecordingService.updateStatus(RecordingStatus())
+        }
+    }
+
     fun showPermissionSnackbar(message: String) {
         coroutineScope.launch {
             val result = snackbarHostState.showSnackbar(
@@ -200,7 +226,8 @@ fun RecordTabScreen(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val cameraGranted = permissions[Manifest.permission.CAMERA] == true
-        if (cameraGranted) {
+        val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+        if (cameraGranted && micGranted) {
             onStartVideo()
         } else {
             showPermissionSnackbar(context.getString(R.string.permission_camera_mic))
@@ -220,32 +247,21 @@ fun RecordTabScreen(
 
     fun executeRecordingAction() {
         if (selectedMode == "VIDEO") {
-            val permissions = mutableListOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-
             val cameraGranted = ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.CAMERA
             ) == PackageManager.PERMISSION_GRANTED
+            val micGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
 
-            if (cameraGranted) {
+            if (cameraGranted && micGranted) {
                 onStartVideo()
             } else {
-                videoPermissionLauncher.launch(permissions.toTypedArray())
+                showPermissionRationaleDialog = true
             }
         } else {
-            val permissions = mutableListOf(
-                Manifest.permission.RECORD_AUDIO
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-
             val micGranted = ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.RECORD_AUDIO
@@ -254,7 +270,7 @@ fun RecordTabScreen(
             if (micGranted) {
                 onStartAudio()
             } else {
-                audioPermissionLauncher.launch(permissions.toTypedArray())
+                showPermissionRationaleDialog = true
             }
         }
     }
@@ -365,6 +381,86 @@ fun RecordTabScreen(
                                 tint = TextMuted,
                                 modifier = Modifier.size(18.dp)
                             )
+                        }
+                    }
+                }
+
+                // Quick Record Widget Tip Card (Only shown after at least 1 successful recording)
+                if (hasCompletedFirstRecording && !isWidgetTipDismissed) {
+                    Card(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showWidgetDialog = true
+                            isWidgetTipDismissed = true
+                            prefs.edit().putBoolean("quick_record_widget_tip_dismissed", true).apply()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("quick_record_widget_tip_card"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, BorderSubtle)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(AccentRed.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Widgets,
+                                        contentDescription = null,
+                                        tint = AccentRed,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "1-Tap Quick Record Widget",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        ),
+                                        color = TextPrimary
+                                    )
+                                    Text(
+                                        text = "Add a home screen widget to launch recordings instantly.",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontSize = 11.sp
+                                        ),
+                                        color = TextSecondary,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = {
+                                    isWidgetTipDismissed = true
+                                    prefs.edit().putBoolean("quick_record_widget_tip_dismissed", true).apply()
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Dismiss tip",
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1239,6 +1335,11 @@ fun RecordTabScreen(
     }
 
     // 4K UHD Locked Dialog
+    LaunchedEffect(show4kLockedDialog) {
+        if (show4kLockedDialog) {
+            RewardedAdManager.loadAd(context)
+        }
+    }
     if (show4kLockedDialog) {
         val activity = context.findActivity()
         AlertDialog(
@@ -1383,6 +1484,123 @@ fun RecordTabScreen(
             },
             containerColor = SurfacePrimary,
             shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // Quick Record Widget Selection Dialog
+    if (showWidgetDialog) {
+        WidgetSelectionDialog(
+            onDismissRequest = { showWidgetDialog = false },
+            defaultRecordingType = selectedMode
+        )
+    }
+
+    // Pre-Permission Privacy Rationale Dialog
+    if (showPermissionRationaleDialog) {
+        val isVideo = (selectedMode == "VIDEO")
+        AlertDialog(
+            onDismissRequest = { showPermissionRationaleDialog = false },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(AccentRed.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isVideo) Icons.Default.Videocam else Icons.Default.Mic,
+                        contentDescription = null,
+                        tint = AccentRed,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = if (isVideo) "Enable Camera & Mic" else "Enable Microphone",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = if (isVideo)
+                            "Required to capture video and audio while your screen is black or covered."
+                        else
+                            "Required to record high-fidelity audio while your screen is black or in the background.",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                        color = TextSecondary
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SurfaceSecondary)
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = AccentRed,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "100% Private — all files stay on your device.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = TextMuted
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPermissionRationaleDialog = false
+                        if (isVideo) {
+                            val permissions = mutableListOf(
+                                Manifest.permission.CAMERA,
+                                Manifest.permission.RECORD_AUDIO
+                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            videoPermissionLauncher.launch(permissions.toTypedArray())
+                        } else {
+                            val permissions = mutableListOf(
+                                Manifest.permission.RECORD_AUDIO
+                            )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            audioPermissionLauncher.launch(permissions.toTypedArray())
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Allow Access", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showPermissionRationaleDialog = false }
+                ) {
+                    Text(strings.maybeLater, color = TextSecondary)
+                }
+            },
+            containerColor = SurfacePrimary,
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }

@@ -129,10 +129,31 @@ fun RecordingsLockView(
         }
     }
 
-    fun authenticateWithBiometrics() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+    val hasBiometricHardware = remember(context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val pm = context.packageManager
+            pm.hasSystemFeature(android.content.pm.PackageManager.FEATURE_FINGERPRINT) ||
+            pm.hasSystemFeature("android.hardware.biometrics.fingerprint")
+        } else {
+            false
+        }
+    }
+    var activeCancellationSignal by remember { mutableStateOf<CancellationSignal?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
             try {
-                val cancellationSignal = CancellationSignal()
+                activeCancellationSignal?.cancel()
+            } catch (_: Throwable) {}
+        }
+    }
+
+    fun authenticateWithBiometrics() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && hasBiometricHardware && settings.biometricEnabled) {
+            try {
+                activeCancellationSignal?.cancel()
+                val signal = CancellationSignal()
+                activeCancellationSignal = signal
                 val prompt = android.hardware.biometrics.BiometricPrompt.Builder(context)
                     .setTitle("Unlock Vault")
                     .setSubtitle("Authenticate using biometrics to view recordings")
@@ -140,25 +161,27 @@ fun RecordingsLockView(
                     .build()
 
                 prompt.authenticate(
-                    cancellationSignal,
+                    signal,
                     context.mainExecutor,
                     object : android.hardware.biometrics.BiometricPrompt.AuthenticationCallback() {
                         override fun onAuthenticationSucceeded(result: android.hardware.biometrics.BiometricPrompt.AuthenticationResult?) {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onUnlocked()
+                            try {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUnlocked()
+                            } catch (_: Throwable) {}
                         }
                         override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
                             // Biometric prompt dismissed or canceled
                         }
                     }
                 )
-            } catch (_: Exception) {}
+            } catch (_: Throwable) {}
         }
     }
 
     // Auto-prompt biometrics once when unlocking existing vault
-    LaunchedEffect(Unit) {
-        if (!isSetupMode) {
+    LaunchedEffect(hasBiometricHardware, isSetupMode, settings.biometricEnabled) {
+        if (!isSetupMode && hasBiometricHardware && settings.biometricEnabled) {
             delay(150L)
             authenticateWithBiometrics()
         }
@@ -436,7 +459,7 @@ fun RecordingsLockView(
                             when (key) {
                                 "BIO" -> {
                                     // BIOMETRIC BUTTON
-                                    if (!isSetupMode) {
+                                    if (!isSetupMode && hasBiometricHardware && settings.biometricEnabled) {
                                         Box(
                                             modifier = Modifier
                                                 .size(68.dp)

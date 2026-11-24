@@ -40,6 +40,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +64,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -90,6 +94,7 @@ import kotlinx.coroutines.isActive
 import java.io.File
 import com.example.localization.LocalAppStrings
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordingDetailDialog(
     recording: RecordingEntity,
@@ -156,6 +161,11 @@ fun RecordingDetailDialog(
                         isPlaying = false
                         currentPositionMs = 0L
                     }
+                    setOnErrorListener { _, what, extra ->
+                        android.util.Log.e("MediaPlayerDialog", "MediaPlayer error: what=$what, extra=$extra")
+                        isPlaying = false
+                        true
+                    }
                     prepareAsync()
                 } catch (e: Exception) {
                     android.util.Log.e("MediaPlayerDialog", "Error setting data source", e)
@@ -195,9 +205,32 @@ fun RecordingDetailDialog(
         }
     }
 
+    // Automatically pause playback when app is backgrounded or screen turns off
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                mediaPlayer?.let { mp ->
+                    if (mp.isPlaying) {
+                        try {
+                            mp.pause()
+                            isPlaying = false
+                        } catch (_: Exception) {}
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     Dialog(
         onDismissRequest = {
-            mediaPlayer?.stop()
+            try {
+                mediaPlayer?.stop()
+            } catch (_: Exception) {}
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -248,46 +281,33 @@ fun RecordingDetailDialog(
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = { showDeleteConfirmDialog = true },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .testTag("detail_top_delete_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Delete Recording",
-                                tint = AccentRed,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        IconButton(
-                            onClick = {
+                    IconButton(
+                        onClick = {
+                            try {
                                 mediaPlayer?.stop()
-                                onDismiss()
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cancel",
-                                tint = TextSecondary
-                            )
-                        }
+                            } catch (_: Exception) {}
+                            onDismiss()
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cancel",
+                            tint = TextSecondary
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Media Preview with Opaque Container & Aspect Ratio Alignment
+                val previewHeight = if (isVideo) 220.dp else 120.dp
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(230.dp)
+                        .height(previewHeight)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black),
+                        .background(if (isVideo) Color.Black else SurfaceSecondary),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!file.exists()) {
@@ -345,8 +365,13 @@ fun RecordingDetailDialog(
                                         .background(Color.Black.copy(alpha = 0.55f))
                                         .clickable {
                                             mediaPlayer?.let { mp ->
-                                                mp.start()
-                                                isPlaying = true
+                                                try {
+                                                    mp.start()
+                                                    isPlaying = true
+                                                } catch (e: Exception) {
+                                                    android.util.Log.e("MediaPlayerDialog", "Error starting playback", e)
+                                                    isPlaying = false
+                                                }
                                             }
                                         },
                                     contentAlignment = Alignment.Center
@@ -361,17 +386,44 @@ fun RecordingDetailDialog(
                             }
                         }
                     } else {
-                        // Audio visualizer placeholder
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        // Compact audio preview with microphone badge and audio waveform
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = null,
-                                tint = AccentRed.copy(alpha = 0.6f),
-                                modifier = Modifier.size(48.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(AccentRed.copy(alpha = 0.12f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Mic,
+                                    contentDescription = null,
+                                    tint = AccentRed,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            // Dynamic audio waveform simulation
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val barHeights = listOf(10, 16, 24, 18, 30, 22, 14, 28, 34, 26, 16, 32, 22, 14, 20, 12, 18, 8)
+                                barHeights.forEachIndexed { idx, h ->
+                                    val currentProgress = if (totalDurationMs > 0) currentPositionMs.toFloat() / totalDurationMs else 0f
+                                    val barProgress = idx.toFloat() / barHeights.size
+                                    val isPassed = barProgress <= currentProgress
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .height(h.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(if (isPassed) AccentRed else BorderSubtle.copy(alpha = 0.6f))
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -385,12 +437,17 @@ fun RecordingDetailDialog(
                     IconButton(
                         onClick = {
                             mediaPlayer?.let { mp ->
-                                if (mp.isPlaying) {
-                                    mp.pause()
+                                try {
+                                    if (mp.isPlaying) {
+                                        mp.pause()
+                                        isPlaying = false
+                                    } else {
+                                        mp.start()
+                                        isPlaying = true
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("MediaPlayerDialog", "Error toggling playback", e)
                                     isPlaying = false
-                                } else {
-                                    mp.start()
-                                    isPlaying = true
                                 }
                             }
                         },
@@ -428,6 +485,24 @@ fun RecordingDetailDialog(
                             activeTrackColor = AccentRed,
                             inactiveTrackColor = BorderSubtle
                         ),
+                        thumb = {
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .background(AccentRed, CircleShape)
+                            )
+                        },
+                        track = { sliderState ->
+                            SliderDefaults.Track(
+                                sliderState = sliderState,
+                                colors = SliderDefaults.colors(
+                                    activeTrackColor = AccentRed,
+                                    inactiveTrackColor = BorderSubtle
+                                ),
+                                thumbTrackGapSize = 0.dp,
+                                drawStopIndicator = null
+                            )
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("media_slider")

@@ -480,7 +480,7 @@ executeSingleExport(recording, folderUri, folderName)
                         IconButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                val itemsToExport = filteredRecordings.filter { selectedIds.contains(it.id) }
+                                val itemsToExport = recordings.filter { it.id in selectedIds }
                                 startBatchExport(itemsToExport)
                             },
                             enabled = selectedIds.isNotEmpty(),
@@ -857,6 +857,12 @@ exportProgressState = null
 }
 )
 }
+
+    LaunchedEffect(showExportAdDialog) {
+        if (showExportAdDialog) {
+            RewardedAdManager.loadAd(context)
+        }
+    }
 
 if (showExportAdDialog) {
 AlertDialog(

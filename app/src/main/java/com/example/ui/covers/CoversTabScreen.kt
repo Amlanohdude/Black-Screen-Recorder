@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
 import android.app.Activity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -152,6 +153,12 @@ Text(strings.cancel, color = TextSecondary)
 }
 )
 }
+
+    LaunchedEffect(showCustomCoversLockedDialog) {
+        if (showCustomCoversLockedDialog) {
+            RewardedAdManager.loadAd(context)
+        }
+    }
 
 if (showCustomCoversLockedDialog) {
 val activity = context.findActivity()

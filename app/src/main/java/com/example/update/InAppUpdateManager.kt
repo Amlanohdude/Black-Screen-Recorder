@@ -106,7 +106,21 @@ object InAppUpdateManager {
             manager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
                 if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
                     cachedAppUpdateInfo = appUpdateInfo
-                    _isUpdatePromptVisible.value = true
+                    if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+                        try {
+                            manager.startUpdateFlowForResult(
+                                appUpdateInfo,
+                                activity,
+                                AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
+                                REQUEST_CODE_FLEXIBLE_UPDATE
+                            )
+                        } catch (t: Throwable) {
+                            Log.w(TAG, "Flexible update flow could not be started directly", t)
+                            _isUpdatePromptVisible.value = true
+                        }
+                    } else {
+                        _isUpdatePromptVisible.value = true
+                    }
                 } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
                     _isUpdateDownloaded.value = true
                 }
@@ -150,7 +164,21 @@ object InAppUpdateManager {
                 when {
                     appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE -> {
                         cachedAppUpdateInfo = appUpdateInfo
-                        _isUpdatePromptVisible.value = true
+                        if (appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+                            try {
+                                manager.startUpdateFlowForResult(
+                                    appUpdateInfo,
+                                    activity,
+                                    AppUpdateOptions.defaultOptions(AppUpdateType.FLEXIBLE),
+                                    REQUEST_CODE_FLEXIBLE_UPDATE
+                                )
+                            } catch (t: Throwable) {
+                                Log.w(TAG, "Flexible update flow launch failed", t)
+                                _isUpdatePromptVisible.value = true
+                            }
+                        } else {
+                            _isUpdatePromptVisible.value = true
+                        }
                     }
                     appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED -> {
                         _isUpdateDownloaded.value = true
@@ -218,6 +246,11 @@ object InAppUpdateManager {
     fun dismissDownloadedBanner() {
         _isUpdateDownloaded.value = false
     }
+
+    /**
+     * Returns the available version code from Play Core if cached.
+     */
+    fun getAvailableVersionCode(): Int? = cachedAppUpdateInfo?.availableVersionCode()
 
     /**
      * Shows or dismisses the Update Available prompt dialog.

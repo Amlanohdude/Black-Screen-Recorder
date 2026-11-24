@@ -132,22 +132,37 @@ abstract class BaseRecordWidgetProvider(
             }
 
             var serviceStarted = false
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    ContextCompat.startForegroundService(context, serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // Android 14+ (API 34+) strictly requires a foreground activity state when starting
+                // a foreground service with type 'camera' or 'microphone'. Launch via QuickTrampolineActivity.
+                try {
+                    val trampolineIntent = Intent(context, com.example.quicksettings.QuickTrampolineActivity::class.java).apply {
+                        action = targetAction
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(trampolineIntent)
+                    serviceStarted = true
+                } catch (e: Exception) {
+                    Log.e(TAG, "QuickTrampolineActivity launch failed on Android 14+", e)
                 }
-                serviceStarted = true
+            } else {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(context, serviceIntent)
+                    } else {
+                        context.startService(serviceIntent)
+                    }
+                    serviceStarted = true
 
-                val prefs = SettingsPreferences(context).settings.value
-                if (prefs.hapticFeedbackEnabled) {
-                    BlindOperationHaptics.vibrateStarted(context)
+                    val prefs = SettingsPreferences(context).settings.value
+                    if (prefs.hapticFeedbackEnabled) {
+                        BlindOperationHaptics.vibrateStarted(context)
+                    }
+                    val typeStr = if (isVideo) "Video" else "Audio"
+                    Toast.makeText(context, "$typeStr recording started (screen dark)", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Direct startForegroundService failed: ${e.message}, falling back to trampoline", e)
                 }
-                val typeStr = if (isVideo) "Video" else "Audio"
-                Toast.makeText(context, "$typeStr recording started (screen dark)", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Log.w(TAG, "Direct startForegroundService failed: ${e.message}, falling back to trampoline", e)
             }
 
             if (!serviceStarted) {
@@ -158,7 +173,7 @@ abstract class BaseRecordWidgetProvider(
                     }
                     context.startActivity(trampolineIntent)
                 } catch (e: Exception) {
-                    Log.e(TAG, "QuickTrampolineActivity launch also failed", e)
+                    Log.e(TAG, "QuickTrampolineActivity fallback launch also failed", e)
                 }
             }
             updateAllWidgets(context)
@@ -249,7 +264,7 @@ abstract class BaseRecordWidgetProvider(
                     }
                     views.setTextViewText(R.id.widget_badge, badgeText)
                     views.setTextColor(R.id.widget_badge, Color.parseColor("#8E8E93"))
-                    views.setTextViewText(R.id.widget_footer, "Discreet · Screen Kept Dark")
+                    views.setTextViewText(R.id.widget_footer, "Quick Record · Screen Kept Dark")
                 } catch (_: Exception) {}
             }
 
@@ -357,7 +372,7 @@ abstract class BaseRecordWidgetProvider(
                     views.setViewVisibility(R.id.layout_recording_dashboard, View.GONE)
                     views.setTextViewText(R.id.widget_dash_badge, "DUAL REC")
                     views.setTextColor(R.id.widget_dash_badge, Color.parseColor("#8E8E93"))
-                    views.setTextViewText(R.id.widget_dash_footer, "Discreet · Screen Kept Dark")
+                    views.setTextViewText(R.id.widget_dash_footer, "Quick Record · Screen Kept Dark")
                     views.setOnClickPendingIntent(R.id.btn_dash_video, videoPendingIntent)
                     views.setOnClickPendingIntent(R.id.btn_dash_audio, audioPendingIntent)
                 } else {

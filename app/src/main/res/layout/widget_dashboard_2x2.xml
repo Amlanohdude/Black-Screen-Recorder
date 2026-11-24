@@ -86,7 +86,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Discreet · Screen Kept Dark"
+        android:text="Quick Record · Screen Kept Dark"
         android:textColor="#666672"
         android:textSize="8sp" />
 

@@ -86,7 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Discreet · Dark"
+                android:text="Quick · Dark"
                 android:textColor="#8E8E93"
                 android:textSize="9sp"
                 android:singleLine="true"
@@ -128,7 +128,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Discreet · Dark"
+                android:text="Quick · Dark"
                 android:textColor="#8E8E93"
                 android:textSize="9sp"
                 android:singleLine="true"
@@ -185,7 +185,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Discreet · Screen Kept Dark"
+        android:text="Quick Record · Screen Kept Dark"
         android:textColor="#666672"
         android:textSize="8sp" />
 

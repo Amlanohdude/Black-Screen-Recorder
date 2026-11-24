@@ -24,7 +24,7 @@ enum class StopBehavior(val displayName: String, val description: String) {
 
 enum class ExitMethod(val id: String, val title: String, val description: String) {
     NORMAL_STOP_CONTROLS("NORMAL_STOP_CONTROLS", "Use normal stop controls", "Stop, save, and exit using the standard stop controls."),
-    GESTURE("GESTURE", "Use a gesture", "Use a discreet gesture while recording to stop, save, and exit.");
+    GESTURE("GESTURE", "Use a gesture", "Use a quick gesture while recording to stop, save, and exit.");
 
     companion object {
         fun fromId(id: String?): ExitMethod {
@@ -80,11 +80,11 @@ data class UserSettings(
     val customExportFolderUri: String? = null,
     val customExportFolderName: String? = null,
     val exitAfterRecordingEnabled: Boolean = false,
-    val backgroundRecordingEnabled: Boolean = false,
+    val backgroundRecordingEnabled: Boolean = true,
     val exitMethod: ExitMethod = ExitMethod.NORMAL_STOP_CONTROLS,
     val exitGesture: ExitGesture = ExitGesture.TWO_FINGER_DOUBLE_TAP,
     val volumeStopTrigger: VolumeStopTrigger = VolumeStopTrigger.VOLUME_DOWN_TWICE,
-    val stopOnScreenOff: Boolean = true,
+    val stopOnScreenOff: Boolean = false,
     val shakeToStopEnabled: Boolean = false,
     val flipToStopEnabled: Boolean = false,
     val preferredMicrophone: String = "PHONE_MIC",
@@ -175,7 +175,7 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
         val audioBitrate = prefs.getInt("audio_bitrate", 192000)
         val audioSampleRate = prefs.getInt("audio_sample_rate", 44100)
         val exitAfterRecordingEnabled = prefs.getBoolean("exit_after_recording_enabled", prefs.getBoolean("quick_stop_and_exit_enabled", false))
-        val backgroundRecordingEnabled = prefs.getBoolean("background_recording_enabled", false)
+        val backgroundRecordingEnabled = prefs.getBoolean("background_recording_enabled", true)
         val exitMethod = ExitMethod.fromId(prefs.getString("exit_method", "NORMAL_STOP_CONTROLS"))
         val exitGesture = ExitGesture.fromId(prefs.getString("exit_gesture", "TWO_FINGER_DOUBLE_TAP"))
         val activeAudioPreset = try {
@@ -222,7 +222,7 @@ ControlGesture.valueOf(prefs.getString("cover_control_gesture", ControlGesture.S
             exitMethod = exitMethod,
             exitGesture = exitGesture,
             volumeStopTrigger = VolumeStopTrigger.fromId(prefs.getString("volume_stop_trigger", VolumeStopTrigger.VOLUME_DOWN_TWICE.name)),
-            stopOnScreenOff = prefs.getBoolean("stop_on_screen_off", true),
+            stopOnScreenOff = prefs.getBoolean("stop_on_screen_off", false),
             shakeToStopEnabled = prefs.getBoolean("shake_to_stop_enabled", false),
             flipToStopEnabled = prefs.getBoolean("flip_to_stop_enabled", false),
             preferredMicrophone = preferredMicrophone,

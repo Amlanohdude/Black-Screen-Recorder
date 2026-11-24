@@ -157,6 +157,7 @@ replay_pid*
 /generate_icons.html
 /render_icon_option2*.html
 /test_generated_svg.svg
+motion_graphics_demo/
 store_assets/base64_assets/
 store_assets/icon_base64.txt
 

@@ -144,8 +144,12 @@ class RecordingRepository(
             for (file in files) {
                 if (!file.isFile) continue
                 if (file.length() == 0L) {
-                    // Safe cleanup of abandoned 0-byte corrupt files
-                    file.delete()
+                    val ageMs = System.currentTimeMillis() - file.lastModified()
+                    // Only delete abandoned 0-byte files that are older than 60 seconds.
+                    // Fresh files may be actively written by an ongoing recording session.
+                    if (ageMs > 60_000L) {
+                        file.delete()
+                    }
                     continue
                 }
                 val isMp4 = file.name.endsWith(".mp4", ignoreCase = true)

@@ -112,6 +112,7 @@ import com.example.storage.StorageCapacityEstimator
 import com.example.storage.VolumeStopTrigger
 import com.example.ui.MainViewModel
 import com.example.ui.components.TabTopHeader
+import com.example.ui.components.WidgetSelectionDialog
 import com.example.growth.InAppReviewManager
 import com.example.widget.DualRecordWidgetProvider
 import com.example.widget.QuickAudioWidgetProvider
@@ -708,7 +709,7 @@ fun SettingsScreen(
                                         executor
                                     ) { _ -> }
                                     Toast.makeText(context, "Tile addition prompt requested.", Toast.LENGTH_SHORT).show()
-                                } catch (_: Exception) {
+                                } catch (_: Throwable) {
                                     Toast.makeText(context, "Please add the tile via your Quick Settings edit panel.", Toast.LENGTH_LONG).show()
                                 }
                             },
@@ -924,313 +925,9 @@ fun SettingsScreen(
     }
 
     if (showWidgetDialog) {
-        val appWidgetManager = context.getSystemService(android.appwidget.AppWidgetManager::class.java)
-        val canPin = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appWidgetManager?.isRequestPinAppWidgetSupported == true
-
-        fun pinWidget(providerClass: Class<*>, widgetName: String) {
-            if (canPin) {
-                val provider = android.content.ComponentName(context, providerClass)
-                appWidgetManager?.requestPinAppWidget(provider, null, null)
-            } else {
-                Toast.makeText(context, "Touch and hold home screen, tap Widgets, and add $widgetName.", Toast.LENGTH_LONG).show()
-            }
-            showWidgetDialog = false
-        }
-
-        AlertDialog(
+        WidgetSelectionDialog(
             onDismissRequest = { showWidgetDialog = false },
-            title = {
-                Text(
-                    text = strings.dialogWidgetsTitle,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Choose which 1-tap widget to pin to your home screen:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Dual Record Option (Both Video & Audio)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(DualRecordWidgetProvider::class.java, "Dual Record (2×1)") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Widgets,
-                                    contentDescription = "Dual Record",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Dual Record (2×1 Dual Bar)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Both Video and Audio 1-tap options in one widget",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    // Audio Option
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(QuickAudioWidgetProvider::class.java, "Quick Audio") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Mic,
-                                    contentDescription = "Audio",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Quick Audio (1×1)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Always starts discreet audio recording",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    // Video Option
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(QuickVideoWidgetProvider::class.java, "Quick Video") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Videocam,
-                                    contentDescription = "Video",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Quick Video (1×1)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Always starts discreet video recording",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    // Universal Option
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(QuickRecordWidgetProvider::class.java, "Quick Record") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.RadioButtonChecked,
-                                    contentDescription = "Quick Record",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Quick Record (1×1)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Uses default mode (${settings.defaultRecordingType})",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    // 2x1 Horizontal Bar Option
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(QuickBarWidgetProvider::class.java, "Quick Bar (2×1)") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Widgets,
-                                    contentDescription = "Quick Bar",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Quick Bar (2×1 Wide)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Horizontal action bar with live status badge",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    // 2x2 Dashboard Option
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pinWidget(QuickDashboardWidgetProvider::class.java, "Dashboard (2×2)") },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceSecondary),
-                        border = BorderStroke(1.dp, BorderSubtle),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentRed.copy(alpha = 0.14f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Layers,
-                                    contentDescription = "Dashboard",
-                                    tint = AccentRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Control Dashboard (2×2)",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "Expanded card with session monitor & trigger",
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = "Tip: You can also resize any widget on your home screen by long-pressing it and dragging the edge handles.",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-                        color = TextSecondary.copy(alpha = 0.8f)
-                    )
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showWidgetDialog = false }) {
-                    Text(text = strings.cancel, color = AccentRed)
-                }
-            },
-            containerColor = SurfacePrimary,
-            shape = RoundedCornerShape(16.dp)
+            defaultRecordingType = settings.defaultRecordingType
         )
     }
 
@@ -1475,6 +1172,12 @@ fun SettingsScreen(
         )
     }
 
+    LaunchedEffect(showAutoStopLockedDialog) {
+        if (showAutoStopLockedDialog) {
+            RewardedAdManager.loadAd(context)
+        }
+    }
+
     if (showAutoStopLockedDialog) {
         val activity = context as? Activity
         AlertDialog(
@@ -1526,6 +1229,12 @@ fun SettingsScreen(
             containerColor = SurfacePrimary,
             shape = RoundedCornerShape(14.dp)
         )
+    }
+
+    LaunchedEffect(show4kLockedDialog) {
+        if (show4kLockedDialog) {
+            RewardedAdManager.loadAd(context)
+        }
     }
 
     if (show4kLockedDialog) {

@@ -52,11 +52,11 @@ import com.example.ui.theme.TextSecondary
  */
 @Composable
 fun UpdatePromptDialog(
-    versionName: String = "1.0.2",
+    versionName: String? = null,
     releaseNotes: List<String> = listOf(
         "Enhanced background recording stability",
-        "Refined Dashcam HUD speedometer & responsiveness",
-        "Performance optimizations & bug fixes"
+        "Performance optimizations and hardware compatibility",
+        "Bug fixes and security updates"
     ),
     onUpdateClick: () -> Unit,
     onDismiss: () -> Unit
@@ -98,6 +98,7 @@ fun UpdatePromptDialog(
                         color = TextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
+                    val badgeText = if (!versionName.isNullOrBlank()) "v$versionName is ready" else "New version ready"
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -105,7 +106,7 @@ fun UpdatePromptDialog(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "v$versionName is ready",
+                            text = badgeText,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.SemiBold

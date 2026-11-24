@@ -57,5 +57,5 @@ object AppLinks {
      * Default text used when sharing the app.
      */
     const val SHARE_APP_TEXT: String =
-        "Check out Black Screen Recorder - Discreet, secure, and privacy-focused screen recording:\n$PLAY_STORE_URL"
+        "Check out Black Screen Recorder - Secure, minimal, and privacy-focused screen recording:\n$PLAY_STORE_URL"
 }

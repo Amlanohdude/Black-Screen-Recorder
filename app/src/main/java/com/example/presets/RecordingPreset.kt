@@ -9,7 +9,7 @@ enum class RecordingPresetId(
     val shortSubtitle: String
 ) {
     DISCREET_VIDEO(
-        title = "Discreet Video",
+        title = "Quick Video",
         description = "720p · Back camera · Pure Black · Minimum brightness",
         shortSubtitle = "720p · Back cam · Pure Black · Min brightness"
     ),

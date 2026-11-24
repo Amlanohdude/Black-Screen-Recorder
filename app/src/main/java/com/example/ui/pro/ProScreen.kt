@@ -190,6 +190,10 @@ fun ProScreen(
     val billingState by AppBillingManager.uiState.collectAsStateWithLifecycle()
     val isAdLoading by RewardedAdManager.isLoading.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        RewardedAdManager.loadAd(context)
+    }
+
     LaunchedEffect(billingState.userMessage) {
         val msg = billingState.userMessage
         if (!msg.isNullOrBlank()) {
@@ -413,14 +417,14 @@ fun ProScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = if (isPro) Icons.Default.CheckCircle else Icons.Default.WorkspacePremium,
+                                imageVector = if (isPro) Icons.Default.CheckCircle else Icons.Default.Timer,
                                 contentDescription = null,
                                 tint = GoldAccent,
                                 modifier = Modifier.size(13.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isPro) strings.proLifetimeActive else "${strings.proLaunchSpecialBadge} · 50% OFF",
+                                text = if (isPro) strings.proLifetimeActive else "LIMITED TIME · 50% OFF",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.8.sp,
@@ -778,7 +782,7 @@ fun ProScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = strings.proUnlockProCta.format(activePrice),
+                                            text = "UNLOCK FOREVER · $activePrice",
                                             style = MaterialTheme.typography.titleMedium.copy(
                                                 fontSize = 14.5.sp,
                                                 fontWeight = FontWeight.ExtraBold,
@@ -790,38 +794,30 @@ fun ProScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            Text(
-                                text = "One-time payment • Lifetime access",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                                color = TextMuted,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            // Trust Badges Row
+                            // Bigger Highlighted Lifetime Ownership Callout
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                TrustBadge(icon = Icons.Default.Shield, label = strings.proTrustOffline)
-                                Box(
-                                    modifier = Modifier
-                                        .size(3.dp)
-                                        .background(BorderSubtle, CircleShape)
+                                Icon(
+                                    imageVector = Icons.Default.AllInclusive,
+                                    contentDescription = null,
+                                    tint = GoldAccent,
+                                    modifier = Modifier.size(17.dp)
                                 )
-                                TrustBadge(icon = Icons.Default.AllInclusive, label = strings.proTrustNoSubs)
-                                Box(
-                                    modifier = Modifier
-                                        .size(3.dp)
-                                        .background(BorderSubtle, CircleShape)
+                                Spacer(modifier = Modifier.width(7.dp))
+                                Text(
+                                    text = "Pay once, zero subscriptions",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.3.sp
+                                    ),
+                                    color = GoldAccent,
+                                    textAlign = TextAlign.Center
                                 )
-                                TrustBadge(icon = Icons.Default.Lock, label = strings.proTrustSecure)
                             }
 
                             if (billingState.isConnecting) {

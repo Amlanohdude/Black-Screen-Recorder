@@ -22,8 +22,9 @@ object CameraHardwareHelper {
      * Uses CameraX VideoCapabilities with CamcorderProfile fallback.
      */
     fun is4KSupported(context: Context, useFrontCamera: Boolean): Boolean {
-        if (force4kSupportForTesting != null) {
-            return force4kSupportForTesting!!
+        val override = force4kSupportForTesting
+        if (override != null) {
+            return override
         }
         return try {
             val providerFuture = ProcessCameraProvider.getInstance(context)

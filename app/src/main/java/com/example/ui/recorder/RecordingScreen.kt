@@ -144,8 +144,13 @@ fun RecordingScreen(
                 insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
                 insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     win.attributes = win.attributes.apply {
+                        layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    win.attributes = win.attributes.apply {
+                        @Suppress("DEPRECATION")
                         layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
                     }
                 }
@@ -925,6 +930,7 @@ fun RecordingScreen(
             AlertDialog(
                 onDismissRequest = {
                     finalizationErrorMessage = null
+                    com.example.recording.RecordingService.updateStatus(com.example.recording.RecordingStatus())
                     onRecordingFinished(null)
                 },
                 title = {
@@ -937,6 +943,7 @@ fun RecordingScreen(
                     Button(
                         onClick = {
                             finalizationErrorMessage = null
+                            com.example.recording.RecordingService.updateStatus(com.example.recording.RecordingStatus())
                             onRecordingFinished(null)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
